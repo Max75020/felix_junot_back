@@ -19,13 +19,13 @@ class PanierProduit
 
 	// Relation ManyToOne avec l'entité Produit
 	#[ORM\ManyToOne(targetEntity: Produit::class)]
-	#[ORM\JoinColumn(nullable: false)]
+	#[ORM\JoinColumn(name: 'produit_id', referencedColumnName: 'id_produit', nullable: false)]
 	#[Assert\NotBlank(message: "Le produit est obligatoire.")]
 	private ?Produit $produit = null;
 
 	// Relation ManyToOne avec l'entité Panier
 	#[ORM\ManyToOne(targetEntity: Panier::class, inversedBy: 'panierProduits')]
-	#[ORM\JoinColumn(nullable: false)]
+	#[ORM\JoinColumn(name: 'panier_id', referencedColumnName: 'id_panier', nullable: false)]
 	#[Assert\NotBlank(message: "Le panier est obligatoire.")]
 	private ?Panier $panier = null;
 

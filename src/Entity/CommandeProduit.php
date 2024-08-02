@@ -19,12 +19,12 @@ class CommandeProduit
 
 	// Relation ManyToOne avec l'entité Commande
 	#[ORM\ManyToOne(targetEntity: Commande::class, inversedBy: 'commandeProduits')]
-	#[ORM\JoinColumn(nullable: false)]
+	#[ORM\JoinColumn(name: 'commande_id', referencedColumnName: 'id_commande', nullable: false)]
 	private ?Commande $commande = null;
 
 	// Relation ManyToOne avec l'entité Produit
 	#[ORM\ManyToOne(targetEntity: Produit::class, inversedBy: 'commandeProduits')]
-	#[ORM\JoinColumn(nullable: false)]
+	#[ORM\JoinColumn(name: 'produit_id', referencedColumnName: 'id_produit', nullable: false)]
 	private ?Produit $produit = null;
 
 	// Quantité du produit dans la commande

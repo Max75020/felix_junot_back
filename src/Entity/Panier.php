@@ -19,7 +19,7 @@ class Panier
 
 	// Relation ManyToOne avec l'entité Utilisateur
 	#[ORM\ManyToOne(targetEntity: Utilisateur::class, inversedBy: 'paniers')]
-	#[ORM\JoinColumn(nullable: false)]
+	#[ORM\JoinColumn(name: 'utilisateur_id', referencedColumnName: 'id_utilisateur', nullable: false)]
 	#[Assert\NotBlank(message: "L'utilisateur est obligatoire.")]
 	private ?Utilisateur $utilisateur = null;
 

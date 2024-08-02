@@ -19,13 +19,13 @@ class Favoris
 
 	// Relation ManyToOne avec l'entité Utilisateur
 	#[ORM\ManyToOne(targetEntity: Utilisateur::class, inversedBy: 'favoris')]
-	#[ORM\JoinColumn(nullable: false)]
+	#[ORM\JoinColumn(name: 'utilisateur_id', referencedColumnName: 'id_utilisateur', nullable: false)]
 	#[Assert\NotBlank(message: "L'utilisateur est obligatoire.")]
 	private ?Utilisateur $utilisateur = null;
 
 	// Relation ManyToOne avec l'entité Produit
 	#[ORM\ManyToOne(targetEntity: Produit::class)]
-	#[ORM\JoinColumn(nullable: false)]
+	#[ORM\JoinColumn(name: 'produit_id', referencedColumnName: 'id_produit', nullable: false)]
 	#[Assert\NotBlank(message: "Le produit est obligatoire.")]
 	private ?Produit $produit = null;
 

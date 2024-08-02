@@ -19,7 +19,7 @@ class Adresse
 
 	// Relation ManyToOne avec l'entité Utilisateur
 	#[ORM\ManyToOne(targetEntity: Utilisateur::class, inversedBy: 'adresses')]
-	#[ORM\JoinColumn(nullable: false)]
+	#[ORM\JoinColumn(name: 'utilisateur_id', referencedColumnName: 'id_utilisateur', nullable: false)]
 	private ?Utilisateur $utilisateur = null;
 
 	// Type d'adresse (Facturation ou Livraison)

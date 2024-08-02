@@ -39,14 +39,14 @@ class Produit
 	private ?float $prix = null;
 
 	// Relation ManyToOne avec l'entité Categorie
-	#[ORM\ManyToOne(targetEntity: Categorie::class)]
-	#[ORM\JoinColumn(nullable: false)]
+	#[ORM\ManyToOne(targetEntity: Categorie::class, inversedBy: 'produits')]
+	#[ORM\JoinColumn(name: 'categorie_id', referencedColumnName: 'id_categorie', nullable: false)]
 	#[Assert\NotBlank(message: "La catégorie est obligatoire.")]
 	private ?Categorie $categorie = null;
 
 	// Relation ManyToOne avec l'entité Tva
 	#[ORM\ManyToOne(targetEntity: Tva::class)]
-	#[ORM\JoinColumn(nullable: false)]
+	#[ORM\JoinColumn(name: 'tva_id', referencedColumnName: 'id_tva', nullable: false)]
 	#[Assert\NotBlank(message: "La TVA est obligatoire.")]
 	private ?Tva $tva = null;
 

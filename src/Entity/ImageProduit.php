@@ -19,7 +19,7 @@ class ImageProduit
 
 	// Relation ManyToOne avec l'entité Produit
 	#[ORM\ManyToOne(targetEntity: Produit::class, inversedBy: 'images')]
-	#[ORM\JoinColumn(nullable: false)]
+	#[ORM\JoinColumn(name: 'produit_id', referencedColumnName: 'id_produit', nullable: false)]
 	#[Assert\NotBlank(message: "Le produit est obligatoire.")]
 	private ?Produit $produit = null;
 
