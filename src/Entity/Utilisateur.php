@@ -66,6 +66,9 @@ class Utilisateur
 	#[ORM\OneToMany(targetEntity: Favoris::class, mappedBy: 'utilisateur')]
 	private Collection $favoris;
 
+	#[ORM\Column(type: 'boolean')]
+	private ?bool $email_valide = false;
+
 	// Constructeur pour initialiser les collections
 	public function __construct()
 	{
@@ -263,6 +266,18 @@ class Utilisateur
 				$favori->setUtilisateur(null);
 			}
 		}
+
+		return $this;
+	}
+
+	public function isEmailValide(): ?bool
+	{
+		return $this->email_valide;
+	}
+
+	public function setEmailValide(bool $email_valide): static
+	{
+		$this->email_valide = $email_valide;
 
 		return $this;
 	}
