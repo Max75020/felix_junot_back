@@ -8,10 +8,12 @@ use Doctrine\ORM\Mapping as ORM;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Component\Security\Core\User\UserInterface;
+use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 
 #[ORM\Entity(repositoryClass: UtilisateurRepository::class)]
 #[ApiResource]
-class Utilisateur
+class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
 {
 	// Clé primaire avec auto-incrémentation
 	#[ORM\Id]
@@ -129,16 +131,18 @@ class Utilisateur
 		return $this;
 	}
 
-	public function getMotDePasse(): ?string
-	{
-		return $this->mot_de_passe;
-	}
+	public function getPassword(): ?string
+    {
+        // Retourne le champ 'mot_de_passe' pour Symfony
+        return $this->mot_de_passe;
+    }
 
-	public function setMotDePasse(string $mot_de_passe): self
-	{
-		$this->mot_de_passe = $mot_de_passe;
-		return $this;
-	}
+    public function setPassword(string $password): self
+    {
+        // Définit le champ 'mot_de_passe'
+        $this->mot_de_passe = $password;
+        return $this;
+    }
 
 	public function getRole(): ?string
 	{
@@ -281,4 +285,34 @@ class Utilisateur
 
 		return $this;
 	}
+
+    // Méthodes de l'interface UserInterface
+
+    public function getUserIdentifier(): string
+    {
+        return $this->email;
+    }
+
+    public function getUsername(): string
+    {
+        return $this->email;
+    }
+
+    // Adapter la méthode getRoles() pour utiliser le champ 'role' existant
+    public function getRoles(): array
+    {
+        // Retourner le rôle de l'utilisateur sous forme de tableau
+        return [$this->role];
+    }
+
+    public function eraseCredentials() : void
+    {
+        // Dans mon cas, je n'ai pas besoin de cette méthode mais elle est obligatoire avec l'interface UserInterface, je la laisse vide
+    }
+
+    public function getSalt(): ?string
+    {
+        // Non nécessaire si bcrypt ou argon2i est utilisé
+        return null;
+    }
 }
