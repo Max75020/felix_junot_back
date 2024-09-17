@@ -3,6 +3,9 @@
 namespace App\Entity;
 
 use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Post;
+use ApiPlatform\Metadata\Put;
+use ApiPlatform\Metadata\Patch;
 use App\Repository\UtilisateurRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -10,9 +13,16 @@ use Doctrine\Common\Collections\Collection;
 use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
+use App\State\UserPasswordHasher;
 
 #[ORM\Entity(repositoryClass: UtilisateurRepository::class)]
-#[ApiResource]
+#[ApiResource(
+    operations: [
+        new Post(processor: UserPasswordHasher::class),
+        new Put(processor: UserPasswordHasher::class),
+        new Patch(processor: UserPasswordHasher::class),
+    ]
+)]
 class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
 {
 	// Clé primaire avec auto-incrémentation
@@ -68,7 +78,7 @@ class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
 	#[ORM\OneToMany(targetEntity: Favoris::class, mappedBy: 'utilisateur')]
 	private Collection $favoris;
 
-	#[ORM\Column(type: 'boolean')]
+	#[ORM\Column(type: 'boolean', options: ['default' => false])]
 	private ?bool $email_valide = false;
 
 	// Constructeur pour initialiser les collections
