@@ -3,64 +3,102 @@
 namespace App\Entity;
 
 use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Get;
+use ApiPlatform\Metadata\Post;
+use ApiPlatform\Metadata\Put;
+use ApiPlatform\Metadata\Delete;
+use Symfony\Component\Serializer\Annotation\Groups;
 use App\Repository\CommandeRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
+use App\State\CommandeProcessor;
 
-#[ApiResource]
+#[ApiResource(
+	normalizationContext: ['groups' => ['commande:read']],
+	denormalizationContext: ['groups' => ['commande:write']],
+	operations: [
+		// Récupération d'une commande (accessible uniquement à l'utilisateur propriétaire ou à l'administrateur)
+		new Get(security: "is_granted('ROLE_USER') and object.getUtilisateur() == user or is_granted('ROLE_ADMIN')"),
+
+		// Modification complète d'une commande (accessible uniquement aux administrateurs)
+		new Put(security: "is_granted('ROLE_ADMIN')"),
+
+		// Suppression d'une commande (accessible uniquement aux administrateurs)
+		new Delete(security: "is_granted('ROLE_ADMIN')"),
+
+		// Création d'une nouvelle commande (accessible aux utilisateurs connectés et aux administrateurs)
+		new Post(security: "is_granted('ROLE_USER') or is_granted('ROLE_ADMIN')",
+		processor: CommandeProcessor::class)
+	]
+)]
 #[ORM\Entity(repositoryClass: CommandeRepository::class)]
+#[ORM\Index(name: 'idx_utilisateur_id', columns: ['utilisateur_id'])]
+#[ORM\Index(name: 'idx_etat_commande_id', columns: ['etat_commande_id'])]
+#[ORM\Index(name: 'idx_date_commande', columns: ['date_commande'])]
 class Commande
 {
 	// Clé primaire avec auto-incrémentation
 	#[ORM\Id]
 	#[ORM\GeneratedValue]
 	#[ORM\Column(type: 'integer')]
+	#[Groups(['commande:read'])]
 	private ?int $id_commande = null;
 
 	// Relation ManyToOne avec l'entité Utilisateur
 	#[ORM\ManyToOne(targetEntity: Utilisateur::class, inversedBy: 'commandes')]
 	#[ORM\JoinColumn(name: 'utilisateur_id', referencedColumnName: 'id_utilisateur', nullable: false)]
+	#[Groups(['commande:read', 'commande:write'])]
 	private ?Utilisateur $utilisateur = null;
 
 	// Date de la commande
 	#[ORM\Column(type: 'date')]
 	#[Assert\NotBlank(message: "La date de commande est obligatoire.")]
+	#[Assert\Type(\DateTimeInterface::class, message: "La date de commande doit être une date valide.")]
+	#[Groups(['commande:read', 'commande:write'])]
 	private ?\DateTimeInterface $date_commande = null;
 
 	// Total de la commande
 	#[ORM\Column(type: 'decimal', precision: 10, scale: 2)]
 	#[Assert\NotBlank(message: "Le total est obligatoire.")]
 	#[Assert\Positive(message: "Le total doit être positif.")]
-	private ?float $total = null;
+	#[Groups(['commande:read', 'commande:write'])]
+	private ?string $total = null;
 
 	// Relation ManyToOne avec l'entité EtatCommande
 	#[ORM\ManyToOne(targetEntity: EtatCommande::class, inversedBy: 'commandes')]
 	#[ORM\JoinColumn(name: 'etat_commande_id', referencedColumnName: 'id_etat_commande', nullable: false)]
+	#[Groups(['commande:read', 'commande:write'])]
 	private ?EtatCommande $etat_commande = null;
 
 	// Transporteur de la commande
 	#[ORM\Column(type: 'string', length: 100)]
 	#[Assert\NotBlank(message: "Le nom du transporteur est obligatoire.")]
+	#[Assert\Length(max: 100, maxMessage: "Le nom du transporteur ne peut pas dépasser {{ limit }} caractères.")]
+	#[Groups(['commande:read', 'commande:write'])]
 	private ?string $transporteur = null;
 
 	// Poids de la commande
 	#[ORM\Column(type: 'decimal', precision: 10, scale: 2)]
 	#[Assert\NotBlank(message: "Le poids est obligatoire.")]
 	#[Assert\PositiveOrZero(message: "Le poids ne peut pas être négatif.")]
-	private ?float $poids = null;
+	#[Groups(['commande:read', 'commande:write'])]
+	private ?string $poids = null;
 
 	// Frais de livraison de la commande
 	#[ORM\Column(type: 'decimal', precision: 10, scale: 2)]
 	#[Assert\NotBlank(message: "Les frais de livraison sont obligatoires.")]
 	#[Assert\PositiveOrZero(message: "Les frais de livraison ne peuvent pas être négatifs.")]
-	private ?float $frais_livraison = null;
+	#[Groups(['commande:read', 'commande:write'])]
+	private ?string $frais_livraison = null;
 
 	// Numéro de suivi de la commande
 	#[ORM\Column(type: 'string', length: 100)]
 	#[Assert\NotBlank(message: "Le numéro de suivi est obligatoire.")]
+	#[Assert\Length(max: 100, maxMessage: "Le numéro de suivi ne peut pas dépasser {{ limit }} caractères.")]
+	#[Groups(['commande:read', 'commande:write'])]
 	private ?string $numero_suivi = null;
 
-	// Getters et Setters
+	// Getters et Setters...
 
 	public function getIdCommande(): ?int
 	{
@@ -89,12 +127,12 @@ class Commande
 		return $this;
 	}
 
-	public function getTotal(): ?float
+	public function getTotal(): ?string
 	{
 		return $this->total;
 	}
 
-	public function setTotal(float $total): self
+	public function setTotal(string $total): self
 	{
 		$this->total = $total;
 		return $this;
@@ -122,23 +160,23 @@ class Commande
 		return $this;
 	}
 
-	public function getPoids(): ?float
+	public function getPoids(): ?string
 	{
 		return $this->poids;
 	}
 
-	public function setPoids(float $poids): self
+	public function setPoids(string $poids): self
 	{
 		$this->poids = $poids;
 		return $this;
 	}
 
-	public function getFraisLivraison(): ?float
+	public function getFraisLivraison(): ?string
 	{
 		return $this->frais_livraison;
 	}
 
-	public function setFraisLivraison(float $frais_livraison): self
+	public function setFraisLivraison(string $frais_livraison): self
 	{
 		$this->frais_livraison = $frais_livraison;
 		return $this;
