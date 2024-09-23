@@ -4,6 +4,8 @@ namespace App\Tests;
 
 use PHPUnit\Framework\TestCase;
 use App\Entity\Utilisateur;
+use App\Entity\Adresse;
+use App\Entity\Favoris;
 
 class UtilisateurTest extends TestCase
 {
@@ -42,7 +44,7 @@ class UtilisateurTest extends TestCase
 	public function testAddAndRemoveAdresse()
 	{
 		$utilisateur = new Utilisateur();
-		$adresse = new \App\Entity\Adresse();
+		$adresse = new Adresse();
 
 		// Ajoute une adresse à l'utilisateur
 		$utilisateur->addAdresse($adresse);
@@ -59,7 +61,7 @@ class UtilisateurTest extends TestCase
 	public function testAddAndRemoveFavoris()
 	{
 		$utilisateur = new Utilisateur();
-		$favori = new \App\Entity\Favoris();
+		$favori = new Favoris();
 
 		// Ajoute un favori à l'utilisateur
 		$utilisateur->addFavoris($favori);
@@ -70,5 +72,67 @@ class UtilisateurTest extends TestCase
 		$utilisateur->removeFavoris($favori);
 		// Vérifie que le favori a bien été supprimé
 		$this->assertCount(0, $utilisateur->getFavoris());
+	}
+
+	// Test pour vérifier la récupération du prénom de l'utilisateur
+	public function testSetAndGetPrenom()
+	{
+		$utilisateur = new Utilisateur();
+		$prenom = 'John';
+
+		$utilisateur->setPrenom($prenom);
+		$this->assertEquals($prenom, $utilisateur->getPrenom());
+	}
+
+	// Test pour vérifier la récupération du nom de l'utilisateur
+	public function testSetAndGetNom()
+	{
+		$utilisateur = new Utilisateur();
+		$nom = 'Doe';
+
+		$utilisateur->setNom($nom);
+		$this->assertEquals($nom, $utilisateur->getNom());
+	}
+
+	// Test pour vérifier la récupération de l'email de l'utilisateur
+	public function testSetAndGetEmail()
+	{
+		$utilisateur = new Utilisateur();
+		$email = 'john.doe@example.com';
+
+		$utilisateur->setEmail($email);
+		$this->assertEquals($email, $utilisateur->getEmail());
+	}
+
+	// Test pour vérifier la récupération du numéro de téléphone de l'utilisateur
+	public function testSetInvalidRole()
+	{
+		$this->expectException(\InvalidArgumentException::class);
+		$this->expectExceptionMessage('Rôle invalide.');
+
+		$utilisateur = new Utilisateur();
+		$utilisateur->setRole('ROLE_INVALID');
+	}
+
+	// Test pour vérifier la récupération du token de réinitialisation de mot de passe
+	public function testSetAndGetTokenReinitialisation()
+	{
+		$utilisateur = new Utilisateur();
+		$token = 'token123';
+
+		$utilisateur->setTokenReinitialisation($token);
+		$this->assertEquals($token, $utilisateur->getTokenReinitialisation());
+	}
+
+	// Test pour vérifier la récupération du numéro de téléphone de l'utilisateur
+	public function testSetAndIsEmailValide()
+	{
+		$utilisateur = new Utilisateur();
+
+		$utilisateur->setEmailValide(true);
+		$this->assertTrue($utilisateur->isEmailValide());
+
+		$utilisateur->setEmailValide(false);
+		$this->assertFalse($utilisateur->isEmailValide());
 	}
 }
