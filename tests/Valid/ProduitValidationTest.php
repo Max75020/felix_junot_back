@@ -3,15 +3,94 @@
 namespace App\Tests\Valid;
 
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
+use App\Entity\Produit;
+use App\Entity\Categorie;
+use App\Entity\Tva;
 
 class ProduitValidationTest extends KernelTestCase
 {
-    public function testSomething(): void
-    {
-        $kernel = self::bootKernel();
+	private $entityManager;
 
-        $this->assertSame('test', $kernel->getEnvironment());
-        // $routerService = static::getContainer()->get('router');
-        // $myCustomService = static::getContainer()->get(CustomService::class);
-    }
+	protected function setUp(): void
+	{
+		self::bootKernel();
+		$this->entityManager = self::getContainer()->get('doctrine')->getManager();
+	}
+
+	public function getValidationErrors(Produit $produit)
+	{
+		$validator = self::getContainer()->get('validator');
+		return $validator->validate($produit);
+	}
+
+	private function initializeValidProduit(string $reference = 'REF123'): Produit
+	{
+		$produit = new Produit();
+		$categorie = $this->entityManager->getRepository(Categorie::class)->find(1); // Catégorie Test déjà présente en BDD
+		$tva = $this->entityManager->getRepository(Tva::class)->find(1); // Tva Test déjà présente en BDD
+
+		$produit->setReference($reference)
+			->setNom('Produit Test')
+			->setDescription('Description test')
+			->setPrix(19.99)
+			->setCategorie($categorie)
+			->setTva($tva);
+
+		return $produit;
+	}
+
+	// Test de validation avec un produit valide
+	public function testProduitValide()
+	{
+		$produit = $this->initializeValidProduit('REF999'); // Utilisation d'une référence unique
+
+		$errors = $this->getValidationErrors($produit);
+		$this->assertCount(0, $errors); // Aucun problème attendu
+	}
+
+	// Test de validation pour la référence unique
+	public function testReferenceUnique()
+	{
+		$produit = $this->initializeValidProduit('REF1000'); // Utilisation d'une autre référence unique
+		$this->entityManager->persist($produit);
+		$this->entityManager->flush();
+
+		$produitDuplique = clone $produit;
+		$errors = $this->getValidationErrors($produitDuplique);
+		$this->assertGreaterThan(0, count($errors));
+		$this->assertEquals("Cette référence est déjà utilisée.", $errors[0]->getMessage());
+	}
+
+	// Test de validation lorsque le nom est absent
+	public function testNomObligatoire()
+	{
+		$produit = $this->initializeValidProduit('REF1010'); // Utilisation d'une autre référence unique
+		$produit->setNom(''); // Suppression du nom
+
+		$errors = $this->getValidationErrors($produit);
+		$this->assertGreaterThan(0, count($errors));
+		$this->assertEquals("Le nom est obligatoire.", $errors[0]->getMessage());
+	}
+
+	// Test de validation lorsque le prix est négatif
+	public function testPrixNegatif()
+	{
+		$produit = $this->initializeValidProduit('REF1020'); // Utilisation d'une autre référence unique
+		$produit->setPrix(-10.00); // Prix négatif
+
+		$errors = $this->getValidationErrors($produit);
+		$this->assertGreaterThan(0, count($errors));
+		$this->assertEquals("Le prix doit être un nombre positif.", $errors[0]->getMessage());
+	}
+
+	// Test de validation lorsque la description est absente
+	public function testDescriptionObligatoire()
+	{
+		$produit = $this->initializeValidProduit('REF1030'); // Utilisation d'une autre référence unique
+		$produit->setDescription(''); // Suppression de la description
+
+		$errors = $this->getValidationErrors($produit);
+		$this->assertGreaterThan(0, count($errors));
+		$this->assertEquals("La description est obligatoire.", $errors[0]->getMessage());
+	}
 }
