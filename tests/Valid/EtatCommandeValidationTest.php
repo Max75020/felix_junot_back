@@ -25,14 +25,12 @@ class EtatCommandeValidationTest extends KernelTestCase
 	// Fonction pour initialiser un EtatCommande valide
 	private function initializeValidEtatCommande(): EtatCommande
 	{
-		// Crée un EtatCommande valide
 		$etatCommande = new EtatCommande();
-		$etatCommande->setLibelle('En préparation'); // Libellé valide
-
+		$etatCommande->setLibelle('Etat Test Valide'); // Exemple d'un libellé valide
 		return $etatCommande;
 	}
 
-	// Test de validation avec un EtatCommande valide
+
 	public function testEtatCommandeValide()
 	{
 		$etatCommande = $this->initializeValidEtatCommande();
@@ -63,18 +61,19 @@ class EtatCommandeValidationTest extends KernelTestCase
 		$this->assertEquals("Le libellé ne peut pas dépasser 50 caractères.", $errors[0]->getMessage());
 	}
 
-	// Test de validation pour l'unicité du libellé
 	public function testLibelleUnique()
 	{
-		// Crée et persiste un premier EtatCommande valide
-		$etatCommande = $this->initializeValidEtatCommande();
-		$this->entityManager->persist($etatCommande);
-		$this->entityManager->flush();
+		// Récupère un état de commande déjà présent en base avec le libellé 'En préparation'
+		$etatExistant = $this->entityManager->getRepository(EtatCommande::class)->findOneBy(['libelle' => 'En préparation']);
 
-		// Crée un second EtatCommande avec le même libellé
+		// Vérifie que l'état existe bien en base, sinon échec du test
+		$this->assertNotNull($etatExistant, "L'état de commande avec le libellé 'En préparation' n'existe pas en base de données.");
+
+		// Crée un nouvel EtatCommande avec le même libellé que l'état existant
 		$etatCommandeDuplique = new EtatCommande();
 		$etatCommandeDuplique->setLibelle('En préparation'); // Libellé dupliqué
 
+		// Vérification des erreurs de validation
 		$errors = $this->getValidationErrors($etatCommandeDuplique);
 
 		// Vérification de l'erreur d'unicité
