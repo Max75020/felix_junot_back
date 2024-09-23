@@ -48,15 +48,25 @@ class ProduitValidationTest extends KernelTestCase
 		$this->assertCount(0, $errors); // Aucun problème attendu
 	}
 
-	// Test de validation pour la référence unique
 	public function testReferenceUnique()
 	{
-		$produit = $this->initializeValidProduit('REF1000'); // Utilisation d'une autre référence unique
-		$this->entityManager->persist($produit);
-		$this->entityManager->flush();
+		// Crée un premier produit avec une référence fictive
+		$produit = $this->initializeValidProduit();
+		$produit->setReference('REF1000'); // Données fictives pour tester
 
-		$produitDuplique = clone $produit;
+		// Crée un second produit avec la même référence
+		$produitDuplique = new Produit();
+		$produitDuplique->setReference('REF1000'); // Référence dupliquée
+		$produitDuplique->setNom('Produit test duplicata');
+		$produitDuplique->setDescription('Ceci est un duplicata pour test.');
+		$produitDuplique->setPrix(150.00);
+		$produitDuplique->setCategorie($produit->getCategorie()); // Catégorie fictive
+		$produitDuplique->setTva($produit->getTva()); // TVA fictive
+
+		// Valide le second produit avec la même référence
 		$errors = $this->getValidationErrors($produitDuplique);
+
+		// Vérification de l'erreur d'unicité
 		$this->assertGreaterThan(0, count($errors));
 		$this->assertEquals("Cette référence est déjà utilisée.", $errors[0]->getMessage());
 	}
