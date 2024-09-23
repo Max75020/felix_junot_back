@@ -27,8 +27,10 @@ use App\State\CommandeProcessor;
 		new Delete(security: "is_granted('ROLE_ADMIN')"),
 
 		// Création d'une nouvelle commande (accessible aux utilisateurs connectés et aux administrateurs)
-		new Post(security: "is_granted('ROLE_USER') or is_granted('ROLE_ADMIN')",
-		processor: CommandeProcessor::class)
+		new Post(
+			security: "is_granted('ROLE_USER') or is_granted('ROLE_ADMIN')",
+			processor: CommandeProcessor::class
+		)
 	]
 )]
 #[ORM\Entity(repositoryClass: CommandeRepository::class)]
@@ -97,6 +99,12 @@ class Commande
 	#[Assert\Length(max: 100, maxMessage: "Le numéro de suivi ne peut pas dépasser {{ limit }} caractères.")]
 	#[Groups(['commande:read', 'commande:write'])]
 	private ?string $numero_suivi = null;
+
+	// Constructeur pour initialiser automatiquement la date de commande
+	public function __construct()
+	{
+		$this->date_commande = new \DateTime(); // Initialise la date avec la date actuelle
+	}
 
 	// Getters et Setters...
 

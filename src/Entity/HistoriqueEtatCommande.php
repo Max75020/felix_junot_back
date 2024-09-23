@@ -55,6 +55,13 @@ class HistoriqueEtatCommande
 	#[Groups(['historiqueEtatCommande:read', 'historiqueEtatCommande:write'])]
 	private ?EtatCommande $etat_commande = null;
 
+	// Constructeur pour initialiser automatiquement la date
+	public function __construct()
+	{
+		// Initialise automatiquement la date à la création de l'objet
+		$this->date_etat = new \DateTime(); 
+	}
+
 	// Getters et Setters...
 
 	public function getIdHistoriqueEtatCommande(): ?int
