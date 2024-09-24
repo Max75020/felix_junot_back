@@ -113,7 +113,8 @@ class UtilisateurValidationTest extends KernelTestCase
 	public function testPasswordSansChiffre()
 	{
 		$utilisateur = $this->initializeValidUtilisateur();
-		$utilisateur->setPassword('NoNumbersHere!'); // Pas de chiffre
+		// Pas de chiffre
+		$utilisateur->setPassword('NoNumbersHere!'); 
 
 		$errors = $this->getValidationErrors($utilisateur);
 		$this->assertGreaterThan(0, count($errors));
