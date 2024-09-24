@@ -33,7 +33,7 @@ class ProduitValidationTest extends KernelTestCase
 			->setNom('Produit Test')
 			->setDescription('Description test')
 			->setPrix(19.99)
-			->setCategorie($categorie)
+			->addCategorie($categorie) // Utilisation de addCategorie pour la relation ManyToMany
 			->setTva($tva);
 
 		return $produit;
@@ -60,7 +60,7 @@ class ProduitValidationTest extends KernelTestCase
 		$produitDuplique->setNom('Produit test duplicata');
 		$produitDuplique->setDescription('Ceci est un duplicata pour test.');
 		$produitDuplique->setPrix(150.00);
-		$produitDuplique->setCategorie($produit->getCategorie()); // Catégorie fictive
+		$produitDuplique->addCategorie($produit->getCategories()->first()); // Catégorie fictive
 		$produitDuplique->setTva($produit->getTva()); // TVA fictive
 
 		// Valide le second produit avec la même référence

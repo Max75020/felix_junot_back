@@ -12,6 +12,8 @@ use App\Repository\ProduitRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
+use Doctrine\Common\Collections\Collection;
+use Doctrine\Common\Collections\ArrayCollection;
 
 #[ApiResource(
 	normalizationContext: ['groups' => ['produit:read']],
@@ -32,7 +34,6 @@ use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 )]
 #[ORM\Entity(repositoryClass: ProduitRepository::class)]
 #[UniqueEntity(fields: ['reference'], message: "Cette référence est déjà utilisée.")]
-#[ORM\Index(name: 'idx_categorie_id', columns: ['categorie_id'])]
 #[ORM\Index(name: 'idx_reference', columns: ['reference'])]
 #[ORM\UniqueConstraint(name: 'uq_reference', columns: ['reference'])]
 #[ORM\Index(name: 'idx_nom', columns: ['nom'])]
@@ -71,12 +72,11 @@ class Produit
 	#[Groups(['produit:read', 'produit:write'])]
 	private ?float $prix = null;
 
-	// Relation ManyToOne avec l'entité Categorie
-	#[ORM\ManyToOne(targetEntity: Categorie::class, inversedBy: 'produits')]
-	#[ORM\JoinColumn(name: 'categorie_id', referencedColumnName: 'id_categorie', nullable: false)]
+	// Relation ManyToMany avec l'entité Categorie
+	#[ORM\ManyToMany(targetEntity: Categorie::class, mappedBy: 'produits')]
 	#[Assert\NotBlank(message: "La catégorie est obligatoire.")]
 	#[Groups(['produit:read', 'produit:write'])]
-	private ?Categorie $categorie = null;
+	private Collection $categories;
 
 	// Relation ManyToOne avec l'entité Tva
 	#[ORM\ManyToOne(targetEntity: Tva::class)]
@@ -84,6 +84,11 @@ class Produit
 	#[Assert\NotBlank(message: "La TVA est obligatoire.")]
 	#[Groups(['produit:read', 'produit:write'])]
 	private ?Tva $tva = null;
+
+	public function __construct()
+	{
+		$this->categories = new ArrayCollection();
+	}
 
 	// Getters et Setters...
 
@@ -136,14 +141,46 @@ class Produit
 		return $this;
 	}
 
-	public function getCategorie(): ?Categorie
+	public function getCategories(): Collection
 	{
-		return $this->categorie;
+		return $this->categories;
 	}
 
-	public function setCategorie(?Categorie $categorie): self
+	public function setCategories(Collection $categories): self
 	{
-		$this->categorie = $categorie;
+		// On réinitialise les catégories actuelles en retirant celles qui ne sont plus présentes
+		foreach ($this->categories as $categorie) {
+			if (!$categories->contains($categorie)) {
+				$this->removeCategorie($categorie);
+			}
+		}
+
+		// On ajoute les nouvelles catégories qui ne sont pas encore associées
+		foreach ($categories as $categorie) {
+			$this->addCategorie($categorie);
+		}
+
+		return $this;
+	}
+
+	public function addCategorie(Categorie $categorie): self
+	{
+		if (!$this->categories->contains($categorie)) {
+			$this->categories[] = $categorie;
+			// Mise à jour de la relation bidirectionnelle en ajoutant ce produit à la catégorie
+			$categorie->addProduit($this);
+		}
+
+		return $this;
+	}
+
+	public function removeCategorie(Categorie $categorie): self
+	{
+		if ($this->categories->removeElement($categorie)) {
+			// Met à jour la relation bidirectionnelle en supprimant ce produit de la catégorie
+			$categorie->removeProduit($this);
+		}
+
 		return $this;
 	}
 

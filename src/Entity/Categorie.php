@@ -60,8 +60,16 @@ class Categorie
 	#[Groups(['categorie:read', 'categorie:write'])]
 	private ?string $nom = null;
 
-	// Relation OneToMany avec l'entité Produit
-	#[ORM\OneToMany(targetEntity: Produit::class, mappedBy: 'categorie')]
+	#[ORM\ManyToMany(targetEntity: Produit::class, inversedBy: 'categories')]
+	#[ORM\JoinTable(
+		name: 'categorie_produit',
+		joinColumns: [
+			new ORM\JoinColumn(name: 'categorie_id', referencedColumnName: 'id_categorie')
+		],
+		inverseJoinColumns: [
+			new ORM\JoinColumn(name: 'produit_id', referencedColumnName: 'id_produit')
+		]
+	)]
 	#[Groups(['categorie:read'])]
 	private Collection $produits;
 
@@ -97,7 +105,8 @@ class Categorie
 	{
 		if (!$this->produits->contains($produit)) {
 			$this->produits[] = $produit;
-			$produit->setCategorie($this);
+			// Mise à jour de la relation bidirectionnelle si cette catégorie n'est pas déjà associée à ce produit
+			$produit->addCategorie($this);
 		}
 
 		return $this;
@@ -106,10 +115,8 @@ class Categorie
 	public function removeProduit(Produit $produit): self
 	{
 		if ($this->produits->removeElement($produit)) {
-			// set the owning side to null (unless already changed)
-			if ($produit->getCategorie() === $this) {
-				$produit->setCategorie(null);
-			}
+			// Mise à jour de la relation bidirectionnelle si cette catégorie est bien associée à ce produit
+			$produit->removeCategorie($this);
 		}
 
 		return $this;
