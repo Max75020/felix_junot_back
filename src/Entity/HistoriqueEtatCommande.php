@@ -5,6 +5,7 @@ namespace App\Entity;
 use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\Post;
+use ApiPlatform\Metadata\GetCollection;
 use Symfony\Component\Serializer\Annotation\Groups;
 use App\Repository\HistoriqueEtatCommandeRepository;
 use Doctrine\ORM\Mapping as ORM;
@@ -14,6 +15,9 @@ use Symfony\Component\Validator\Constraints as Assert;
 	normalizationContext: ['groups' => ['historiqueEtatCommande:read']],
 	denormalizationContext: ['groups' => ['historiqueEtatCommande:write']],
 	operations: [
+
+		// Récupération de tous les historiques d'état de commande (accessible à l'administrateur ou à l'utilisateur propriétaire)
+		new GetCollection(security: "is_granted('ROLE_ADMIN') or object.getCommande().getUtilisateur() == user"),
 		// Récupération de l'historique d'un état de commande (accessible à l'administrateur ou à l'utilisateur propriétaire)
 		new Get(security: "is_granted('ROLE_ADMIN') or object.getCommande().getUtilisateur() == user"),
 
