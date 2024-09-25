@@ -8,6 +8,7 @@ use ApiPlatform\Metadata\Put;
 use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\Delete;
+use ApiPlatform\Metadata\GetCollection;
 use App\Repository\CategorieRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
@@ -17,9 +18,13 @@ use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 
 #[ApiResource(
+	collectDenormalizationErrors: true,
 	normalizationContext: ['groups' => ['categorie:read']],
 	denormalizationContext: ['groups' => ['categorie:write']],
 	operations: [
+		// Récupération de toutes les catégories (accessible à tous)
+		new GetCollection(),
+
 		// Récupération d'une catégorie (accessible à tous)
 		new Get(),
 
@@ -60,16 +65,7 @@ class Categorie
 	#[Groups(['categorie:read', 'categorie:write'])]
 	private ?string $nom = null;
 
-	#[ORM\ManyToMany(targetEntity: Produit::class, inversedBy: 'categories')]
-	#[ORM\JoinTable(
-		name: 'categorie_produit',
-		joinColumns: [
-			new ORM\JoinColumn(name: 'categorie_id', referencedColumnName: 'id_categorie')
-		],
-		inverseJoinColumns: [
-			new ORM\JoinColumn(name: 'produit_id', referencedColumnName: 'id_produit')
-		]
-	)]
+	#[ORM\ManyToMany(targetEntity: Produit::class, mappedBy: 'categories')]
 	#[Groups(['categorie:read'])]
 	private Collection $produits;
 

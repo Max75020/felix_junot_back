@@ -8,6 +8,7 @@ use ApiPlatform\Metadata\Put;
 use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\Delete;
+use ApiPlatform\Metadata\GetCollection;
 use App\Repository\UtilisateurRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -24,6 +25,10 @@ use Symfony\Component\Serializer\Annotation\Groups;
 	normalizationContext: ['groups' => ['user:read']],
 	denormalizationContext: ['groups' => ['user:write']],
 	operations: [
+
+		// Récupération de tous les utilisateurs (accessible uniquement à l'administrateur)
+		new GetCollection(security: "is_granted('ROLE_ADMIN')"),
+
 		// Récupération d'un utilisateur (accessible uniquement à l'utilisateur lui-même ou à l'administrateur)
 		new Get(
 			security: "is_granted('ROLE_USER') and object == user or is_granted('ROLE_ADMIN')"
@@ -59,7 +64,7 @@ class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
 	#[ORM\Id]
 	#[ORM\GeneratedValue]
 	#[ORM\Column(type: 'integer')]
-	#[Groups(['user:read'])]
+	#[Groups(['user:read','adresse:read'])]
 	private ?int $id_utilisateur = null;
 
 	// Prénom de l'utilisateur, ne doit pas être vide
@@ -115,15 +120,19 @@ class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
 
 	// Relations avec d'autres entités
 	#[ORM\OneToMany(targetEntity: Adresse::class, mappedBy: 'utilisateur')]
+	#[Groups(['user:read'])]
 	private Collection $adresses;
 
 	#[ORM\OneToMany(targetEntity: Commande::class, mappedBy: 'utilisateur')]
+	#[Groups(['user:read'])]
 	private Collection $commandes;
 
 	#[ORM\OneToMany(targetEntity: Panier::class, mappedBy: 'utilisateur')]
+	#[Groups(['user:read'])]
 	private Collection $paniers;
 
 	#[ORM\OneToMany(targetEntity: Favoris::class, mappedBy: 'utilisateur')]
+	#[Groups(['user:read'])]
 	private Collection $favoris;
 
 

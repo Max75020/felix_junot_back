@@ -7,20 +7,30 @@ use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\Post;
 use ApiPlatform\Metadata\Put;
 use ApiPlatform\Metadata\Delete;
+use ApiPlatform\Metadata\GetCollection;
 use Symfony\Component\Serializer\Annotation\Groups;
 use App\Repository\CommandeRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
 use App\State\CommandeProcessor;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 
 #[ApiResource(
 	normalizationContext: ['groups' => ['commande:read']],
 	denormalizationContext: ['groups' => ['commande:write']],
 	operations: [
+
+		// Récupération de toutes les commandes (accessible à tous)
+		new GetCollection(),
+
 		// Récupération d'une commande (accessible uniquement à l'utilisateur propriétaire ou à l'administrateur)
 		new Get(security: "is_granted('ROLE_USER') and object.getUtilisateur() == user or is_granted('ROLE_ADMIN')"),
 
 		// Modification complète d'une commande (accessible uniquement aux administrateurs)
+		new Put(security: "is_granted('ROLE_ADMIN')"),
+
+		// Modification partielle d'une commande (accessible uniquement à l'administrateur)
 		new Put(security: "is_granted('ROLE_ADMIN')"),
 
 		// Suppression d'une commande (accessible uniquement aux administrateurs)
@@ -100,10 +110,30 @@ class Commande
 	#[Groups(['commande:read', 'commande:write'])]
 	private ?string $numero_suivi = null;
 
+	// Référence de la commande
+	#[ORM\Column(type: 'string', length: 13)]
+	#[Assert\NotBlank(message: "La référence est obligatoire.")]
+	#[Assert\Length(exactly: 13, exactMessage: "La référence doit contenir {{ limit }} caractères.")]
+	#[Groups(['commande:read', 'commande:write'])]
+	private ?string $reference = null;
+
+	// Relation OneToMany avec l'entité CommandeProduit
+	// Cascade persist et remove pour enregistrer et supprimer automatiquement les commandes produits associées
+	#[ORM\OneToMany(mappedBy: 'commande', targetEntity: CommandeProduit::class, cascade: ['persist', 'remove'])]
+	private Collection $commandeProduits;
+
+	// Relation OneToMany avec l'entité HistoriqueEtatCommande
+	// Cascade persist et remove pour enregistrer et supprimer automatiquement les historiques d'états associés
+	#[ORM\OneToMany(mappedBy: 'commande', targetEntity: HistoriqueEtatCommande::class, cascade: ['persist', 'remove'])]
+	private Collection $historiqueEtats;
+
 	// Constructeur pour initialiser automatiquement la date de commande
 	public function __construct()
 	{
-		$this->date_commande = new \DateTime(); // Initialise la date avec la date actuelle
+		$this->commandeProduits = new ArrayCollection();
+		$this->historiqueEtats = new ArrayCollection();
+		// Initialise la date avec la date actuelle
+		$this->date_commande = new \DateTime();
 	}
 
 	// Getters et Setters...
@@ -198,6 +228,70 @@ class Commande
 	public function setNumeroSuivi(string $numero_suivi): self
 	{
 		$this->numero_suivi = $numero_suivi;
+		return $this;
+	}
+
+	public function getReference(): ?string
+	{
+		return $this->reference;
+	}
+
+	public function setReference(string $reference): self
+	{
+		$this->reference = $reference;
+		return $this;
+	}
+
+	public function getCommandeProduits(): Collection
+	{
+		return $this->commandeProduits;
+	}
+
+	public function addCommandeProduit(CommandeProduit $commandeProduit): self
+	{
+		if (!$this->commandeProduits->contains($commandeProduit)) {
+			$this->commandeProduits[] = $commandeProduit;
+			$commandeProduit->setCommande($this);
+		}
+
+		return $this;
+	}
+
+	public function removeCommandeProduit(CommandeProduit $commandeProduit): self
+	{
+		if ($this->commandeProduits->removeElement($commandeProduit)) {
+			
+			if ($commandeProduit->getCommande() === $this) {
+				$commandeProduit->setCommande(null);
+			}
+		}
+
+		return $this;
+	}
+
+	public function getHistoriqueEtats(): Collection
+	{
+		return $this->historiqueEtats;
+	}
+
+	public function addHistoriqueEtat(HistoriqueEtatCommande $historiqueEtat): self
+	{
+		if (!$this->historiqueEtats->contains($historiqueEtat)) {
+			$this->historiqueEtats[] = $historiqueEtat;
+			$historiqueEtat->setCommande($this);
+		}
+
+		return $this;
+	}
+
+	public function removeHistoriqueEtat(HistoriqueEtatCommande $historiqueEtat): self
+	{
+		if ($this->historiqueEtats->removeElement($historiqueEtat)) {
+			if ($historiqueEtat->getCommande() === $this) {
+				$historiqueEtat->setCommande(null);
+			}
+		}
+
 		return $this;
 	}
 }

@@ -6,6 +6,7 @@ use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\Post;
 use ApiPlatform\Metadata\Delete;
+use ApiPlatform\Metadata\GetCollection;
 use Symfony\Component\Serializer\Annotation\Groups;
 use App\Repository\FavorisRepository;
 use Doctrine\ORM\Mapping as ORM;
@@ -17,6 +18,9 @@ use App\State\FavorisProcessor;
 	normalizationContext: ['groups' => ['favoris:read']],
 	denormalizationContext: ['groups' => ['favoris:write']],
 	operations: [
+		// Récupération de tous les favoris (accessible à tous)
+		new GetCollection(),
+
 		// Récupération d'un favori (accessible à l'utilisateur propriétaire ou à l'administrateur)
 		new Get(security: "is_granted('ROLE_ADMIN') or object.getUtilisateur() == user"),
 
@@ -54,7 +58,7 @@ class Favoris
 	private ?Utilisateur $utilisateur = null;
 
 	// Relation ManyToOne avec l'entité Produit
-	#[ORM\ManyToOne(targetEntity: Produit::class)]
+	#[ORM\ManyToOne(targetEntity: Produit::class, inversedBy: 'favoris')]
 	#[ORM\JoinColumn(name: 'produit_id', referencedColumnName: 'id_produit', nullable: false)]
 	#[Assert\NotBlank(message: "Le produit est obligatoire.")]
 	#[Groups(['favoris:read', 'favoris:write'])]

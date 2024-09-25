@@ -12,6 +12,8 @@ use App\Repository\PanierRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
 use App\State\PanierProcessor;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 
 #[ApiResource(
 	normalizationContext: ['groups' => ['panier:read']],
@@ -27,7 +29,9 @@ use App\State\PanierProcessor;
 		new Delete(security: "is_granted('ROLE_ADMIN') or object.getUtilisateur() == user"),
 
 		// Création d'un panier (accessible aux utilisateurs connectés et aux administrateurs)
-		new Post(security: "is_granted('ROLE_USER') or is_granted('ROLE_ADMIN')",processor: PanierProcessor::class
+		new Post(
+			security: "is_granted('ROLE_USER') or is_granted('ROLE_ADMIN')",
+			processor: PanierProcessor::class
 		)
 	]
 )]
@@ -49,6 +53,15 @@ class Panier
 	#[Groups(['panier:read', 'panier:write'])]
 	private ?Utilisateur $utilisateur = null;
 
+	// Relation OneToMany avec l'entité PanierProduit
+	#[ORM\OneToMany(mappedBy: 'panier', targetEntity: PanierProduit::class, cascade: ['persist', 'remove'])]
+	private Collection $panierProduits;
+
+	public function __construct()
+	{
+		$this->panierProduits = new ArrayCollection();
+	}
+
 	// Getters et Setters
 
 	public function getIdPanier(): ?int
@@ -64,6 +77,32 @@ class Panier
 	public function setUtilisateur(?Utilisateur $utilisateur): self
 	{
 		$this->utilisateur = $utilisateur;
+		return $this;
+	}
+
+	public function getPanierProduits(): Collection
+	{
+		return $this->panierProduits;
+	}
+
+	public function addPanierProduit(PanierProduit $panierProduit): self
+	{
+		if (!$this->panierProduits->contains($panierProduit)) {
+			$this->panierProduits[] = $panierProduit;
+			$panierProduit->setPanier($this);
+		}
+
+		return $this;
+	}
+
+	public function removePanierProduit(PanierProduit $panierProduit): self
+	{
+		if ($this->panierProduits->removeElement($panierProduit)) {
+			if ($panierProduit->getPanier() === $this) {
+				$panierProduit->setPanier(null);
+			}
+		}
+
 		return $this;
 	}
 }

@@ -7,6 +7,7 @@ use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\Post;
 use ApiPlatform\Metadata\Put;
 use ApiPlatform\Metadata\Delete;
+use ApiPlatform\Metadata\GetCollection;
 use Symfony\Component\Serializer\Annotation\Groups;
 use App\Repository\ProduitRepository;
 use Doctrine\ORM\Mapping as ORM;
@@ -17,8 +18,12 @@ use Doctrine\Common\Collections\ArrayCollection;
 
 #[ApiResource(
 	normalizationContext: ['groups' => ['produit:read']],
-	denormalizationContext: ['groups' => ['produit:write']],
+	denormalizationContext: ['groups' => ['produit:write', 'categorie:write']],
 	operations: [
+
+		// Récupération de tous les produits (accessible à tous)
+		new GetCollection(),
+
 		// Récupération d'un produit (accessible à tous)
 		new Get(),
 
@@ -70,24 +75,57 @@ class Produit
 	#[Assert\NotBlank(message: "Le prix est obligatoire.")]
 	#[Assert\Positive(message: "Le prix doit être un nombre positif.")]
 	#[Groups(['produit:read', 'produit:write'])]
-	private ?float $prix = null;
+	private ?string $prix = null;
 
 	// Relation ManyToMany avec l'entité Categorie
-	#[ORM\ManyToMany(targetEntity: Categorie::class, mappedBy: 'produits')]
+	#[ORM\ManyToMany(targetEntity: Categorie::class, inversedBy: 'produits')]
+	#[ORM\JoinTable(
+		name: 'produit_categorie',
+		joinColumns: [
+			new ORM\JoinColumn(name: 'produit_id', referencedColumnName: 'id_produit')
+		],
+		inverseJoinColumns: [
+			new ORM\JoinColumn(name: 'categorie_id', referencedColumnName: 'id_categorie')
+		]
+	)]
 	#[Assert\NotBlank(message: "La catégorie est obligatoire.")]
-	#[Groups(['produit:read', 'produit:write'])]
+	#[Groups(['produit:read', 'produit:write', 'categorie:write'])]
 	private Collection $categories;
 
 	// Relation ManyToOne avec l'entité Tva
-	#[ORM\ManyToOne(targetEntity: Tva::class)]
+	#[ORM\ManyToOne(targetEntity: Tva::class, inversedBy: 'produits')]
 	#[ORM\JoinColumn(name: 'tva_id', referencedColumnName: 'id_tva', nullable: false)]
 	#[Assert\NotBlank(message: "La TVA est obligatoire.")]
 	#[Groups(['produit:read', 'produit:write'])]
 	private ?Tva $tva = null;
 
+	// Relation OneToMany avec l'entité Favoris
+	#[ORM\OneToMany(mappedBy: 'produit', targetEntity: Favoris::class)]
+	#[Groups(['produit:read'])]
+	private Collection $favoris;
+
+	// Relation OneToMany avec l'entité PanierProduit
+	#[ORM\OneToMany(mappedBy: 'produit', targetEntity: PanierProduit::class)]
+	#[Groups(['produit:read'])]
+	private Collection $panierProduits;
+
+	// Relation OneToMany avec l'entité ImageProduit
+	#[ORM\OneToMany(mappedBy: 'produit', targetEntity: ImageProduit::class, cascade: ['persist', 'remove'])]
+	#[Groups(['produit:read', 'produit:write'])]
+	private Collection $images;
+
+	// Relation OneToMany avec l'entité CommandeProduit
+	#[ORM\OneToMany(mappedBy: 'produit', targetEntity: CommandeProduit::class)]
+	#[Groups(['produit:read'])]
+	private Collection $commandeProduits;
+
 	public function __construct()
 	{
 		$this->categories = new ArrayCollection();
+		$this->favoris = new ArrayCollection();
+		$this->panierProduits = new ArrayCollection();
+		$this->images = new ArrayCollection();
+		$this->commandeProduits = new ArrayCollection();
 	}
 
 	// Getters et Setters...
@@ -130,12 +168,12 @@ class Produit
 		return $this;
 	}
 
-	public function getPrix(): ?float
+	public function getPrix(): ?string
 	{
 		return $this->prix;
 	}
 
-	public function setPrix(float $prix): self
+	public function setPrix(string $prix): self
 	{
 		$this->prix = $prix;
 		return $this;
@@ -146,7 +184,7 @@ class Produit
 		return $this->categories;
 	}
 
-	public function setCategories(Collection $categories): self
+	public function setCategories(iterable $categories): self
 	{
 		// On réinitialise les catégories actuelles en retirant celles qui ne sont plus présentes
 		foreach ($this->categories as $categorie) {
@@ -192,6 +230,110 @@ class Produit
 	public function setTva(?Tva $tva): self
 	{
 		$this->tva = $tva;
+		return $this;
+	}
+
+	public function getFavoris(): Collection
+	{
+		return $this->favoris;
+	}
+
+	public function addFavori(Favoris $favori): self
+	{
+		if (!$this->favoris->contains($favori)) {
+			$this->favoris[] = $favori;
+			$favori->setProduit($this);
+		}
+
+		return $this;
+	}
+
+	public function removeFavori(Favoris $favori): self
+	{
+		if ($this->favoris->removeElement($favori)) {
+			if ($favori->getProduit() === $this) {
+				$favori->setProduit(null);
+			}
+		}
+
+		return $this;
+	}
+
+	public function getPanierProduits(): Collection
+	{
+		return $this->panierProduits;
+	}
+
+	public function addPanierProduit(PanierProduit $panierProduit): self
+	{
+		if (!$this->panierProduits->contains($panierProduit)) {
+			$this->panierProduits[] = $panierProduit;
+			$panierProduit->setProduit($this);
+		}
+
+		return $this;
+	}
+
+	public function removePanierProduit(PanierProduit $panierProduit): self
+	{
+		if ($this->panierProduits->removeElement($panierProduit)) {
+			if ($panierProduit->getProduit() === $this) {
+				$panierProduit->setProduit(null);
+			}
+		}
+
+		return $this;
+	}
+
+	public function getImages(): Collection
+	{
+		return $this->images;
+	}
+
+	public function addImage(ImageProduit $image): self
+	{
+		if (!$this->images->contains($image)) {
+			$this->images[] = $image;
+			$image->setProduit($this);
+		}
+
+		return $this;
+	}
+
+	public function removeImage(ImageProduit $image): self
+	{
+		if ($this->images->removeElement($image)) {
+			if ($image->getProduit() === $this) {
+				$image->setProduit(null);
+			}
+		}
+
+		return $this;
+	}
+
+	public function getCommandeProduits(): Collection
+	{
+		return $this->commandeProduits;
+	}
+
+	public function addCommandeProduit(CommandeProduit $commandeProduit): self
+	{
+		if (!$this->commandeProduits->contains($commandeProduit)) {
+			$this->commandeProduits[] = $commandeProduit;
+			$commandeProduit->setProduit($this);
+		}
+
+		return $this;
+	}
+
+	public function removeCommandeProduit(CommandeProduit $commandeProduit): self
+	{
+		if ($this->commandeProduits->removeElement($commandeProduit)) {
+			if ($commandeProduit->getProduit() === $this) {
+				$commandeProduit->setProduit(null);
+			}
+		}
+
 		return $this;
 	}
 }

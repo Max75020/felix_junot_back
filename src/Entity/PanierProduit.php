@@ -7,6 +7,7 @@ use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\Post;
 use ApiPlatform\Metadata\Put;
 use ApiPlatform\Metadata\Delete;
+use ApiPlatform\Metadata\GetCollection;
 use Symfony\Component\Serializer\Annotation\Groups;
 use App\Repository\PanierProduitRepository;
 use Doctrine\ORM\Mapping as ORM;
@@ -17,6 +18,10 @@ use App\State\PanierProduitProcessor;
 	normalizationContext: ['groups' => ['panierProduit:read']],
 	denormalizationContext: ['groups' => ['panierProduit:write']],
 	operations: [
+
+		// Récupération de tous les paniers-produits (accessible à l'utilisateur propriétaire ou à l'administrateur)
+		new GetCollection(security: "is_granted('ROLE_ADMIN') or object.getPanier().getUtilisateur() == user"),
+
 		// Récupération d'un panier-produit (accessible à l'utilisateur propriétaire ou à l'administrateur)
 		new Get(security: "is_granted('ROLE_ADMIN') or object.getPanier().getUtilisateur() == user"),
 
@@ -43,7 +48,7 @@ class PanierProduit
 	private ?int $id_panier_produit = null;
 
 	// Relation ManyToOne avec l'entité Produit
-	#[ORM\ManyToOne(targetEntity: Produit::class)]
+	#[ORM\ManyToOne(targetEntity: Produit::class, inversedBy: 'panierProduits')]
 	#[ORM\JoinColumn(name: 'produit_id', referencedColumnName: 'id_produit', nullable: false)]
 	#[Assert\NotBlank(message: "Le produit est obligatoire.")]
 	#[Groups(['panierProduit:read', 'panierProduit:write'])]

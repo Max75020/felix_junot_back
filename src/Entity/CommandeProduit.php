@@ -7,6 +7,7 @@ use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\Post;
 use ApiPlatform\Metadata\Put;
 use ApiPlatform\Metadata\Delete;
+use ApiPlatform\Metadata\GetCollection;
 use Symfony\Component\Serializer\Annotation\Groups;
 use App\Repository\CommandeProduitRepository;
 use Doctrine\ORM\Mapping as ORM;
@@ -16,6 +17,9 @@ use Symfony\Component\Validator\Constraints as Assert;
 	normalizationContext: ['groups' => ['commandeProduit:read']],
 	denormalizationContext: ['groups' => ['commandeProduit:write']],
 	operations: [
+		// Récupération de toutes les commandes-produits (accessible à tous)
+		new GetCollection(),
+
 		// Récupération d'une commande-produit (accessible à l'administrateur ou au propriétaire de la commande)
 		new Get(security: "is_granted('ROLE_ADMIN') or object.getCommande().getUtilisateur() == user"),
 

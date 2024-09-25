@@ -7,15 +7,22 @@ use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\Post;
 use ApiPlatform\Metadata\Put;
 use ApiPlatform\Metadata\Delete;
+use ApiPlatform\Metadata\GetCollection;
 use Symfony\Component\Serializer\Annotation\Groups;
 use App\Repository\TvaRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 
 #[ApiResource(
 	normalizationContext: ['groups' => ['tva:read']],
 	denormalizationContext: ['groups' => ['tva:write']],
 	operations: [
+
+		// Récupération de tous les taux de TVA (accessible uniquement aux administrateurs)
+		new GetCollection(security: "is_granted('ROLE_ADMIN')"),
+
 		// Récupération d'un taux de TVA (accessible à tous)
 		new Get(),
 
@@ -48,6 +55,14 @@ class Tva
 	#[Groups(['tva:read', 'tva:write'])]
 	private ?string $taux = null;
 
+	#[ORM\OneToMany(mappedBy: 'tva', targetEntity: Produit::class)]
+	private Collection $produits;
+
+	public function __construct()
+	{
+		$this->produits = new ArrayCollection();
+	}
+
 	// Getters et Setters...
 
 	public function getIdTva(): ?int
@@ -63,6 +78,32 @@ class Tva
 	public function setTaux(string $taux): self
 	{
 		$this->taux = $taux;
+		return $this;
+	}
+
+	public function getProduits(): Collection
+	{
+		return $this->produits;
+	}
+
+	public function addProduit(Produit $produit): self
+	{
+		if (!$this->produits->contains($produit)) {
+			$this->produits[] = $produit;
+			$produit->setTva($this);
+		}
+
+		return $this;
+	}
+
+	public function removeProduit(Produit $produit): self
+	{
+		if ($this->produits->removeElement($produit)) {
+			if ($produit->getTva() === $this) {
+				$produit->setTva(null);
+			}
+		}
+
 		return $this;
 	}
 }
