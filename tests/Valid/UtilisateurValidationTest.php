@@ -24,13 +24,14 @@ class UtilisateurValidationTest extends KernelTestCase
 	}
 
 	// Fonction qui initialise un Utilisateur avec des valeurs valides
-	private function initializeValidUtilisateur(): Utilisateur
+	public function initializeValidUtilisateur(): Utilisateur
 	{
 		$utilisateur = new Utilisateur();
 		$utilisateur->setPrenom('John');
 		$utilisateur->setNom('Doe');
-		$utilisateur->setEmail('john.doe@example.com');
-		$utilisateur->setPassword('ValidPassw0rd!'); // Mot de passe valide
+		$utilisateur->setEmail('john.doe@e.com');
+		// Mot de passe valide
+		$utilisateur->setPassword('ValidPassw0rd75!'); 
 		$utilisateur->setRole('ROLE_USER');
 		return $utilisateur;
 	}

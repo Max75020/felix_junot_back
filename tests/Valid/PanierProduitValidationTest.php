@@ -6,6 +6,7 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use App\Entity\PanierProduit;
 use App\Entity\Produit;
 use App\Entity\Panier;
+use App\Entity\Utilisateur;
 
 class PanierProduitValidationTest extends KernelTestCase
 {
@@ -27,15 +28,40 @@ class PanierProduitValidationTest extends KernelTestCase
 	// Fonction pour initialiser un PanierProduit valide
 	private function initializeValidPanierProduit(): PanierProduit
 	{
-		// Récupère le produit et le panier avec id = 1
-		$produit = $this->entityManager->getRepository(Produit::class)->find(1);
-		$panier = $this->entityManager->getRepository(Panier::class)->find(1);
-
-		if (!$produit || !$panier) {
-			$this->fail('Produit ou Panier non trouvés.');
+		// 1. Création ou récupération du Produit
+		$produitRepository = $this->entityManager->getRepository(Produit::class);
+		$produit = $produitRepository->findOneBy(['nom' => 'Produit Test']);
+		if (!$produit) {
+			$produit = new Produit();
+			$produit->setReference('REF' . uniqid());
+			$produit->setNom('Produit Test');
+			$produit->setDescription('Description test');
+			$produit->setPrix(19.99);
+			$produit->setStock(100);
+			// Définissez les autres propriétés requises du Produit
+			$this->entityManager->persist($produit);
+			$this->entityManager->flush();
 		}
 
-		// Crée un PanierProduit valide
+		// 2. Création d'un nouvel Utilisateur
+		$utilisateur = new Utilisateur();
+		$utilisateur->setPrenom('John');
+		$utilisateur->setNom('Doe');
+		$utilisateur->setEmail('john.doe.' . uniqid() . '@example.com');
+		$utilisateur->setPassword('ValidPassw0rd!');
+		$utilisateur->setRole('ROLE_USER');
+		// Définissez les autres propriétés si nécessaire
+		$this->entityManager->persist($utilisateur);
+		$this->entityManager->flush();
+
+		// 3. Création d'un nouveau Panier associé à l'Utilisateur
+		$panier = new Panier();
+		$panier->setUtilisateur($utilisateur);
+		// Définissez les autres propriétés si nécessaire
+		$this->entityManager->persist($panier);
+		$this->entityManager->flush();
+
+		// 4. Création du PanierProduit
 		$panierProduit = new PanierProduit();
 		$panierProduit->setProduit($produit);
 		$panierProduit->setPanier($panier);

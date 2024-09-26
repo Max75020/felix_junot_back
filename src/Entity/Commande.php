@@ -111,9 +111,9 @@ class Commande
 	private ?string $numero_suivi = null;
 
 	// Référence de la commande
-	#[ORM\Column(type: 'string', length: 13)]
+	#[ORM\Column(type: 'string', length: 30)]
 	#[Assert\NotBlank(message: "La référence est obligatoire.")]
-	#[Assert\Length(exactly: 13, exactMessage: "La référence doit contenir {{ limit }} caractères.")]
+	#[Assert\Length(max:30, maxMessage:"La référence doit contenir {{ limit }} caractères maximum.")]
 	#[Groups(['commande:read', 'commande:write'])]
 	private ?string $reference = null;
 
@@ -240,6 +240,21 @@ class Commande
 	{
 		$this->reference = $reference;
 		return $this;
+	}
+
+	/**
+	 * Génère une référence unique basée sur l'ID de l'utilisateur et la date.
+	 */
+	public function generateReference(): void
+	{
+		if ($this->utilisateur && $this->date_commande) {
+			// Récupère l'ID de l'utilisateur
+			$userId = $this->utilisateur->getIdUtilisateur();
+			// Format : jour mois année heures minutes secondes
+			$date = $this->date_commande->format('dmYHis');
+			// Génère la référence
+			$this->reference = $userId . '-' . $date;
+		}
 	}
 
 	public function getCommandeProduits(): Collection

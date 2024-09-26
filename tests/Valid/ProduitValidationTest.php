@@ -23,17 +23,34 @@ class ProduitValidationTest extends KernelTestCase
 		return $validator->validate($produit);
 	}
 
-	private function initializeValidProduit(string $reference = 'REF123'): Produit
+	private function initializeValidProduit(string $reference = 'REF7894561231'): Produit
 	{
 		$produit = new Produit();
-		$categorie = $this->entityManager->getRepository(Categorie::class)->find(1); // Catégorie Test déjà présente en BDD
-		$tva = $this->entityManager->getRepository(Tva::class)->find(1); // Tva Test déjà présente en BDD
 
-		$produit->setReference($reference)
+		// Création ou récupération de la catégorie
+		$categorie = $this->entityManager->getRepository(Categorie::class)->findOneBy(['nom' => 'Catégorie Test']);
+		if (!$categorie) {
+			$categorie = new Categorie();
+			$categorie->setNom('Catégorie Test');
+			$this->entityManager->persist($categorie);
+			$this->entityManager->flush();
+		}
+
+		// Création ou récupération de la TVA
+		$tva = $this->entityManager->getRepository(Tva::class)->findOneBy(['taux' => 20.0]);
+		if (!$tva) {
+			$tva = new Tva();
+			$tva->setTaux(20.0);
+			$this->entityManager->persist($tva);
+			$this->entityManager->flush();
+		}
+
+		// Initialisation du produit avec des valeurs valides
+		$produit->setReference($reference) // Doit être de 13 caractères
 			->setNom('Produit Test')
 			->setDescription('Description test')
 			->setPrix(19.99)
-			->addCategorie($categorie) // Utilisation de addCategorie pour la relation ManyToMany
+			->addCategorie($categorie)
 			->setTva($tva);
 
 		return $produit;
@@ -42,7 +59,7 @@ class ProduitValidationTest extends KernelTestCase
 	// Test de validation avec un produit valide
 	public function testProduitValide()
 	{
-		$produit = $this->initializeValidProduit('REF999'); // Utilisation d'une référence unique
+		$produit = $this->initializeValidProduit('REF1234567890'); // Référence de 13 caractères
 
 		$errors = $this->getValidationErrors($produit);
 		$this->assertCount(0, $errors); // Aucun problème attendu
@@ -50,18 +67,16 @@ class ProduitValidationTest extends KernelTestCase
 
 	public function testReferenceUnique()
 	{
-		// Crée un premier produit avec une référence fictive
-		$produit = $this->initializeValidProduit();
-		$produit->setReference('REF1000'); // Données fictives pour tester
+		// Référence valide aléatoire
+		$reference = 'REF' . rand(1000000000000, 9999999999999);
+		// Crée un premier produit avec une référence valide
+		$produit = $this->initializeValidProduit($reference);
+		$this->entityManager->persist($produit);
+		$this->entityManager->flush();
 
 		// Crée un second produit avec la même référence
-		$produitDuplique = new Produit();
-		$produitDuplique->setReference('REF1000'); // Référence dupliquée
+		$produitDuplique = $this->initializeValidProduit($reference); // Référence dupliquée
 		$produitDuplique->setNom('Produit test duplicata');
-		$produitDuplique->setDescription('Ceci est un duplicata pour test.');
-		$produitDuplique->setPrix(150.00);
-		$produitDuplique->addCategorie($produit->getCategories()->first()); // Catégorie fictive
-		$produitDuplique->setTva($produit->getTva()); // TVA fictive
 
 		// Valide le second produit avec la même référence
 		$errors = $this->getValidationErrors($produitDuplique);
@@ -74,8 +89,9 @@ class ProduitValidationTest extends KernelTestCase
 	// Test de validation lorsque le nom est absent
 	public function testNomObligatoire()
 	{
-		$produit = $this->initializeValidProduit('REF1010'); // Utilisation d'une autre référence unique
-		$produit->setNom(''); // Suppression du nom
+		$produit = $this->initializeValidProduit('REF1234567893'); // Référence valide
+		// Suppression du nom
+		$produit->setNom("");
 
 		$errors = $this->getValidationErrors($produit);
 		$this->assertGreaterThan(0, count($errors));
@@ -85,7 +101,7 @@ class ProduitValidationTest extends KernelTestCase
 	// Test de validation lorsque le prix est négatif
 	public function testPrixNegatif()
 	{
-		$produit = $this->initializeValidProduit('REF1020'); // Utilisation d'une autre référence unique
+		$produit = $this->initializeValidProduit('REF1234567894'); // Référence valide
 		$produit->setPrix(-10.00); // Prix négatif
 
 		$errors = $this->getValidationErrors($produit);
@@ -96,8 +112,9 @@ class ProduitValidationTest extends KernelTestCase
 	// Test de validation lorsque la description est absente
 	public function testDescriptionObligatoire()
 	{
-		$produit = $this->initializeValidProduit('REF1030'); // Utilisation d'une autre référence unique
-		$produit->setDescription(''); // Suppression de la description
+		$produit = $this->initializeValidProduit('REF1234567895'); // Référence valide
+		// Suppression de la description
+		$produit->setDescription("");
 
 		$errors = $this->getValidationErrors($produit);
 		$this->assertGreaterThan(0, count($errors));

@@ -90,9 +90,9 @@ class Adresse
 	#[Groups(['adresse:read', 'adresse:write'])]
 	private ?string $appartement = null;
 
-	#[ORM\Column(type: 'string', length: 20)]
+	#[ORM\Column(type: 'string', length: 5)]
 	#[Assert\NotBlank(message: "Le code postal est obligatoire.")]
-	#[Assert\Length(max: 20, maxMessage: "Le code postal ne peut pas dépasser {{ limit }} caractères.")]
+	#[Assert\Length(max: 5, maxMessage: "Le code postal ne peut pas dépasser {{ limit }} caractères.")]
 	#[Groups(['adresse:read', 'adresse:write'])]
 	private ?string $code_postal = null;
 
@@ -106,10 +106,10 @@ class Adresse
 	#[Groups(['adresse:read', 'adresse:write'])]
 	private ?string $pays = null;
 
-	#[ORM\Column(type: 'string', length: 10, nullable: true)]
-	#[Assert\Length(max: 10, maxMessage: "Le numéro de téléphone ne peut pas dépasser {{ limit }} caractères.")]
+	#[ORM\Column(type: 'string', length: 14, nullable: true)]
+	#[Assert\Length(max: 14, maxMessage: "Le numéro de téléphone ne peut pas dépasser {{ limit }} caractères.")]
 	#[Assert\Regex(
-		pattern: "/^[+0-9\s\-\(\)]+$/",
+		pattern: "/^\+?[1-9]\d{1,14}$|^(0|\+33)[1-9](\s?\d{2}){4}$/",
 		message: "Le numéro de téléphone n'est pas valide."
 	)]
 	#[Groups(['adresse:read', 'adresse:write'])]

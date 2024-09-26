@@ -53,8 +53,9 @@ class Produit
 	private ?int $id_produit = null;
 
 	// Référence unique du produit
-	#[ORM\Column(type: 'string', length: 32)]
+	#[ORM\Column(type: 'string', length: 13)]
 	#[Assert\NotBlank(message: "La référence est obligatoire.")]
+	#[Assert\Length(exactly: 13, exactMessage: "La référence doit contenir {{ limit }} caractères.")]
 	#[Groups(['produit:read', 'produit:write'])]
 	private ?string $reference = null;
 

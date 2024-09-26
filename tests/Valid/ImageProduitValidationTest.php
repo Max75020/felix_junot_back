@@ -26,12 +26,18 @@ class ImageProduitValidationTest extends KernelTestCase
 	// Fonction pour initialiser une ImageProduit avec les données présentes en base
 	private function initializeValidImageProduit(): ImageProduit
 	{
+		// Si le produit avec l'id 1 n'existe pas, il faut le créer
+		if (!$this->entityManager->getRepository(Produit::class)->find(1)) {
+			$produit = new Produit();
+			$produit->setReference('REF123');
+			$produit->setNom('Produit Test');
+			$produit->setDescription('Description test');
+			$produit->setPrix(19.99);
+			$this->entityManager->persist($produit);
+			$this->entityManager->flush();
+		}
 		// Récupère le produit avec id_produit = 1
 		$produit = $this->entityManager->getRepository(Produit::class)->find(1);
-
-		if (!$produit) {
-			$this->fail('Produit non trouvé.');
-		}
 
 		// Crée une ImageProduit valide
 		$imageProduit = new ImageProduit();

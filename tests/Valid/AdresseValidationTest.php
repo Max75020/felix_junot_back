@@ -26,7 +26,7 @@ class AdresseValidationTest extends KernelTestCase
 		$adresse->setCodePostal('75020');
 		$adresse->setVille('Paris');
 		$adresse->setPays('France');
-		$adresse->setTelephone('+33 1 23 45 67 89'); // Facultatif mais valide
+		$adresse->setTelephone('0659747803'); // Facultatif mais valide
 		return $adresse;
 	}
 
@@ -38,7 +38,7 @@ class AdresseValidationTest extends KernelTestCase
 
 		$errors = $this->getValidationErrors($adresse);
 		$this->assertGreaterThan(0, count($errors));
-		$this->assertEquals("Le code postal ne peut pas dépasser 20 caractères.", $errors[0]->getMessage());
+		$this->assertEquals("Le code postal ne peut pas dépasser 5 caractères.", $errors[0]->getMessage());
 	}
 
 	// Test du code postal valide
@@ -48,6 +48,9 @@ class AdresseValidationTest extends KernelTestCase
 		$adresse->setCodePostal('75020');
 
 		$errors = $this->getValidationErrors($adresse);
+		foreach ($errors as $error) {
+			echo $error->getMessage() . "\n";
+		}
 		$this->assertCount(0, $errors); // Pas d'erreurs attendues
 	}
 
@@ -142,7 +145,7 @@ class AdresseValidationTest extends KernelTestCase
 	public function testValidTelephone()
 	{
 		$adresse = $this->initializeValidAdresse();
-		$adresse->setTelephone('+33 1 23 45 67 89'); // Format valide
+		$adresse->setTelephone('+330143746852'); // Format valide
 
 		$errors = $this->getValidationErrors($adresse);
 		$this->assertCount(0, $errors); // Pas d'erreurs attendues

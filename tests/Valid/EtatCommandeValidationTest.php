@@ -65,6 +65,13 @@ class EtatCommandeValidationTest extends KernelTestCase
 	{
 		// Récupère un état de commande déjà présent en base avec le libellé 'En préparation'
 		$etatExistant = $this->entityManager->getRepository(EtatCommande::class)->findOneBy(['libelle' => 'En préparation']);
+		// Si l'état n'existe pas, on le créé
+		if (!$etatExistant) {
+			$etatExistant = new EtatCommande();
+			$etatExistant->setLibelle('En préparation');
+			$this->entityManager->persist($etatExistant);
+			$this->entityManager->flush();
+		}
 
 		// Vérifie que l'état existe bien en base, sinon échec du test
 		$this->assertNotNull($etatExistant, "L'état de commande avec le libellé 'En préparation' n'existe pas en base de données.");

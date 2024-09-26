@@ -88,10 +88,10 @@ class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
 	private ?string $email = null;
 
 	// Téléphone de l'utilisateur, optionnel
-	#[ORM\Column(type: 'string', length: 10, nullable: true)]
-	#[Assert\Length(max: 10, maxMessage: "Le numéro de téléphone ne peut pas dépasser {{ limit }} caractères.")]
+	#[ORM\Column(type: 'string', length: 14, nullable: true)]
+	#[Assert\Length(max: 14, maxMessage: "Le numéro de téléphone ne peut pas dépasser {{ limit }} caractères.")]
 	#[Assert\Regex(
-		pattern: "/^[+0-9\s\-\(\)]+$/",
+		pattern: "/^\+?[1-9]\d{1,14}$|^(0|\+33)[1-9](\s?\d{2}){4}$/",
 		message: "Le numéro de téléphone n'est pas valide."
 	)]
 	#[Groups(['user:read', 'user:write'])]

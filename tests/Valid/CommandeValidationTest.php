@@ -6,6 +6,7 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use App\Entity\Commande;
 use App\Entity\Utilisateur;
 use App\Entity\EtatCommande;
+use App\Entity\CommandeProduit;
 
 class CommandeValidationTest extends KernelTestCase
 {
@@ -28,6 +29,9 @@ class CommandeValidationTest extends KernelTestCase
 		$commande->setPoids('2.50');
 		$commande->setFraisLivraison('5.00');
 		$commande->setNumeroSuivi('ABC123');
+		$commande->setReference('1234567891234');
+		$commande->setDateCommande(new \DateTime());
+		$commande->addCommandeProduit(new CommandeProduit());
 		return $commande;
 	}
 
