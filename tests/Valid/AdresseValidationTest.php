@@ -8,9 +8,13 @@ use App\Entity\Utilisateur;
 
 class AdresseValidationTest extends KernelTestCase
 {
-	public function getValidationErrors(Adresse $adresse)
+	protected function setUp(): void
 	{
 		self::bootKernel();
+	}
+
+	public function getValidationErrors(Adresse $adresse)
+	{
 		$validator = self::getContainer()->get('validator');
 		return $validator->validate($adresse);
 	}
@@ -18,6 +22,16 @@ class AdresseValidationTest extends KernelTestCase
 	// Test de validation d'une adresse valide (utilisée pour les tests suivants)
 	private function initializeValidAdresse(): Adresse
 	{
+		// Création d'un utilisateur
+		$utilisateur = new Utilisateur();
+		$utilisateur->setPrenom('John');
+		$utilisateur->setNom('Doe');
+		$utilisateur->setEmail('john.doe.' . uniqid() . '@example.com');
+		$utilisateur->setPassword('ValidPassw0rd!');
+		$utilisateur->setRole('ROLE_USER');
+		$utilisateur->setEmailValide(true);
+
+		// Création d'une adresse
 		$adresse = new Adresse();
 		$adresse->setType('Facturation'); // Ajout d'un type valide
 		$adresse->setPrenom('Maxime');
@@ -27,6 +41,8 @@ class AdresseValidationTest extends KernelTestCase
 		$adresse->setVille('Paris');
 		$adresse->setPays('France');
 		$adresse->setTelephone('0659747803'); // Facultatif mais valide
+		$adresse->setUtilisateur($utilisateur);
+		$adresse->setSimilaire(false);
 		return $adresse;
 	}
 

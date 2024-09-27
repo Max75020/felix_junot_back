@@ -57,7 +57,7 @@ class Commande
 	private ?int $id_commande = null;
 
 	// Relation ManyToOne avec l'entité Utilisateur
-	#[ORM\ManyToOne(targetEntity: Utilisateur::class, inversedBy: 'commandes')]
+	#[ORM\ManyToOne(targetEntity: Utilisateur::class, inversedBy: 'commandes', cascade: ['persist', 'remove'])]
 	#[ORM\JoinColumn(name: 'utilisateur_id', referencedColumnName: 'id_utilisateur', nullable: false)]
 	#[Groups(['commande:read', 'commande:write'])]
 	private ?Utilisateur $utilisateur = null;
@@ -245,7 +245,7 @@ class Commande
 	/**
 	 * Génère une référence unique basée sur l'ID de l'utilisateur et la date.
 	 */
-	public function generateReference(): void
+	public function generateReference()
 	{
 		if ($this->utilisateur && $this->date_commande) {
 			// Récupère l'ID de l'utilisateur

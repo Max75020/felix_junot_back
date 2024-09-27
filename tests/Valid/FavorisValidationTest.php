@@ -6,6 +6,8 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use App\Entity\Favoris;
 use App\Entity\Produit;
 use App\Entity\Utilisateur;
+use App\Entity\Categorie;
+use App\Entity\Tva;
 use Doctrine\ORM\EntityManagerInterface;
 
 class FavorisValidationTest extends KernelTestCase
@@ -28,19 +30,55 @@ class FavorisValidationTest extends KernelTestCase
 	// Fonction qui initialise un Favoris avec les données déjà présentes en base
 	private function initializeValidFavoris(): Favoris
 	{
-		// Récupère le produit avec id_produit = 1
-		$produit = $this->entityManager->getRepository(Produit::class)->find(1);
+		// Création ou récupération de la catégorie
+		$categorie = $this->entityManager->getRepository(Categorie::class)->findOneBy(['nom' => 'Catégorie Test']);
+		if (!$categorie) {
+			$categorie = new Categorie();
+			$categorie->setNom('Catégorie Test');
+			$this->entityManager->persist($categorie);
+			$this->entityManager->flush();
+		}
 
-		// Récupère l'utilisateur avec id_utilisateur = 1
-		$utilisateur = $this->entityManager->getRepository(Utilisateur::class)->find(1);
+		// Création ou récupération de la TVA
+		$tva = $this->entityManager->getRepository(Tva::class)->findOneBy(['taux' => 20.0]);
+		if (!$tva) {
+			$tva = new Tva();
+			$tva->setTaux(20.0);
+			$this->entityManager->persist($tva);
+			$this->entityManager->flush();
+		}
 
-		// Crée un favori avec les objets Utilisateur et Produit
+		// Création d'un utilisateur
+		$utilisateur = new Utilisateur();
+		$utilisateur->setPrenom('John');
+		$utilisateur->setNom('Doe');
+		// Générer un email unique
+		$utilisateur->setEmail('john.doe.' . uniqid() . '@example.com');
+		// Mot de passe valide
+		$utilisateur->setPassword('ValidPassw0rd75!');
+		$utilisateur->setRole('ROLE_USER');
+
+		$this->entityManager->persist($utilisateur);
+		$this->entityManager->flush();
+		
+		$produit = new Produit();
+		// Initialisation du produit avec des valeurs valides
+		$produit->setTva($tva);
+		// Référence valide basée sur la date actuelle + 4 chiffres aléatoires
+		$produit->setReference($produit->generateProductReference());
+		$produit->setNom('Produit Test');
+		$produit->setDescription('Description test');
+		$produit->setPrix(19.99);
+		$produit->addCategorie($categorie);
+		
+		// Création du favori
 		$favoris = new Favoris();
-		$favoris->setUtilisateur($utilisateur); // Associe l'objet Utilisateur au favori
-		$favoris->setProduit($produit); // Associe l'objet Produit au favori
-
+		$favoris->setUtilisateur($utilisateur);
+		$favoris->setProduit($produit);
+	
 		return $favoris;
 	}
+	
 
 	// Test de validation de l'unicité d'un favori
 	public function testUniqueFavori()

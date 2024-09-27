@@ -5,6 +5,8 @@ namespace App\Tests\Valid;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use App\Entity\ImageProduit;
 use App\Entity\Produit;
+use App\Entity\Categorie;
+use App\Entity\Tva;
 
 class ImageProduitValidationTest extends KernelTestCase
 {
@@ -26,18 +28,35 @@ class ImageProduitValidationTest extends KernelTestCase
 	// Fonction pour initialiser une ImageProduit avec les données présentes en base
 	private function initializeValidImageProduit(): ImageProduit
 	{
-		// Si le produit avec l'id 1 n'existe pas, il faut le créer
-		if (!$this->entityManager->getRepository(Produit::class)->find(1)) {
-			$produit = new Produit();
-			$produit->setReference('REF123');
-			$produit->setNom('Produit Test');
-			$produit->setDescription('Description test');
-			$produit->setPrix(19.99);
-			$this->entityManager->persist($produit);
+		// Création ou récupération de la catégorie
+		$categorie = $this->entityManager->getRepository(Categorie::class)->findOneBy(['nom' => 'Catégorie Test']);
+		if (!$categorie) {
+			$categorie = new Categorie();
+			$categorie->setNom('Catégorie Test');
+			$this->entityManager->persist($categorie);
 			$this->entityManager->flush();
 		}
-		// Récupère le produit avec id_produit = 1
-		$produit = $this->entityManager->getRepository(Produit::class)->find(1);
+
+		// Création ou récupération de la TVA
+		$tva = $this->entityManager->getRepository(Tva::class)->findOneBy(['taux' => 20.0]);
+		if (!$tva) {
+			$tva = new Tva();
+			$tva->setTaux(20.0);
+			$this->entityManager->persist($tva);
+			$this->entityManager->flush();
+		}
+
+		$produit = new Produit();
+		// Initialisation du produit avec des valeurs valides
+		$produit->setTva($tva);
+		// Référence valide basée sur la date actuelle + 4 chiffres aléatoires
+		$produit->setReference($produit->generateProductReference());
+		$produit->setNom('Produit Test');
+		$produit->setDescription('Description test');
+		$produit->setPrix(19.99);
+		$produit->addCategorie($categorie);
+		$this->entityManager->persist($produit);
+		$this->entityManager->flush();
 
 		// Crée une ImageProduit valide
 		$imageProduit = new ImageProduit();

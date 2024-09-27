@@ -8,9 +8,13 @@ use App\Entity\Categorie;
 class CategorieValidationTest extends KernelTestCase
 {
 
-	public function getValidationErrors(Categorie $categorie)
+	protected function setUp(): void
 	{
 		self::bootKernel();
+	}
+
+	public function getValidationErrors(Categorie $categorie)
+	{
 		$validator = self::getContainer()->get('validator');
 		return $validator->validate($categorie);
 	}

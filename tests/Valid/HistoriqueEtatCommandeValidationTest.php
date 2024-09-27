@@ -8,7 +8,9 @@ use App\Entity\Commande;
 use App\Entity\EtatCommande;
 use App\Entity\Utilisateur;
 use App\Entity\CommandeProduit;
-use App\Entity\Produit; // N'oubliez pas d'importer l'entité Produit
+use App\Entity\Produit;
+use App\Entity\Categorie;
+use App\Entity\Tva;
 
 class HistoriqueEtatCommandeValidationTest extends KernelTestCase
 {
@@ -41,41 +43,55 @@ class HistoriqueEtatCommandeValidationTest extends KernelTestCase
             $this->entityManager->flush();
         }
 
-        // Création ou récupération de l'Utilisateur
-        $utilisateur = $this->entityManager->getRepository(Utilisateur::class)->findOneBy(['email' => 'john.doe@example.com']);
-        if (!$utilisateur) {
-            $utilisateur = new Utilisateur();
-            $utilisateur->setPrenom('John');
-            $utilisateur->setNom('Doe');
-            $utilisateur->setEmail('john.doe@example.com');
-            $utilisateur->setPassword('ValidPassw0rd!'); // Mot de passe valide
-            $utilisateur->setRole('ROLE_USER');
-            $this->entityManager->persist($utilisateur);
-            $this->entityManager->flush();
-        }
+		// Création d'un utilisateur
+		$utilisateur = new Utilisateur();
+		$utilisateur->setPrenom('John');
+		$utilisateur->setNom('Doe');
+		// Générer un email unique
+		$utilisateur->setEmail('john.doe.' . uniqid() . '@example.com');
+		// Mot de passe valide
+		$utilisateur->setPassword('ValidPassw0rd75!');
+		$utilisateur->setRole('ROLE_USER');
 
-        // Création ou récupération du Produit
-        $produit = $this->entityManager->getRepository(Produit::class)->findOneBy(['nom' => 'Produit Test']);
-        if (!$produit) {
-            $produit = new Produit();
-            $produit->setNom('Produit Test');
-            $produit->setPrix(9.99);
-            // Définissez les autres propriétés requises du Produit
-            $this->entityManager->persist($produit);
-            $this->entityManager->flush();
-        }
+		// Création ou récupération de la catégorie
+		$categorie = $this->entityManager->getRepository(Categorie::class)->findOneBy(['nom' => 'Catégorie Test']);
+		if (!$categorie) {
+			$categorie = new Categorie();
+			$categorie->setNom('Catégorie Test');
+			$this->entityManager->persist($categorie);
+			$this->entityManager->flush();
+		}
+
+		// Création ou récupération de la TVA
+		$tva = $this->entityManager->getRepository(Tva::class)->findOneBy(['taux' => 20.0]);
+		if (!$tva) {
+			$tva = new Tva();
+			$tva->setTaux(20.0);
+			$this->entityManager->persist($tva);
+			$this->entityManager->flush();
+		}
+		
+		$produit = new Produit();
+		// Initialisation du produit avec des valeurs valides
+		$produit->setTva($tva);
+		// Référence valide basée sur la date actuelle + 4 chiffres aléatoires
+		$produit->setReference($produit->generateProductReference());
+		$produit->setNom('Produit Test');
+		$produit->setDescription('Description test');
+		$produit->setPrix(19.99);
+		$produit->addCategorie($categorie);
 
         // Création de la Commande
         $commande = new Commande();
         $commande->setUtilisateur($utilisateur);
         $commande->setDateCommande(new \DateTime());
-        $commande->setTotal(19.99);
+        $commande->setTotal(24.98);
         $commande->setEtatCommande($etatCommande);
         $commande->setTransporteur('Colissimo');
         $commande->setPoids(1.5);
         $commande->setFraisLivraison(4.99);
-        $commande->setNumeroSuivi('1234567890');
-        $commande->setReference('CMD1234567890');
+        $commande->setNumeroSuivi('1234567810');
+        $commande->generateReference();
 
         // Création du CommandeProduit
         $commandeProduit = new CommandeProduit();

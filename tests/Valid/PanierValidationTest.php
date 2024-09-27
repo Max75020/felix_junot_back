@@ -5,15 +5,24 @@ namespace App\Tests\Valid;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use App\Entity\Panier;
 use App\Entity\Utilisateur;
+use Doctrine\ORM\EntityManagerInterface;
 
 class PanierValidationTest extends KernelTestCase
 {
-	private $entityManager;
+	private ?EntityManagerInterface $entityManager = null;
 
 	protected function setUp(): void
 	{
 		self::bootKernel();
 		$this->entityManager = self::getContainer()->get('doctrine')->getManager();
+	}
+
+	protected function tearDown(): void
+	{
+		parent::tearDown();
+		$this->entityManager->close();
+		// Évite les fuites de mémoire
+		$this->entityManager = null;
 	}
 
 	// Fonction pour obtenir les erreurs de validation
@@ -26,14 +35,20 @@ class PanierValidationTest extends KernelTestCase
 	// Fonction pour initialiser un Panier valide
 	private function initializeValidPanier(): Panier
 	{
-		// Récupère un utilisateur existant avec id_utilisateur = 1
-		$utilisateur = $this->entityManager->getRepository(Utilisateur::class)->find(1);
+		// Création d'un nouvel utilisateur pour le test
+		$utilisateur = new Utilisateur();
+		$utilisateur->setPrenom('John');
+		$utilisateur->setNom('Doe');
+		$utilisateur->setEmail('john.doe.' . uniqid() . '@example.com');
+		$utilisateur->setPassword('ValidPassw0rd!');
+		$utilisateur->setRole('ROLE_USER');
+		// Définissez les autres propriétés requises si nécessaire
 
-		if (!$utilisateur) {
-			$this->fail('Utilisateur non trouvé.');
-		}
+		// Persister l'utilisateur
+		$this->entityManager->persist($utilisateur);
+		$this->entityManager->flush();
 
-		// Crée un Panier valide
+		// Créer un Panier valide
 		$panier = new Panier();
 		$panier->setUtilisateur($utilisateur);
 

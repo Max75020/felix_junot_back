@@ -10,10 +10,15 @@ use App\Entity\CommandeProduit;
 
 class CommandeValidationTest extends KernelTestCase
 {
+
+	protected function setUp(): void
+	{
+		self::bootKernel();
+	}
+	
 	// Fonction pour obtenir les erreurs de validation d'une commande
 	public function getValidationErrors(Commande $commande)
 	{
-		self::bootKernel();
 		$validator = self::getContainer()->get('validator');
 		return $validator->validate($commande);
 	}
@@ -21,17 +26,30 @@ class CommandeValidationTest extends KernelTestCase
 	// Fonction qui initialise une commande avec des valeurs valides
 	private function initializeValidCommande(): Commande
 	{
+		// Création d'un utilisateur
+		$utilisateur = new Utilisateur();
+		$utilisateur->setPrenom('John');
+		$utilisateur->setNom('Doe');
+		$utilisateur->setEmail('john.doe.' . uniqid() . '@example.com');
+		$utilisateur->setPassword('ValidPassw0rd!');
+		$utilisateur->setRole('ROLE_USER');
+		$utilisateur->setEmailValide(true);
+
+		// Création d'un etat de commande
+		$etatCommande = new EtatCommande();
+		$etatCommande->setLibelle('En attente de paiement');
+
+		// Initialisation de la commande
 		$commande = new Commande();
-		$commande->setUtilisateur(new Utilisateur());
+		$commande->setUtilisateur($utilisateur);
+		$commande->setEtatCommande($etatCommande);
+		$commande->setDateCommande(new \DateTime());
 		$commande->setTotal('100.00');
-		$commande->setEtatCommande(new EtatCommande());
-		$commande->setTransporteur('DHL');
+		$commande->setTransporteur('Colissimo');
 		$commande->setPoids('2.50');
 		$commande->setFraisLivraison('5.00');
 		$commande->setNumeroSuivi('ABC123');
-		$commande->setReference('1234567891234');
-		$commande->setDateCommande(new \DateTime());
-		$commande->addCommandeProduit(new CommandeProduit());
+		$commande->generateReference();
 		return $commande;
 	}
 

@@ -39,7 +39,7 @@ class HistoriqueEtatCommande
 	private ?int $id_historique_etat_commande = null;
 
 	// Relation ManyToOne avec l'entité Commande
-	#[ORM\ManyToOne(targetEntity: Commande::class, inversedBy: 'historiqueEtats')]
+	#[ORM\ManyToOne(targetEntity: Commande::class, inversedBy: 'historiqueEtats', cascade: ['persist', 'remove'])]
 	#[ORM\JoinColumn(name: 'commande_id', referencedColumnName: 'id_commande', nullable: false)]
 	#[Assert\NotBlank(message: "La commande est obligatoire.")]
 	#[Groups(['historiqueEtatCommande:read', 'historiqueEtatCommande:write'])]

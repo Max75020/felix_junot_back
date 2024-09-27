@@ -15,6 +15,13 @@ class EtatCommandeValidationTest extends KernelTestCase
 		$this->entityManager = self::getContainer()->get('doctrine')->getManager();
 	}
 
+	protected function tearDown(): void
+	{
+		parent::tearDown();
+		$this->entityManager->close();
+		$this->entityManager = null;
+	}
+
 	// Fonction pour obtenir les erreurs de validation
 	public function getValidationErrors(EtatCommande $etatCommande)
 	{
@@ -26,7 +33,8 @@ class EtatCommandeValidationTest extends KernelTestCase
 	private function initializeValidEtatCommande(): EtatCommande
 	{
 		$etatCommande = new EtatCommande();
-		$etatCommande->setLibelle('Etat Test Valide'); // Exemple d'un libellé valide
+		// Exemple d'un libellé valide
+		$etatCommande->setLibelle('Etat Test Valide');
 		return $etatCommande;
 	}
 

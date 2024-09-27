@@ -4,10 +4,11 @@ namespace App\Tests\Valid;
 
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use App\Entity\Utilisateur;
+use Doctrine\ORM\EntityManagerInterface;
 
 class UtilisateurValidationTest extends KernelTestCase
 {
-	private $entityManager;
+	private ?EntityManagerInterface $entityManager = null;
 
 	protected function setUp(): void
 	{
@@ -15,10 +16,17 @@ class UtilisateurValidationTest extends KernelTestCase
 		$this->entityManager = self::getContainer()->get('doctrine')->getManager();
 	}
 
+	protected function tearDown(): void
+	{
+		parent::tearDown();
+		$this->entityManager->close();
+		// Évite les fuites de mémoire
+		$this->entityManager = null;
+	}
+
 	// Fonction pour obtenir les erreurs de validation d'un utilisateur
 	public function getValidationErrors(Utilisateur $utilisateur)
 	{
-		self::bootKernel();
 		$validator = self::getContainer()->get('validator');
 		return $validator->validate($utilisateur);
 	}
@@ -29,9 +37,10 @@ class UtilisateurValidationTest extends KernelTestCase
 		$utilisateur = new Utilisateur();
 		$utilisateur->setPrenom('John');
 		$utilisateur->setNom('Doe');
-		$utilisateur->setEmail('john.doe@e.com');
+		// Générer un email unique
+		$utilisateur->setEmail('john.doe.' . uniqid() . '@example.com');
 		// Mot de passe valide
-		$utilisateur->setPassword('ValidPassw0rd75!'); 
+		$utilisateur->setPassword('ValidPassw0rd75!');
 		$utilisateur->setRole('ROLE_USER');
 		return $utilisateur;
 	}
@@ -114,8 +123,7 @@ class UtilisateurValidationTest extends KernelTestCase
 	public function testPasswordSansChiffre()
 	{
 		$utilisateur = $this->initializeValidUtilisateur();
-		// Pas de chiffre
-		$utilisateur->setPassword('NoNumbersHere!'); 
+		$utilisateur->setPassword('NoNumbersHere!'); // Pas de chiffre
 
 		$errors = $this->getValidationErrors($utilisateur);
 		$this->assertGreaterThan(0, count($errors));
@@ -146,30 +154,24 @@ class UtilisateurValidationTest extends KernelTestCase
 	// Test de validation pour l'unicité de l'email avec un email déjà présent en BDD
 	public function testEmailUnique()
 	{
-		// On tente de récupérer l'utilisateur avec l'id 1
-		$existingUser = $this->entityManager->getRepository(Utilisateur::class)->find(1);
+		// Générer un email unique pour le test
+		$emailUnique = 'test.' . uniqid() . '@example.com';
 
-		// Si l'utilisateur n'existe pas, on le crée et on le persiste en BDD
-		if (!$existingUser) {
-			$existingUser = new Utilisateur();
-			$existingUser->setPrenom('Existing');
-			$existingUser->setNom('User');
-			$existingUser->setEmail('existing@example.com');
-			$existingUser->setPassword('ValidPassw0rd!');
-			$existingUser->setRole('ROLE_USER');
+		// Créer un premier utilisateur avec cet email
+		$utilisateur1 = $this->initializeValidUtilisateur();
+		$utilisateur1->setEmail($emailUnique);
 
-			$this->entityManager->persist($existingUser);
-			$this->entityManager->flush();
-		}
+		$this->entityManager->persist($utilisateur1);
+		$this->entityManager->flush();
 
-		// On crée un nouvel utilisateur avec le même email que l'utilisateur existant
-		$utilisateur = $this->initializeValidUtilisateur();
-		$utilisateur->setEmail($existingUser->getEmail()); // Même email que l'utilisateur existant
+		// Créer un second utilisateur avec le même email
+		$utilisateur2 = $this->initializeValidUtilisateur();
+		$utilisateur2->setEmail($emailUnique);
 
-		// Validation
-		$errors = $this->getValidationErrors($utilisateur);
+		// Valider le second utilisateur
+		$errors = $this->getValidationErrors($utilisateur2);
 
-		// Vérification qu'il y a une erreur sur l'unicité de l'email
+		// Vérifier qu'il y a une erreur sur l'unicité de l'email
 		$this->assertGreaterThan(0, count($errors));
 		$this->assertEquals("Cet email est déjà utilisé.", $errors[0]->getMessage());
 	}

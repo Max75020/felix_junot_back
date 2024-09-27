@@ -15,6 +15,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\Common\Collections\ArrayCollection;
+use DateTime;
 
 #[ApiResource(
 	normalizationContext: ['groups' => ['produit:read']],
@@ -53,9 +54,9 @@ class Produit
 	private ?int $id_produit = null;
 
 	// Référence unique du produit
-	#[ORM\Column(type: 'string', length: 13)]
+	#[ORM\Column(type: 'string', length: 15)]
 	#[Assert\NotBlank(message: "La référence est obligatoire.")]
-	#[Assert\Length(exactly: 13, exactMessage: "La référence doit contenir {{ limit }} caractères.")]
+	#[Assert\Length(exactly: 15, exactMessage: "La référence doit contenir {{ limit }} caractères.")]
 	#[Groups(['produit:read', 'produit:write'])]
 	private ?string $reference = null;
 
@@ -146,6 +147,21 @@ class Produit
 		$this->reference = $reference;
 		return $this;
 	}
+
+	function generateProductReference(): string
+	{
+		// Crée un objet DateTime avec la date et l'heure actuelles
+		$now = new \DateTime();
+		
+		// Génère une partie aléatoire de 4 chiffres
+		$randomPart = mt_rand(1000, 9999);
+		
+		// Génère la référence avec le format jour, mois, année + 4 chiffres aléatoires
+		$reference = 'REF' . $now->format('dmY') . $randomPart;
+		
+		return $reference;
+	}
+	
 
 	public function getNom(): ?string
 	{

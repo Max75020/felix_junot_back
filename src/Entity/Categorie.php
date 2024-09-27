@@ -65,7 +65,7 @@ class Categorie
 	#[Groups(['categorie:read', 'categorie:write'])]
 	private ?string $nom = null;
 
-	#[ORM\ManyToMany(targetEntity: Produit::class, mappedBy: 'categories')]
+	#[ORM\ManyToMany(targetEntity: Produit::class, mappedBy: 'categories', cascade: ['persist', 'remove'])]
 	#[Groups(['categorie:read'])]
 	private Collection $produits;
 
