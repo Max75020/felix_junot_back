@@ -21,16 +21,30 @@ class AdresseProcessor implements ProcessorInterface
 
 	public function process(mixed $data, Operation $operation, array $uriVariables = [], array $context = []): mixed
 	{
-		// Si l'adresse n'a pas d'utilisateur associé
-		if ($data instanceof Adresse && $data->getUtilisateur() === null) {
-			// Associer l'utilisateur connecté
-			$data->setUtilisateur($this->security->getUser());
+		if ($data instanceof Adresse) {
+			$currentUser = $this->security->getUser();
+	
+			// Cas pour un utilisateur standard (non administrateur)
+			if (!$this->security->isGranted('ROLE_ADMIN') && $data->getUtilisateur() === null) {
+				// Associer automatiquement l'utilisateur connecté
+				$data->setUtilisateur($currentUser);
+			}
+	
+			// Cas pour un administrateur
+			if ($this->security->isGranted('ROLE_ADMIN')) {
+				// Récupère l'utilisateur spécifié par l'administrateur
+				$specifiedUser = $data->getUtilisateur();
+				if ($specifiedUser !== null) {
+					// Associe l'utilisateur spécifié par l'administrateur
+					$data->setUtilisateur($specifiedUser);
+				}
+			}
 		}
-
+	
 		// Persister les données dans la base
 		$this->entityManager->persist($data);
 		$this->entityManager->flush();
-
+	
 		return $data;
 	}
 }
