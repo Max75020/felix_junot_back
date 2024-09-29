@@ -47,7 +47,8 @@ use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 	]
 )]
 #[ORM\Entity(repositoryClass: CategorieRepository::class)]
-#[ORM\Table(indexes: [new ORM\Index(name: 'idx_nom', columns: ['nom'])])]
+#[ORM\Table(name: 'categorie')]
+#[ORM\Index(name: 'idx_nom', columns: ['nom'])]
 #[UniqueEntity(fields: ['nom'], message: 'Cette catégorie existe déjà.')]
 class Categorie
 {
