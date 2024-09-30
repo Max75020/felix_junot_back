@@ -74,7 +74,7 @@ class PanierProduitValidationTest extends KernelTestCase
 		$utilisateur->setNom('Doe');
 		$utilisateur->setEmail('john.doe.' . uniqid() . '@example.com');
 		$utilisateur->setPassword('ValidPassw0rd!');
-		$utilisateur->setRole('ROLE_USER');
+		$utilisateur->setRoles(['ROLE_USER']);
 		// Définissez les autres propriétés si nécessaire
 		$this->entityManager->persist($utilisateur);
 		$this->entityManager->flush();

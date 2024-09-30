@@ -56,7 +56,7 @@ class FavorisValidationTest extends KernelTestCase
 		$utilisateur->setEmail('john.doe.' . uniqid() . '@example.com');
 		// Mot de passe valide
 		$utilisateur->setPassword('ValidPassw0rd75!');
-		$utilisateur->setRole('ROLE_USER');
+		$utilisateur->setRoles(['ROLE_USER']);
 
 		$this->entityManager->persist($utilisateur);
 		$this->entityManager->flush();

@@ -28,7 +28,7 @@ class AdresseValidationTest extends KernelTestCase
 		$utilisateur->setNom('Doe');
 		$utilisateur->setEmail('john.doe.' . uniqid() . '@example.com');
 		$utilisateur->setPassword('ValidPassw0rd!');
-		$utilisateur->setRole('ROLE_USER');
+		$utilisateur->setRoles(['ROLE_USER']);
 		$utilisateur->setEmailValide(true);
 
 		// Création d'une adresse

@@ -51,7 +51,7 @@ class HistoriqueEtatCommandeValidationTest extends KernelTestCase
 		$utilisateur->setEmail('john.doe.' . uniqid() . '@example.com');
 		// Mot de passe valide
 		$utilisateur->setPassword('ValidPassw0rd75!');
-		$utilisateur->setRole('ROLE_USER');
+		$utilisateur->setRoles(['ROLE_USER']);
 
 		// Création ou récupération de la catégorie
 		$categorie = $this->entityManager->getRepository(Categorie::class)->findOneBy(['nom' => 'Catégorie Test']);

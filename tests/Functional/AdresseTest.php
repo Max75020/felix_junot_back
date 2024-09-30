@@ -2,93 +2,11 @@
 
 namespace App\Tests\Functional;
 
-use ApiPlatform\Symfony\Bundle\Test\ApiTestCase;
 use Symfony\Component\HttpFoundation\Response;
-use ApiPlatform\Symfony\Bundle\Test\Client;
+use App\Tests\Authenticator\TestAuthenticator;
 
-class AdresseTest extends ApiTestCase
+class AdresseTest extends TestAuthenticator
 {
-	private ?string $jwtToken = null;
-	private ?string $utilisateurIri = null;
-
-	/**
-	 * Méthode pour obtenir le jeton JWT
-	 *
-	 * @return string Le jeton JWT de l'utilisateur
-	 */
-	private function getToken(): string
-	{
-		if ($this->jwtToken) {
-			return $this->jwtToken;
-		}
-
-		$client = static::createClient();
-
-		// Créer un utilisateur de test
-		$email = 'test.user.' . uniqid() . '@example.com';
-		$password = 'Password+75020';
-
-		$response = $client->request('POST', '/api/utilisateurs', [
-			'json' => [
-				'prenom' => 'Test',
-				'nom' => 'User',
-				'email' => $email,
-				'telephone' => '0668747201',
-				'role' => 'ROLE_USER',
-				'password' => $password,
-				'email_valide' => true,
-			],
-		]);
-
-		// Vérifier que l'utilisateur a été créé avec succès
-		$this->assertResponseStatusCodeSame(Response::HTTP_CREATED, 'L\'utilisateur de test n\'a pas été créé correctement.');
-
-		// Récupérer les données de la réponse
-		$data = $response->toArray();
-		$this->utilisateurIri = $data['@id'] ?? null;
-
-		// Authentification pour obtenir le jeton
-		$response = $client->request('POST', '/api/login_check', [
-			'json' => [
-				'email' => $email,
-				'password' => $password,
-			],
-		]);
-
-		// Vérifier que l'authentification a réussi
-		$this->assertResponseIsSuccessful('L\'authentification de l\'utilisateur de test a échoué.');
-
-		// Extraire le token de la réponse
-		$data = $response->toArray();
-
-		// Le token JWT est souvent dans le champ 'token' ou 'jwt'
-		$this->jwtToken = $data['token'] ?? $data['jwt'] ?? null;
-
-		if (!$this->jwtToken) {
-			// Pour le débogage, afficher la réponse
-			fwrite(STDERR, "Réponse de l'authentification : " . print_r($data, true));
-			$this->fail('JWT token non trouvé dans la réponse');
-		}
-
-		return $this->jwtToken;
-	}
-
-	/**
-	 * Méthode pour créer un client authentifié
-	 *
-	 * @return \ApiPlatform\Symfony\Bundle\Test\Client Le client authentifié
-	 */
-	private function createAuthenticatedClient(): Client
-	{
-		$token = $this->getToken();
-
-		return static::createClient([], [
-			'headers' => [
-				'Authorization' => 'Bearer ' . $token,
-			],
-		]);
-	}
-
 	/**
 	 * Méthode pour créer une adresse
 	 *
@@ -96,7 +14,7 @@ class AdresseTest extends ApiTestCase
 	 * @param string $utilisateurIri L'Iri de l'utilisateur
 	 * @return string L'Iri de l'adresse créée
 	 */
-	private function createAdresse(Client $client, string $utilisateurIri): string
+	private function createAdresse($client, string $utilisateurIri): string
 	{
 		$response = $client->request('POST', '/api/adresses', [
 			'json' => [
@@ -122,9 +40,9 @@ class AdresseTest extends ApiTestCase
 	 */
 	public function testGetCollection(): void
 	{
-		// Créer un client authentifié
-		$client = $this->createAuthenticatedClient();
-		$utilisateurIri = $this->utilisateurIri;
+		// Créer un client authentifié en tant qu'utilisateur standard
+		$client = $this->createAuthenticatedClient(); // Utilisateur standard
+		$utilisateurIri = $this->getUserIri();
 
 		// Créer une adresse de test
 		$this->createAdresse($client, $utilisateurIri);
@@ -140,7 +58,8 @@ class AdresseTest extends ApiTestCase
 		$this->assertGreaterThan(0, $data['hydra:totalItems'], 'La collection des adresses est vide.');
 
 		// Vérifier la présence du contexte API
-		$this->assertJsonContains(['@context' => '/api/contexts/Adresse'], 'Le contexte API n\'est pas correct.');
+		$this->assertArrayHasKey('@context', $data, 'La clé @context est absente.');
+		$this->assertEquals('/api/contexts/Adresse', $data['@context'], 'Le contexte API n\'est pas correct.');
 	}
 
 	/**
@@ -148,9 +67,9 @@ class AdresseTest extends ApiTestCase
 	 */
 	public function testGetAdresse(): void
 	{
-		// Créer un client authentifié
-		$client = $this->createAuthenticatedClient();
-		$utilisateurIri = $this->utilisateurIri;
+		// Créer un client authentifié en tant qu'utilisateur standard
+		$client = $this->createAuthenticatedClient(); // Utilisateur standard
+		$utilisateurIri = $this->getUserIri();
 
 		// Créer une adresse de test
 		$adresseIri = $this->createAdresse($client, $utilisateurIri);
@@ -178,9 +97,9 @@ class AdresseTest extends ApiTestCase
 	 */
 	public function testCreateAdresse(): void
 	{
-		// Créer un client authentifié
-		$client = $this->createAuthenticatedClient();
-		$utilisateurIri = $this->utilisateurIri;
+		// Créer un client authentifié en tant qu'utilisateur standard
+		$client = $this->createAuthenticatedClient(); // Utilisateur standard
+		$utilisateurIri = $this->getUserIri();
 
 		// Créer une adresse de test
 		$adresseIri = $this->createAdresse($client, $utilisateurIri);
@@ -195,9 +114,9 @@ class AdresseTest extends ApiTestCase
 	 */
 	public function testUpdatePatchAdresse(): void
 	{
-		// Créer un client authentifié
-		$client = $this->createAuthenticatedClient();
-		$utilisateurIri = $this->utilisateurIri;
+		// Créer un client authentifié en tant qu'utilisateur standard
+		$client = $this->createAuthenticatedClient(); // Utilisateur standard
+		$utilisateurIri = $this->getUserIri();
 
 		// Créer une adresse de test
 		$adresseIri = $this->createAdresse($client, $utilisateurIri);
@@ -224,9 +143,9 @@ class AdresseTest extends ApiTestCase
 	 */
 	public function testUpdatePutAdresse(): void
 	{
-		// Créer un client authentifié
-		$client = $this->createAuthenticatedClient();
-		$utilisateurIri = $this->utilisateurIri;
+		// Créer un client authentifié en tant qu'utilisateur standard
+		$client = $this->createAuthenticatedClient(); // Utilisateur standard
+		$utilisateurIri = $this->getUserIri();
 
 		// Créer une adresse de test
 		$adresseIri = $this->createAdresse($client, $utilisateurIri);
@@ -260,9 +179,9 @@ class AdresseTest extends ApiTestCase
 	 */
 	public function testDeleteAdresse(): void
 	{
-		// Créer un client authentifié
-		$client = $this->createAuthenticatedClient();
-		$utilisateurIri = $this->utilisateurIri;
+		// Créer un client authentifié en tant qu'utilisateur standard
+		$client = $this->createAuthenticatedClient(); // Utilisateur standard
+		$utilisateurIri = $this->getUserIri();
 
 		// Créer une adresse de test
 		$adresseIri = $this->createAdresse($client, $utilisateurIri);

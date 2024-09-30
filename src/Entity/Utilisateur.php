@@ -19,6 +19,8 @@ use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use App\State\UserPasswordHasher;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Serializer\Annotation\Groups;
+use ApiPlatform\Metadata\ApiFilter;
+use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
 
 #[ORM\Entity(repositoryClass: UtilisateurRepository::class)]
 #[ApiResource(
@@ -57,14 +59,18 @@ use Symfony\Component\Serializer\Annotation\Groups;
 	fields: ['email'],
 	message: 'Cet email est déjà utilisé.'
 )]
-#[ORM\Index(name: 'idx_role', columns: ['role'])]
+#[ApiFilter(SearchFilter::class, properties: ['email' => 'exact'])]
+#[ORM\Index(name: 'idx_roles', columns: ['roles'])]
 class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
 {
+	// Définir les rôles valides
+	public const VALID_ROLES = ['ROLE_USER', 'ROLE_ADMIN'];
+
 	// Clé primaire avec auto-incrémentation
 	#[ORM\Id]
 	#[ORM\GeneratedValue]
 	#[ORM\Column(type: 'integer')]
-	#[Groups(['user:read','adresse:read'])]
+	#[Groups(['user:read', 'adresse:read'])]
 	private ?int $id_utilisateur = null;
 
 	// Prénom de l'utilisateur, ne doit pas être vide
@@ -108,11 +114,11 @@ class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
 	#[Groups(['user:write'])]
 	private ?string $password = null;
 
-	// Rôle de l'utilisateur, ne doit pas être vide
-	#[ORM\Column(type: 'string', length: 20)]
+	// Rôles de l'utilisateur, ne doit pas être vide
+	#[ORM\Column(type: 'json')]
 	#[Assert\NotBlank(message: "Le rôle est obligatoire.")]
 	#[Groups(['user:read', 'user:write'])]
-	private ?string $role = 'ROLE_USER';
+	private array $roles = [];
 
 	// Token de réinitialisation du mot de passe, optionnel
 	#[ORM\Column(type: 'string', length: 255, nullable: true)]
@@ -214,21 +220,38 @@ class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
 		return $this;
 	}
 
-	public function getRole(): ?string
+
+	public function getRoles(): array
 	{
-		return $this->role;
+		// Garantir que chaque utilisateur a au moins ROLE_USER
+		$roles = $this->roles;
+		$roles[] = 'ROLE_USER';
+
+		return array_unique($roles);
 	}
 
-	public function setRole(string $role): self
+
+	/**
+	 * Définit les rôles de l'utilisateur.
+	 *
+	 * @param array $roles
+	 * @return self
+	 *
+	 * @throws \InvalidArgumentException si un rôle invalide est fourni
+	 */
+	public function setRoles(array $roles): self
 	{
-		if (!in_array($role, ['ROLE_USER', 'ROLE_ADMIN'])) {
-			throw new \InvalidArgumentException('Rôle invalide.');
+		foreach ($roles as $role) {
+			if (!in_array($role, self::VALID_ROLES, true)) {
+				throw new \InvalidArgumentException('Rôle invalide.');
+			}
 		}
 
-		$this->role = $role;
+		// S'assurer que les rôles sont en majuscules et uniques
+		$this->roles = array_unique(array_map('strtoupper', $roles));
+
 		return $this;
 	}
-
 
 	public function getTokenReinitialisation(): ?string
 	{
@@ -372,20 +395,6 @@ class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
 	{
 		return $this->email;
 	}
-
-	// Adapter la méthode getRoles() pour utiliser le champ 'role' existant car Symfony attend un tableau de rôles et non une simple chaîne de caractères
-	public function getRoles(): array
-	{
-		// Toujours inclure 'ROLE_USER' pour garantir un rôle minimum
-		$roles = [$this->role];
-
-		if (!in_array('ROLE_USER', $roles)) {
-			$roles[] = 'ROLE_USER';
-		}
-
-		return array_unique($roles);
-	}
-
 
 	public function eraseCredentials(): void
 	{

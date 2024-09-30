@@ -14,7 +14,7 @@ class UtilisateurTest extends TestCase
 	{
 		$utilisateur = new Utilisateur();
 		// Définit le rôle de l'utilisateur à 'ROLE_ADMIN'
-		$utilisateur->setRole('ROLE_ADMIN');
+		$utilisateur->setRoles(['ROLE_ADMIN']);
 
 		// Récupère les rôles de l'utilisateur
 		$roles = $utilisateur->getRoles();
@@ -104,14 +104,14 @@ class UtilisateurTest extends TestCase
 		$this->assertEquals($email, $utilisateur->getEmail());
 	}
 
-	// Test pour vérifier la récupération du numéro de téléphone de l'utilisateur
+	// Test pour vérifier la gestion des rôles invalides
 	public function testSetInvalidRole()
 	{
 		$this->expectException(\InvalidArgumentException::class);
 		$this->expectExceptionMessage('Rôle invalide.');
 
 		$utilisateur = new Utilisateur();
-		$utilisateur->setRole('ROLE_INVALID');
+		$utilisateur->setRoles(['ROLE_INVALID']);
 	}
 
 	// Test pour vérifier la récupération du token de réinitialisation de mot de passe

@@ -112,7 +112,6 @@ class Commande
 
 	// Référence de la commande
 	#[ORM\Column(type: 'string', length: 30)]
-	#[Assert\NotBlank(message: "La référence est obligatoire.")]
 	#[Assert\Length(max:30, maxMessage:"La référence doit contenir {{ limit }} caractères maximum.")]
 	#[Groups(['commande:read', 'commande:write'])]
 	private ?string $reference = null;
@@ -134,6 +133,9 @@ class Commande
 		$this->historiqueEtats = new ArrayCollection();
 		// Initialise la date avec la date actuelle
 		$this->date_commande = new \DateTime();
+
+		// Génère une référence unique après avoir configuré l'utilisateur et la date de commande
+		$this->generateReference();
 	}
 
 	// Getters et Setters...
@@ -243,7 +245,7 @@ class Commande
 	}
 
 	/**
-	 * Génère une référence unique basée sur l'ID de l'utilisateur et la date.
+	 *  Génère et attribue une référence unique basée sur l'ID de l'utilisateur et la date de commande
 	 */
 	public function generateReference()
 	{
@@ -253,7 +255,7 @@ class Commande
 			// Format : jour mois année heures minutes secondes
 			$date = $this->date_commande->format('dmYHis');
 			// Génère la référence
-			$this->reference = $userId . '-' . $date;
+			$this->reference = 'CMD-' . $userId . '-' . $date;
 		}
 	}
 
