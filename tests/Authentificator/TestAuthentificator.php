@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Tests\Authenticator;
+namespace App\Tests\Authentificator;
 
 use ApiPlatform\Symfony\Bundle\Test\ApiTestCase;
 use ApiPlatform\Symfony\Bundle\Test\Client;
@@ -8,7 +8,7 @@ use Symfony\Component\HttpFoundation\Response;
 use App\Entity\Utilisateur;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
-abstract class TestAuthenticator extends ApiTestCase
+abstract class TestAuthentificator extends ApiTestCase
 {
 	private ?string $jwtTokenAdmin = null;
 	private ?string $jwtTokenUser = null;

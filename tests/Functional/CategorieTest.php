@@ -3,9 +3,9 @@
 namespace App\Tests\Functional;
 
 use Symfony\Component\HttpFoundation\Response;
-use App\Tests\Authenticator\TestAuthenticator;
+use App\Tests\Authentificator\TestAuthentificator;
 
-class CategorieTest extends TestAuthenticator
+class CategorieTest extends TestAuthentificator
 {
 	/**
 	 * Crée une catégorie avec un nom unique.

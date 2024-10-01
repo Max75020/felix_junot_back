@@ -3,9 +3,9 @@
 namespace App\Tests\Functional;
 
 use Symfony\Component\HttpFoundation\Response;
-use App\Tests\Authenticator\TestAuthenticator;
+use App\Tests\Authentificator\TestAuthentificator;
 
-class AdresseTest extends TestAuthenticator
+class AdresseTest extends TestAuthentificator
 {
 	/**
 	 * Méthode pour créer une adresse
