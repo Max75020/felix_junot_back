@@ -30,11 +30,34 @@ class CategorieTest extends TestAuthenticator
 	}
 
 	/**
+	 * Teste la création d'une catégorie en tant qu'administrateur.
+	 */
+	public function testCreateCategorieAsAdmin(): void
+	{
+		// Créer un client authentifié en tant qu'administrateur
+		$client = $this->createAuthenticatedClient(true); // Administrateur
+		$categorieIri = $this->createCategorie($client);
+
+		// Vérifie que l'Iri de la catégorie créée n'est pas vide
+		$this->assertNotEmpty($categorieIri, 'L\'IRI de la catégorie créée est vide.');
+		$this->assertResponseStatusCodeSame(Response::HTTP_CREATED, 'Le statut HTTP n\'est pas 201 Created.');
+	}
+
+	/**
 	 * Teste la récupération de la collection de catégories.
 	 */
 	public function testGetCollection(): void
 	{
-		// Utiliser un client authentifié en tant qu'utilisateur standard pour éviter l'erreur 401
+
+		// Créer un client authentifié en tant qu'administrateur
+		$adminClient = $this->createAuthenticatedClient(true); // Administrateur
+		$categorieIri = $this->createCategorie($adminClient);
+
+		// Vérifie que l'Iri de la catégorie créée n'est pas vide
+		$this->assertNotEmpty($categorieIri, 'L\'IRI de la catégorie créée est vide.');
+		$this->assertResponseStatusCodeSame(Response::HTTP_CREATED, 'Le statut HTTP n\'est pas 201 Created.');
+
+		// Utiliser un client authentifié en tant qu'utilisateur standard pour éviter l'erreur 401 :  Absence de jeton JWT
 		$client = $this->createAuthenticatedClient(); // Utilisateur standard
 
 		$response = $client->request('GET', '/api/categories');
@@ -52,20 +75,6 @@ class CategorieTest extends TestAuthenticator
 		// Vérifie la présence de la clé '@context' et sa valeur
 		$this->assertArrayHasKey('@context', $data, 'La clé @context est absente.');
 		$this->assertEquals('/api/contexts/Categorie', $data['@context'], 'Le contexte API n\'est pas correct.');
-	}
-
-	/**
-	 * Teste la création d'une catégorie en tant qu'administrateur.
-	 */
-	public function testCreateCategorieAsAdmin(): void
-	{
-		// Créer un client authentifié en tant qu'administrateur
-		$client = $this->createAuthenticatedClient(true); // Administrateur
-		$categorieIri = $this->createCategorie($client);
-
-		// Vérifie que l'Iri de la catégorie créée n'est pas vide
-		$this->assertNotEmpty($categorieIri, 'L\'IRI de la catégorie créée est vide.');
-		$this->assertResponseStatusCodeSame(Response::HTTP_CREATED, 'Le statut HTTP n\'est pas 201 Created.');
 	}
 
 	/**
