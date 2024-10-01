@@ -50,7 +50,8 @@ class CategorieTest extends TestAuthentificator
 	{
 
 		// Créer un client authentifié en tant qu'administrateur
-		$adminClient = $this->createAuthenticatedClient(true); // Administrateur
+		$adminClient = $this->createAuthenticatedClient(true);
+		// Créer une catégorie en tant qu'administrateur
 		$categorieIri = $this->createCategorie($adminClient);
 
 		// Vérifie que l'Iri de la catégorie créée n'est pas vide
@@ -58,7 +59,7 @@ class CategorieTest extends TestAuthentificator
 		$this->assertResponseStatusCodeSame(Response::HTTP_CREATED, 'Le statut HTTP n\'est pas 201 Created.');
 
 		// Utiliser un client authentifié en tant qu'utilisateur standard pour éviter l'erreur 401 :  Absence de jeton JWT
-		$client = $this->createAuthenticatedClient(); // Utilisateur standard
+		$client = $this->createAuthenticatedClient();
 
 		$response = $client->request('GET', '/api/categories');
 
