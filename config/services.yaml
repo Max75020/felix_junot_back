@@ -20,6 +20,13 @@ services:
             - '../src/Entity/'
             - '../src/Kernel.php'
 
+    # Définir explicitement les contrôleurs comme publics
+    App\Controller\GenerateResetTokenController:
+        public: true
+
+    App\Controller\ResetPasswordController:
+        public: true
+
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
     App\State\UserPasswordHasher:

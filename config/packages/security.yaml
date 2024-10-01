@@ -34,4 +34,6 @@ security:
         - { path: ^/api/login, roles: PUBLIC_ACCESS }
         - { path: ^/api/docs, roles: PUBLIC_ACCESS } # Autoriser l'accès à la documentation Swagger
         - { path: ^/api/utilisateurs, roles: PUBLIC_ACCESS, methods: [POST] }
+        - { path: ^/api/password-reset-request, roles: PUBLIC_ACCESS, methods: [POST] }
+        - { path: ^/api/password-reset, roles: PUBLIC_ACCESS, methods: [POST] }
         - { path: ^/api, roles: IS_AUTHENTICATED_FULLY }

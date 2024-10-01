@@ -21,13 +21,14 @@ use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Serializer\Annotation\Groups;
 use ApiPlatform\Metadata\ApiFilter;
 use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
+use App\Controller\GenerateResetTokenController;
+use App\Controller\ResetPasswordController;
 
 #[ORM\Entity(repositoryClass: UtilisateurRepository::class)]
 #[ApiResource(
 	normalizationContext: ['groups' => ['user:read']],
 	denormalizationContext: ['groups' => ['user:write']],
 	operations: [
-
 		// Récupération de tous les utilisateurs (accessible uniquement à l'administrateur)
 		new GetCollection(security: "is_granted('ROLE_ADMIN')"),
 
@@ -35,24 +36,136 @@ use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
 		new Get(
 			security: "is_granted('ROLE_USER') and object == user or is_granted('ROLE_ADMIN')"
 		),
+
 		// Modification complète d'un utilisateur (accessible uniquement à l'utilisateur lui-même ou à l'administrateur)
 		new Put(
 			security: "is_granted('ROLE_USER') and object == user or is_granted('ROLE_ADMIN')",
 			processor: UserPasswordHasher::class
 		),
+
 		// Modification partielle d'un utilisateur (PATCH, accessible uniquement à l'utilisateur lui-même ou à l'administrateur)
 		new Patch(
 			security: "is_granted('ROLE_USER') and object == user or is_granted('ROLE_ADMIN')",
 			processor: UserPasswordHasher::class
 		),
-		// Suppression d'un utilisateur (accessible uniquement à l'utilisateur lui-même ou à l'administrateur)
+
+		// Suppression d'un utilisateur (accessible uniquement à l'administrateur)
 		new Delete(
-			security: "is_granted('ROLE_USER') and object == user or is_granted('ROLE_ADMIN')"
+			security: "is_granted('ROLE_ADMIN')"
 		),
+
 		// Création d'un nouvel utilisateur (accessible à tous)
 		new Post(
 			processor: UserPasswordHasher::class
-		)
+		),
+
+		// Opération pour demander une réinitialisation de mot de passe
+		new Post(
+			name: 'password_reset_request',
+			uriTemplate: '/password-reset-request',
+			controller: GenerateResetTokenController::class,
+			security: "is_granted('PUBLIC_ACCESS')",
+			read: false,
+			write: false,
+			openapiContext: [
+				'summary' => 'Demande une réinitialisation de mot de passe.',
+				'requestBody' => [
+					'content' => [
+						'application/json' => [
+							'schema' => [
+								'type' => 'object',
+								'properties' => [
+									'email' => [
+										'type' => 'string',
+										'example' => 'maxime.duplaissy@mail.com'
+									],
+								],
+								'required' => ['email'],
+							],
+						],
+					],
+				],
+				'responses' => [
+					'200' => [
+						'description' => 'Email de réinitialisation envoyé si l\'utilisateur existe.',
+						'content' => [
+							'application/json' => [
+								'schema' => [
+									'type' => 'object',
+									'properties' => [
+										'message' => [
+											'type' => 'string',
+											'example' => 'Si l\'email existe, un lien de réinitialisation a été envoyé.'
+										],
+									],
+								],
+							],
+						],
+					],
+				],
+			],
+		),
+
+		// Opération pour réinitialiser le mot de passe
+		new Post(
+			name: 'password_reset',
+			uriTemplate: '/password-reset',
+			controller: ResetPasswordController::class,
+			security: "is_granted('PUBLIC_ACCESS')",
+			read: false,
+			write: false,
+			openapiContext: [
+				'summary' => 'Réinitialise le mot de passe en utilisant le token.',
+				'requestBody' => [
+					'content' => [
+						'application/json' => [
+							'schema' => [
+								'type' => 'object',
+								'properties' => [
+									'email' => [
+										'type' => 'string',
+										'example' => 'maxime.duplaissy@mail.com'
+									],
+									'token' => [
+										'type' => 'string',
+										'example' => 'R8fAJgEUwxMkBlW7KfkwQUtZISxzYLEZWEDZMO9lbjw02EKIHHtqSGMC0rcciki8'
+									],
+									'new_password' => [
+										'type' => 'string',
+										'example' => 'NewUserPassword+123'
+									],
+								],
+								'required' => ['email', 'token', 'new_password'],
+							],
+						],
+					],
+				],
+				'responses' => [
+					'200' => [
+						'description' => 'Mot de passe réinitialisé avec succès.',
+						'content' => [
+							'application/json' => [
+								'schema' => [
+									'type' => 'object',
+									'properties' => [
+										'message' => [
+											'type' => 'string',
+											'example' => 'Mot de passe réinitialisé avec succès.'
+										],
+									],
+								],
+							],
+						],
+					],
+					'400' => [
+						'description' => 'Token invalide ou expiré.',
+					],
+					'404' => [
+						'description' => 'Utilisateur non trouvé.',
+					],
+				],
+			],
+		),
 	]
 )]
 #[UniqueEntity(
