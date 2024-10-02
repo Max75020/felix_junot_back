@@ -49,14 +49,15 @@ use App\Controller\ResetPasswordController;
 			processor: UserPasswordHasher::class
 		),
 
-		// Suppression d'un utilisateur (accessible uniquement à l'administrateur)
+		// Suppression d'un utilisateur (accessible uniquement à l'utilisateur lui-même ou à l'administrateur)
 		new Delete(
-			security: "is_granted('ROLE_ADMIN')"
+			security: "is_granted('ROLE_USER') and object == user or is_granted('ROLE_ADMIN')"
 		),
 
-		// Création d'un nouvel utilisateur (accessible à tous)
+		// Création d'un nouvel utilisateur (accessible à tous sauf aux utilisateurs connectés)
 		new Post(
-			processor: UserPasswordHasher::class
+			security: "user == null or is_granted('ROLE_ADMIN')",
+			processor: UserPasswordHasher::class,
 		),
 
 		// Opération pour demander une réinitialisation de mot de passe

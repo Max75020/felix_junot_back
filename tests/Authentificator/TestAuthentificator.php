@@ -8,6 +8,7 @@ use Symfony\Component\HttpFoundation\Response;
 use App\Entity\Utilisateur;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
+
 abstract class TestAuthentificator extends ApiTestCase
 {
 	private ?string $jwtTokenAdmin = null;
@@ -101,23 +102,27 @@ abstract class TestAuthentificator extends ApiTestCase
 		$user = $entityManager->getRepository(Utilisateur::class)->findOneBy(['email' => $this->userEmail]);
 
 		if (!$user) {
-			// Créer l'utilisateur standard
-			$client = static::createClient();
+			// Créer l'utilisateur standard directement via l'EntityManager
+			$user = new Utilisateur();
+			$user->setPrenom('Test');
+			$user->setNom('User');
+			$user->setEmail($this->userEmail);
+			$user->setTelephone('0668747201');
+			$user->setRoles(["ROLE_USER"]);
+			$user->setEmailValide(true);
 
-			$response = $client->request('POST', '/api/utilisateurs', [
-				'json' => [
-					'prenom' => 'Test',
-					'nom' => 'User',
-					'email' => $this->userEmail,
-					'telephone' => '0668747201',
-					'roles' => ['ROLE_USER'],
-					'password' => $this->userPassword,
-					'email_valide' => true,
-				],
-			]);
+			// Encoder le mot de passe
+			/** @var UserPasswordHasherInterface */
+			$passwordHasher = self::getContainer()->get(UserPasswordHasherInterface::class);
+			$hashedPassword = $passwordHasher->hashPassword($user, $this->userPassword);
+			$user->setPassword($hashedPassword);
 
-			// Vérifie que l'utilisateur standard a été créé avec succès
-			$this->assertResponseStatusCodeSame(Response::HTTP_CREATED, 'Échec de la création de l\'utilisateur standard.');
+			$entityManager->persist($user);
+			$entityManager->flush();
+		} else {
+			// Vérifier que l'utilisateur a bien le rôle ROLE_USER
+			$roles = $user->getRoles();
+			$this->assertContains('ROLE_USER', $roles, 'L\'utilisateur n\'a pas le rôle ROLE_USER.');
 		}
 	}
 
@@ -158,21 +163,23 @@ abstract class TestAuthentificator extends ApiTestCase
 	}
 
 	/**
-	 * Crée un client authentifié avec un token spécifique.
+	 * Authentifie un client avec un token spécifique.
 	 *
+	 * @param Client $client Le client à authentifier.
 	 * @param bool $admin Indique si le client doit être un administrateur.
 	 * @return \ApiPlatform\Symfony\Bundle\Test\Client Le client authentifié.
 	 */
 	protected function createAuthenticatedClient(bool $admin = false): Client
 	{
 		$token = $admin ? $this->getTokenAdmin() : $this->getTokenUser();
-
+	
+		// Créer le client avec l'option 'auth_bearer'
 		return static::createClient([], [
-			'headers' => [
-				'Authorization' => 'Bearer ' . $token,
-			],
+			'auth_bearer' => $token,
 		]);
 	}
+	
+
 
 	/**
 	 * Obtient l'Iri de l'utilisateur standard.
