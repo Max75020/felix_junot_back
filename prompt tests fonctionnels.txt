@@ -1,0 +1,28 @@
+Prompt Tests fonctionnels
+
+
+Je développe une application Symfony avec API Platform et j'ai une entité NomDeLEntite. Je souhaite créer une classe de test fonctionnel en PHPUnit appelée NomDeLEntiteTest. Cette classe doit :
+
+Hériter et Utiliser les Bonnes Classes :
+
+Étendre la classe TestAuthentificator située dans le namespace App\Tests\Authentificator\TestAuthentificator.
+Utiliser l'espace de noms Symfony\Component\HttpFoundation\Response.
+Couvrir les Scénarios d'Utilisateurs et d'Administrateurs :
+
+Pour les utilisateurs standards :
+Pouvoir effectuer des requêtes GET pour récupérer un élément spécifique.
+Pouvoir effectuer des requêtes GET pour récupérer la collection des éléments.
+Ne pas pouvoir effectuer des requêtes POST, PUT, PATCH ou DELETE.
+Pour les administrateurs :
+Pouvoir effectuer toutes les opérations CRUD (GET, GET collection, POST, PUT, PATCH, DELETE) sur les éléments.
+Inclure des Méthodes de Support :
+
+createNomDeLEntite() : Pour créer un élément via une requête POST et retourner son IRI.
+Les méthodes createUserClient() et createAdminClient() doivent être héritées de TestAuthentificator.
+Assurer la Qualité des Tests :
+
+Vérifier les statuts HTTP appropriés pour chaque opération (ex. 200 OK, 201 Created, 403 Forbidden, etc.).
+S'assurer que les données retournées sont correctes (ex. vérifier les champs pertinents).
+Générer des valeurs uniques pour éviter les violations de contraintes d'unicité.
+Assurer que la base de données est réinitialisée entre les tests pour garantir l'isolation des tests.
+Génère la classe de test complète NomDeLEntiteTest en respectant les spécifications ci-dessus.
