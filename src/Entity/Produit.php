@@ -6,6 +6,7 @@ use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\Post;
 use ApiPlatform\Metadata\Put;
+use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Delete;
 use ApiPlatform\Metadata\GetCollection;
 use Symfony\Component\Serializer\Annotation\Groups;
@@ -27,9 +28,9 @@ use DateTime;
 
 		// Récupération d'un produit (accessible à tous)
 		new Get(),
-
-		// Modification d'un produit (accessible uniquement aux administrateurs)
-		new Put(security: "is_granted('ROLE_ADMIN')"),
+		
+		// Modification partielle d'un produit (accessible uniquement aux administrateurs)
+		new Patch(security: "is_granted('ROLE_ADMIN')"),
 
 		// Suppression d'un produit (accessible uniquement aux administrateurs)
 		new Delete(security: "is_granted('ROLE_ADMIN')"),
@@ -148,7 +149,7 @@ class Produit
 		return $this;
 	}
 
-	function generateProductReference(): string
+	public function generateProductReference(): string
 	{
 		// Crée un objet DateTime avec la date et l'heure actuelles
 		$now = new \DateTime();

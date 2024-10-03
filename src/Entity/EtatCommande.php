@@ -7,6 +7,7 @@ use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\Post;
 use ApiPlatform\Metadata\Put;
 use ApiPlatform\Metadata\Delete;
+use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\GetCollection;
 use Symfony\Component\Serializer\Annotation\Groups;
 use App\Repository\EtatCommandeRepository;
@@ -28,6 +29,9 @@ use Doctrine\Common\Collections\ArrayCollection;
 
 		// Modification d'un état de commande (accessible uniquement aux administrateurs)
 		new Put(security: "is_granted('ROLE_ADMIN')"),
+
+		// Modification partielle d'un état de commande (accessible uniquement aux administrateurs)
+		new Patch(security: "is_granted('ROLE_ADMIN')"),
 
 		// Suppression d'un état de commande (accessible uniquement aux administrateurs)
 		new Delete(security: "is_granted('ROLE_ADMIN')"),
