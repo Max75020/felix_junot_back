@@ -8,7 +8,6 @@ use Symfony\Component\HttpFoundation\Response;
 use App\Entity\Utilisateur;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
-use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 
 abstract class TestAuthentificator extends ApiTestCase
 {
@@ -253,31 +252,8 @@ abstract class TestAuthentificator extends ApiTestCase
 			'client' => $authenticatedClient,
 			'iri' => $userIri,
 			'id' => $user->getIdUtilisateur(),
+			'email' => $email,
 		];
-	}
-
-	/**
-	 * Modifie la méthode getUserIri pour accepter un client spécifique.
-	 *
-	 * @param Client $client
-	 * @return string|null
-	 */
-	public function getUserIri(Client $client): ?string
-	{
-		$client->request('GET', '/api/utilisateurs/me', [
-			'headers' => [
-				'Accept' => 'application/json',
-			],
-		]);
-		echo "\n\nResponse content:\n\n ";
-		var_dump($client->getResponse());
-		echo "\n\n";
-
-		$response = $client->getResponse();
-		$this->assertResponseStatusCodeSame(Response::HTTP_OK, 'La requête pour récupérer l\'IRI de l\'utilisateur a échoué.');
-
-		$data = json_decode($response->getContent(), true);
-		return $data['@id'] ?? null;
 	}
 
 	/**
@@ -293,11 +269,33 @@ abstract class TestAuthentificator extends ApiTestCase
 				'Accept' => 'application/json',
 			],
 		]);
-
 		$response = $client->getResponse();
-		$this->assertResponseStatusCodeSame(Response::HTTP_OK, 'La requête pour récupérer l\'ID de l\'utilisateur a échoué.');
+		$this->assertEquals(Response::HTTP_OK, $response->getStatusCode(), 'La requête pour récupérer l\'ID de l\'utilisateur a échoué.');
 
 		$data = json_decode($response->getContent(), true);
-		return isset($data['idUtilisateur']) ? (int) $data['idUtilisateur'] : null;
+		return isset($data['id_utilisateur']) ? (int) $data['id_utilisateur'] : null;
+	}
+
+	/**
+	 * Modifie la méthode getUserIri pour accepter un client spécifique et récupérer l'IRI via l'ID.
+	 *
+	 * @param Client $client
+	 * @return string|null
+	 */
+	public function getUserIri(Client $client): ?string
+	{
+		// Appelle la méthode getUserId pour récupérer l'ID de l'utilisateur
+		$userId = $this->getUserId($client);
+		
+
+		// Vérifie si l'ID a bien été récupéré
+		if ($userId === null) {
+			throw new \RuntimeException('Impossible de récupérer l\'ID de l\'utilisateur.');
+		}
+
+		// Génère l'IRI à partir de l'ID
+		$userIri = '/api/utilisateurs/' . $userId;
+
+		return $userIri;
 	}
 }

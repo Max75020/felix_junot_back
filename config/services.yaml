@@ -50,3 +50,11 @@ services:
         tags:
             - { name: 'api_platform.doctrine.orm.query_extension.collection' }
             - { name: 'api_platform.doctrine.orm.query_extension.item' }
+
+    App\Extension\CommandeExtension:
+        arguments:
+            $security: '@security.helper'
+            $logger: '@logger'
+        tags:
+            - { name: 'api_platform.doctrine.orm.query_extension.collection' }
+            - { name: 'api_platform.doctrine.orm.query_extension.item' }

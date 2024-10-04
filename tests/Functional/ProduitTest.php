@@ -11,16 +11,19 @@ use App\Entity\Produit;
 class ProduitTest extends TestAuthentificator
 {
 
+	// Méthode pour créer un client authentifié en tant qu'administrateur
 	private function createAdminClient()
 	{
 		return $this->createAuthenticatedClient(true);
 	}
 
+	// Méthode pour créer un client authentifié en tant qu'utilisateur
 	private function createUserClient()
 	{
 		return $this->createAuthenticatedClient();
 	}
 
+	// Méthode pour créer un produit
 	public function createProduit()
 	{
 		// Créer un client authentifié en tant qu'administrateur
@@ -79,7 +82,7 @@ class ProduitTest extends TestAuthentificator
 		return $responseProduit->toArray()['@id'];
 	}
 
-
+	// Teste la récupération de la collection de produits en tant qu'utilisateur
 	public function testGetCollectionAsUser()
 	{
 		// Créer un client authentifié en tant qu'administrateur
@@ -103,6 +106,7 @@ class ProduitTest extends TestAuthentificator
 		$this->assertSame(Response::HTTP_OK, $client->getResponse()->getStatusCode());
 	}
 
+	// Teste la récupération d'un produit spécifique en tant qu'utilisateur
 	public function testGetAsUser()
 	{
 		// Créer un client authentifié en tant qu'utilisateur
@@ -123,7 +127,7 @@ class ProduitTest extends TestAuthentificator
 		$this->assertNotEmpty($data['nom'], 'Le nom du produit est vide.');
 	}
 
-
+	// Teste la récupération de la collection de produits en tant qu'administrateur
 	public function testGetCollectionAsAdmin()
 	{
 		$client = $this->createAdminClient();
@@ -135,6 +139,7 @@ class ProduitTest extends TestAuthentificator
 		$this->assertSame(Response::HTTP_OK, $responseGet->getStatusCode(), 'Le statut HTTP de la réponse n\'est pas 200 OK.');
 	}
 
+	// Teste la récupération d'un produit spécifique en tant qu'administrateur
 	public function testGetAsAdmin()
 	{
 		// Créer un client authentifié en tant qu'administrateur
@@ -147,11 +152,13 @@ class ProduitTest extends TestAuthentificator
 		$this->assertSame(Response::HTTP_OK, $responseGet->getStatusCode(), 'Le statut HTTP de la réponse n\'est pas 200 OK.');
 	}
 
+	// Teste la création d'un produit en tant qu'administrateur
 	public function testPostAsAdmin()
 	{
 		$this->createProduit();
 	}
 
+	// Teste la modification d'un produit en tant qu'administrateur
 	public function testPatchAsAdmin()
 	{
 		// Créer un client authentifié en tant qu'administrateur
@@ -169,6 +176,7 @@ class ProduitTest extends TestAuthentificator
 		$this->assertSame(Response::HTTP_OK, $client->getResponse()->getStatusCode());
 	}
 
+	// Teste la suppression d'un produit en tant qu'administrateur
 	public function testDeleteAsAdmin()
 	{
 		// Créer un client authentifié en tant qu'administrateur

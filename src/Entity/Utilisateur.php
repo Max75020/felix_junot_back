@@ -222,6 +222,7 @@ use App\Controller\CurrentUserController;
 		// Modification complète d'un utilisateur
 		new Put(
 			security: "is_granted('ROLE_USER') and object == user or is_granted('ROLE_ADMIN')",
+			securityMessage: "Vous ne pouvez modifier que votre propre compte.",
 			processor: UserPasswordHasher::class,
 			normalizationContext: ['groups' => ['user:read:item']],
 			denormalizationContext: ['groups' => ['user:write']],
@@ -315,6 +316,7 @@ use App\Controller\CurrentUserController;
 		// Modification partielle d'un utilisateur (PATCH)
 		new Patch(
 			security: "is_granted('ROLE_USER') and object == user or is_granted('ROLE_ADMIN')",
+			securityMessage: "Vous ne pouvez modifier que votre propre compte.",
 			processor: UserPasswordHasher::class,
 			normalizationContext: ['groups' => ['user:read:item']],
 			denormalizationContext: ['groups' => ['user:write']],
@@ -379,6 +381,7 @@ use App\Controller\CurrentUserController;
 		// Suppression d'un utilisateur
 		new Delete(
 			security: "is_granted('ROLE_USER') and object == user or is_granted('ROLE_ADMIN')",
+			securityMessage: "Vous ne pouvez supprimer que votre propre compte.",			
 			openapiContext: [
 				'summary' => 'Supprime un utilisateur.',
 				'responses' => [

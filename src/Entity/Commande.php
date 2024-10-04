@@ -38,7 +38,30 @@ use App\Filter\CurrentUserFilter;
 		// Création d'une nouvelle commande (accessible aux utilisateurs connectés et aux administrateurs)
 		new Post(
 			security: "is_granted('ROLE_USER') or is_granted('ROLE_ADMIN')",
-			processor: CommandeProcessor::class
+			processor: CommandeProcessor::class,
+			openapiContext: [
+				'summary' => 'Crée une nouvelle commande.',
+				'requestBody' => [
+					'content' => [
+						'application/json' => [
+							'schema' => [
+								'type' => 'object',
+								'properties' => [
+									'utilisateur' => ['type' => 'string', 'format' => 'iri', 'description' => 'IRI de l\'utilisateur'], 'exemple' => '/api/utilisateurs/1',
+									'etat_commande' => ['type' => 'string', 'format' => 'iri', 'description' => 'IRI de l\'état de la commande', 'exemple' => '/api/etats_commande/1'],
+									'total' => ['type' => 'number', 'description' => 'Total de la commande', 'exemple' => '19.99'],
+									'transporteur' => ['type' => 'string', 'description' => 'Nom du transporteur', 'exemple' => 'Colissimo'],
+									'poids' => ['type' => 'number', 'description' => 'Poids de la commande', 'exemple' => '1.2'],
+									'frais_livraison' => ['type' => 'number', 'description' => 'Frais de livraison', 'exemple' => '4.95'],
+									'numero_suivi' => ['type' => 'string', 'description' => 'Numéro de suivi', 'exemple' => '1234567890'],
+									'reference' => ['type' => 'string', 'description' => 'Référence de la commande', 'exemple' => 'CMD-1-01012021120000']
+								],
+								'required' => ['utilisateur', 'total', 'etat_commande', 'transporteur', 'poids', 'frais_livraison', 'numero_suivi', 'reference']
+							]
+						]
+					]
+				]
+			]
 		)
 	]
 )]

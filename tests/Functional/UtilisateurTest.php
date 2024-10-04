@@ -85,10 +85,10 @@ class UtilisateurTest extends TestAuthentificator
 		// Crée un utilisateur standard
 		$clientData = $this->createUtilisateur();
 		// Crée un client authentifié en tant qu'utilisateur standard
-		$client = $this->createAuthenticatedClientAsUser($clientData['email'], $clientData['password']);		
+		$client = $this->createAuthenticatedClientAsUser($clientData['email'], $clientData['password']);
 
 		// Tente de créer un utilisateur en tant qu'utilisateur standard
-		$client->request('POST', '/api/utilisateurs', [
+		$responsePost = $client->request('POST', '/api/utilisateurs', [
 			'json' => [
 				'prenom' => 'New',
 				'nom' => 'User',
@@ -101,7 +101,7 @@ class UtilisateurTest extends TestAuthentificator
 		]);
 
 		// Vérifie que l'accès est interdit pour un utilisateur standard
-		$this->assertResponseStatusCodeSame(Response::HTTP_FORBIDDEN, 'Un utilisateur standard a pu créer un utilisateur.');
+		$this->assertSame(Response::HTTP_FORBIDDEN, $responsePost->getStatusCode(), 'Un utilisateur standard a pu créer un utilisateur.');
 	}
 
 	/**
@@ -326,11 +326,15 @@ class UtilisateurTest extends TestAuthentificator
 	 */
 	public function testUpdateUtilisateurAsUserForbidden(): void
 	{
-		$adminClient = $this->createAuthenticatedClient(true); // Administrateur
+		// Crée un administrateur pour créer un utilisateur
+		$adminClient = $this->createAuthenticatedClient(true);
+		// Utilisateur créé par l'administrateur
 		$utilisateurData = $this->createUtilisateur($adminClient);
 
-		$userClient = $this->createAuthenticatedClient(); // Utilisateur standard
-		$userClient->request('PUT', $utilisateurData['iri'], [
+		// Crée un utilisateur standard pour tester la mise à jour
+		$userClient = $this->createAuthenticatedClient();
+		// Tente de mettre à jour l'utilisateur créé par l'administrateur
+		$responseUser = $userClient->request('PUT', $utilisateurData['iri'], [
 			'headers' => [
 				'Content-Type' => 'application/ld+json',
 			],
@@ -339,9 +343,15 @@ class UtilisateurTest extends TestAuthentificator
 			],
 		]);
 
-		// Vérifie que la mise à jour par un utilisateur standard est interdite
-		$this->assertResponseStatusCodeSame(Response::HTTP_FORBIDDEN, 'Un utilisateur standard a pu mettre à jour un utilisateur qui n\'est pas le sien.');
+		// Vérifie que la mise à jour par un utilisateur standard est interdite en obtenant un 404
+		// API Platform retourne un 404 pour ne pas divulguer l'existence de la ressource
+		$this->assertSame(
+			Response::HTTP_NOT_FOUND,
+			$responseUser->getStatusCode(),
+			'Un utilisateur standard a pu accéder à un utilisateur qui n\'est pas le sien.'
+		);
 	}
+
 
 	/**
 	 * Teste la suppression d'un utilisateur en tant qu'administrateur.
@@ -387,15 +397,37 @@ class UtilisateurTest extends TestAuthentificator
 	 */
 	public function testDeleteUtilisateurAsUserForbidden(): void
 	{
-		$adminClient = $this->createAuthenticatedClient(true); // Administrateur
+		// Crée un client administrateur pour créer un utilisateur cible
+		$adminClient = $this->createAuthenticatedClient(true);
+
+		// Crée un utilisateur via le client administrateur et récupère ses données
 		$utilisateurData = $this->createUtilisateur($adminClient);
 
-		$userClient = $this->createAuthenticatedClient(); // Utilisateur standard
-		$userClient->request('DELETE', $utilisateurData['iri']);
+		// Crée un client utilisateur standard pour tenter de supprimer l'utilisateur cible
+		$userClient = $this->createAuthenticatedClient();
 
-		// Vérifie que la suppression par un utilisateur standard est interdite
-		$this->assertResponseStatusCodeSame(Response::HTTP_FORBIDDEN, 'Un utilisateur standard a pu supprimer un utilisateur qui n\'est pas le sien.');
+		// Tente de supprimer l'utilisateur cible avec le client utilisateur standard
+		$responseDelete = $userClient->request('DELETE', $utilisateurData['iri']);
+
+		// Vérifie que la suppression par un utilisateur standard est interdite en obtenant un 404
+		// API Platform retourne un 404 pour ne pas divulguer l'existence de la ressource
+		$this->assertSame(
+			Response::HTTP_NOT_FOUND,
+			$responseDelete->getStatusCode(),
+			'Un utilisateur standard a pu supprimer un utilisateur qui n\'est pas le sien.'
+		);
+
+		// Optionnel : Vérifier le contenu de la réponse pour s'assurer qu'il correspond aux attentes
+		$data = $responseDelete->toArray(false);
+		// API Platform peut retourner un message générique pour un 404, par exemple :
+		// {
+		//     "hydra:description": "Not Found",
+		//     "hydra:title": "An error occurred"
+		// }
+		$this->assertArrayHasKey('hydra:description', $data, 'La réponse ne contient pas la clé hydra:description.');
+		$this->assertSame('Not Found', $data['hydra:description'], 'Le message de la réponse n\'est pas "Not Found".');
 	}
+
 
 	/**
 	 * Teste la création d'un utilisateur avec un email dupliqué.
@@ -524,7 +556,7 @@ class UtilisateurTest extends TestAuthentificator
 		// Vérifier que la connexion est réussie
 		$this->assertNotNull($authenticatedClient, 'La connexion avec le nouveau mot de passe a échoué.');
 	}
-	
+
 
 	/**
 	 * Teste la mise à jour partielle d'un utilisateur par le propriétaire du compte.
@@ -560,11 +592,17 @@ class UtilisateurTest extends TestAuthentificator
 	 */
 	public function testPatchUtilisateurAsUserForbidden(): void
 	{
-		$adminClient = $this->createAuthenticatedClient(true); // Administrateur
+		// Crée un client administrateur pour créer un utilisateur cible
+		$adminClient = $this->createAuthenticatedClient(true);
+
+		// Crée un utilisateur via le client administrateur et récupère ses données
 		$utilisateurData = $this->createUtilisateur($adminClient);
-	
-		$userClient = $this->createAuthenticatedClient(); // Utilisateur standard
-		$userClient->request('PATCH', $utilisateurData['iri'], [
+
+		// Crée un client utilisateur standard pour tenter de patcher l'utilisateur cible
+		$userClient = $this->createAuthenticatedClient();
+
+		// Tente de patcher l'utilisateur cible avec le client utilisateur standard
+		$responsePatch = $userClient->request('PATCH', $utilisateurData['iri'], [
 			'headers' => [
 				'Content-Type' => 'application/merge-patch+json',
 			],
@@ -572,10 +610,26 @@ class UtilisateurTest extends TestAuthentificator
 				'prenom' => 'ForbiddenPatch',
 			],
 		]);
-	
-		// Vérifie que la mise à jour par un utilisateur standard est interdite
-		$this->assertResponseStatusCodeSame(Response::HTTP_FORBIDDEN, 'Un utilisateur standard a pu patcher un utilisateur qui n\'est pas le sien.');
-	}	
+
+		// Vérifie que la mise à jour partielle par un utilisateur standard est interdite en obtenant un 404
+		// API Platform retourne un 404 pour ne pas divulguer l'existence de la ressource
+		$this->assertSame(
+			Response::HTTP_NOT_FOUND,
+			$responsePatch->getStatusCode(),
+			'Un utilisateur standard a pu patcher un utilisateur qui n\'est pas le sien.'
+		);
+
+		// Optionnel : Vérifier le contenu de la réponse pour s'assurer qu'il correspond aux attentes
+		$data = $responsePatch->toArray(false);
+
+		// API Platform peut retourner un message générique pour un 404, par exemple :
+		// {
+		//     "hydra:description": "Not Found",
+		//     "hydra:title": "An error occurred"
+		// }
+		$this->assertArrayHasKey('hydra:description', $data, 'La réponse ne contient pas la clé hydra:description.');
+		$this->assertSame('Not Found', $data['hydra:description'], 'Le message de la réponse n\'est pas "Not Found".');
+	}
 }
 /*
  * Pour exécuter les tests, exécutez la commande suivante :

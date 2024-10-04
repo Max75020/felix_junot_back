@@ -60,7 +60,11 @@ class CommandeProcessor implements ProcessorInterface
 				if ($etatCommande) {
 					$data->setEtatCommande($etatCommande);
 				} else {
-					throw new \LogicException('L\'état de commande "En attente de paiement" est introuvable.');
+					// Crée l'état de commande par défaut s'il n'existe pas
+					$etatCommande = new EtatCommande();
+					$etatCommande->setLibelle('En attente de paiement');
+					$this->entityManager->persist($etatCommande);
+					$data->setEtatCommande($etatCommande);
 				}
 			}
 

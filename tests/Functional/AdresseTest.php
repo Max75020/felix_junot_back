@@ -42,7 +42,7 @@ class AdresseTest extends TestAuthentificator
 	{
 		// Créer un client authentifié en tant qu'utilisateur standard
 		$client = $this->createAuthenticatedClient(); // Utilisateur standard
-		$utilisateurIri = $this->getUserIri();
+		$utilisateurIri = $this->getUserIri($client);
 
 		// Créer une adresse de test
 		$this->createAdresse($client, $utilisateurIri);
@@ -69,7 +69,7 @@ class AdresseTest extends TestAuthentificator
 	{
 		// Créer un client authentifié en tant qu'utilisateur standard
 		$client = $this->createAuthenticatedClient(); // Utilisateur standard
-		$utilisateurIri = $this->getUserIri();
+		$utilisateurIri = $this->getUserIri($client);
 
 		// Créer une adresse de test
 		$adresseIri = $this->createAdresse($client, $utilisateurIri);
@@ -99,7 +99,7 @@ class AdresseTest extends TestAuthentificator
 	{
 		// Créer un client authentifié en tant qu'utilisateur standard
 		$client = $this->createAuthenticatedClient(); // Utilisateur standard
-		$utilisateurIri = $this->getUserIri();
+		$utilisateurIri = $this->getUserIri($client);
 
 		// Créer une adresse de test
 		$adresseIri = $this->createAdresse($client, $utilisateurIri);
@@ -116,7 +116,7 @@ class AdresseTest extends TestAuthentificator
 	{
 		// Créer un client authentifié en tant qu'utilisateur standard
 		$client = $this->createAuthenticatedClient(); // Utilisateur standard
-		$utilisateurIri = $this->getUserIri();
+		$utilisateurIri = $this->getUserIri($client);
 
 		// Créer une adresse de test
 		$adresseIri = $this->createAdresse($client, $utilisateurIri);
@@ -145,7 +145,7 @@ class AdresseTest extends TestAuthentificator
 	{
 		// Créer un client authentifié en tant qu'utilisateur standard
 		$client = $this->createAuthenticatedClient(); // Utilisateur standard
-		$utilisateurIri = $this->getUserIri();
+		$utilisateurIri = $this->getUserIri($client);
 
 		// Créer une adresse de test
 		$adresseIri = $this->createAdresse($client, $utilisateurIri);
@@ -181,7 +181,7 @@ class AdresseTest extends TestAuthentificator
 	{
 		// Créer un client authentifié en tant qu'utilisateur standard
 		$client = $this->createAuthenticatedClient(); // Utilisateur standard
-		$utilisateurIri = $this->getUserIri();
+		$utilisateurIri = $this->getUserIri($client);
 
 		// Créer une adresse de test
 		$adresseIri = $this->createAdresse($client, $utilisateurIri);
