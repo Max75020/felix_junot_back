@@ -31,9 +31,11 @@ security:
             jwt: ~
 
     access_control:
-        - { path: ^/api/login, roles: PUBLIC_ACCESS }
-        - { path: ^/api/docs, roles: PUBLIC_ACCESS } # Autoriser l'accès à la documentation Swagger
+        - { path: ^/api/utilisateurs/me, roles: IS_AUTHENTICATED_FULLY, methods: [GET] }
+        - { path: ^/api/utilisateurs/\d+, roles: IS_AUTHENTICATED_FULLY, methods: [GET, PUT, PATCH, DELETE] }
         - { path: ^/api/utilisateurs, roles: PUBLIC_ACCESS, methods: [POST] }
+        - { path: ^/api/login, roles: PUBLIC_ACCESS, methods: [POST] }
         - { path: ^/api/password-reset-request, roles: PUBLIC_ACCESS, methods: [POST] }
         - { path: ^/api/password-reset, roles: PUBLIC_ACCESS, methods: [POST] }
+        - { path: ^/api/docs, roles: PUBLIC_ACCESS }
         - { path: ^/api, roles: IS_AUTHENTICATED_FULLY }

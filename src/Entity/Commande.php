@@ -5,9 +5,10 @@ namespace App\Entity;
 use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\Post;
-use ApiPlatform\Metadata\Put;
 use ApiPlatform\Metadata\Delete;
+use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\ApiFilter;
 use Symfony\Component\Serializer\Annotation\Groups;
 use App\Repository\CommandeRepository;
 use Doctrine\ORM\Mapping as ORM;
@@ -15,23 +16,21 @@ use Symfony\Component\Validator\Constraints as Assert;
 use App\State\CommandeProcessor;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
+use App\Filter\CurrentUserFilter;
 
 #[ApiResource(
 	normalizationContext: ['groups' => ['commande:read']],
 	denormalizationContext: ['groups' => ['commande:write']],
 	operations: [
 
-		// Récupération de toutes les commandes (accessible à tous)
-		new GetCollection(),
+		// Récupération de toutes les commandes (accessible uniquement à l'utilisateur propriétaire ou à l'administrateur)
+		new GetCollection(security: "is_granted('ROLE_USER') or is_granted('ROLE_ADMIN')"),
 
 		// Récupération d'une commande (accessible uniquement à l'utilisateur propriétaire ou à l'administrateur)
 		new Get(security: "is_granted('ROLE_USER') and object.getUtilisateur() == user or is_granted('ROLE_ADMIN')"),
 
-		// Modification complète d'une commande (accessible uniquement aux administrateurs)
-		new Put(security: "is_granted('ROLE_ADMIN')"),
-
 		// Modification partielle d'une commande (accessible uniquement à l'administrateur)
-		new Put(security: "is_granted('ROLE_ADMIN')"),
+		new Patch(security: "is_granted('ROLE_ADMIN')"),
 
 		// Suppression d'une commande (accessible uniquement aux administrateurs)
 		new Delete(security: "is_granted('ROLE_ADMIN')"),
@@ -43,6 +42,7 @@ use Doctrine\Common\Collections\Collection;
 		)
 	]
 )]
+#[ApiFilter(CurrentUserFilter::class)]
 #[ORM\Entity(repositoryClass: CommandeRepository::class)]
 #[ORM\Index(name: 'idx_utilisateur_id', columns: ['utilisateur_id'])]
 #[ORM\Index(name: 'idx_etat_commande_id', columns: ['etat_commande_id'])]
@@ -66,7 +66,7 @@ class Commande
 	#[ORM\Column(type: 'date')]
 	#[Assert\NotBlank(message: "La date de commande est obligatoire.")]
 	#[Assert\Type(\DateTimeInterface::class, message: "La date de commande doit être une date valide.")]
-	#[Groups(['commande:read', 'commande:write'])]
+	#[Groups(['commande:read'])]
 	private ?\DateTimeInterface $date_commande = null;
 
 	// Total de la commande
@@ -113,7 +113,7 @@ class Commande
 	// Référence de la commande
 	#[ORM\Column(type: 'string', length: 30)]
 	#[Assert\Length(max:30, maxMessage:"La référence doit contenir {{ limit }} caractères maximum.")]
-	#[Groups(['commande:read', 'commande:write'])]
+	#[Groups(['commande:read'])]
 	private ?string $reference = null;
 
 	// Relation OneToMany avec l'entité CommandeProduit
@@ -126,7 +126,7 @@ class Commande
 	#[ORM\OneToMany(mappedBy: 'commande', targetEntity: HistoriqueEtatCommande::class, cascade: ['persist', 'remove'])]
 	private Collection $historiqueEtats;
 
-	// Constructeur pour initialiser automatiquement la date de commande
+	// Constructeur pour initialiser automatiquement la date de commande et générer une référence unique
 	public function __construct()
 	{
 		$this->commandeProduits = new ArrayCollection();

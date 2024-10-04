@@ -27,8 +27,26 @@ services:
     App\Controller\ResetPasswordController:
         public: true
 
+    App\Controller\CurrentUserController:
+        public: true
+
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
     App\State\UserPasswordHasher:
         bind:
             $processor: '@api_platform.doctrine.orm.state.persist_processor'
+
+    App\Filter\CurrentUserFilter:
+        arguments:
+            - '@doctrine'
+            - '@security.helper'
+        tags:
+            - { name: 'api_platform.filter', id: 'app.current_user_filter' }
+
+    App\Extension\CurrentUserExtension:
+        arguments:
+            $security: '@security.helper'
+            $logger: '@logger'
+        tags:
+            - { name: 'api_platform.doctrine.orm.query_extension.collection' }
+            - { name: 'api_platform.doctrine.orm.query_extension.item' }

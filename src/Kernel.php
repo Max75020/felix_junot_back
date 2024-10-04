@@ -7,5 +7,13 @@ use Symfony\Component\HttpKernel\Kernel as BaseKernel;
 
 class Kernel extends BaseKernel
 {
-    use MicroKernelTrait;
+	use MicroKernelTrait;
+
+	public function boot(): void
+	{
+		parent::boot();
+
+		// Définit le fuseau horaire par défaut pour l'application
+		date_default_timezone_set('Europe/Paris');
+	}
 }

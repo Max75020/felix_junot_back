@@ -12,7 +12,7 @@ class EtatCommandeTest extends TestAuthentificator
 	 *
 	 * @return string
 	 */
-	private function createEtatCommandeTest(): string
+	public function createEtatCommandeTest(): string
 	{
 		$client = $this->createAdminClient();
 		$libelle = 'Test ' . uniqid();

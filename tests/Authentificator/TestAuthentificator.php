@@ -8,6 +8,7 @@ use Symfony\Component\HttpFoundation\Response;
 use App\Entity\Utilisateur;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
+use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 
 abstract class TestAuthentificator extends ApiTestCase
 {
@@ -172,31 +173,131 @@ abstract class TestAuthentificator extends ApiTestCase
 	protected function createAuthenticatedClient(bool $admin = false): Client
 	{
 		$token = $admin ? $this->getTokenAdmin() : $this->getTokenUser();
-	
+
 		// Créer le client avec l'option 'auth_bearer'
 		return static::createClient([], [
 			'auth_bearer' => $token,
 		]);
 	}
-	
-
 
 	/**
-	 * Obtient l'Iri de l'utilisateur standard.
+	 * Crée un utilisateur unique avec un email unique.
 	 *
-	 * @return string L'Iri de l'utilisateur standard.
+	 * @param string|null $email
+	 * @param string|null $password
+	 * @param array $roles
+	 * @return array Contient le client authentifié, l'IRI et l'ID de l'utilisateur.
 	 */
-	protected function getUserIri(): string
+	protected function createUniqueUser(string $email = null, string $password = null, array $roles = ['ROLE_USER']): array
 	{
 		/** @var EntityManagerInterface */
 		$entityManager = self::getContainer()->get('doctrine')->getManager();
 
-		$user = $entityManager->getRepository(Utilisateur::class)->findOneBy(['email' => $this->userEmail]);
-
-		if ($user) {
-			return '/api/utilisateurs/' . $user->getIdUtilisateur();
+		// Générer un email unique si non fourni
+		if ($email === null) {
+			$email = 'user_' . uniqid() . '@example.com';
 		}
 
-		throw new \Exception('Impossible de récupérer l\'IRI de l\'utilisateur standard.');
+		// Générer un mot de passe unique si non fourni
+		if ($password === null) {
+			$password = 'UserPassword+' . uniqid();
+		}
+
+		// Créer l'utilisateur
+		$user = new Utilisateur();
+		$user->setPrenom('Test');
+		$user->setNom('User');
+		$user->setEmail($email);
+		$user->setTelephone('0668747201');
+		$user->setRoles($roles);
+		$user->setEmailValide(true);
+
+		// Encoder le mot de passe
+		/** @var UserPasswordHasherInterface */
+		$passwordHasher = self::getContainer()->get(UserPasswordHasherInterface::class);
+		$hashedPassword = $passwordHasher->hashPassword($user, $password);
+		$user->setPassword($hashedPassword);
+
+		$entityManager->persist($user);
+		$entityManager->flush();
+
+		// Authentifier l'utilisateur pour obtenir le token JWT
+		$client = static::createClient();
+		$response = $client->request('POST', '/api/login_check', [
+			'json' => [
+				'email' => $email,
+				'password' => $password,
+			],
+		]);
+
+		if ($response->getStatusCode() !== Response::HTTP_OK) {
+			throw new \Exception('Échec de l\'authentification de l\'utilisateur unique.');
+		}
+
+		$data = $response->toArray();
+		if (!isset($data['token'])) {
+			throw new \Exception('Token JWT non trouvé pour l\'utilisateur unique.');
+		}
+
+		$token = $data['token'];
+
+		// Créer le client authentifié
+		$authenticatedClient = static::createClient([], [
+			'auth_bearer' => $token,
+		]);
+
+		// Récupérer l'IRI de l'utilisateur
+		$userIri = '/api/utilisateurs/' . $user->getIdUtilisateur();
+
+		return [
+			'client' => $authenticatedClient,
+			'iri' => $userIri,
+			'id' => $user->getIdUtilisateur(),
+		];
+	}
+
+	/**
+	 * Modifie la méthode getUserIri pour accepter un client spécifique.
+	 *
+	 * @param Client $client
+	 * @return string|null
+	 */
+	public function getUserIri(Client $client): ?string
+	{
+		$client->request('GET', '/api/utilisateurs/me', [
+			'headers' => [
+				'Accept' => 'application/json',
+			],
+		]);
+		echo "\n\nResponse content:\n\n ";
+		var_dump($client->getResponse());
+		echo "\n\n";
+
+		$response = $client->getResponse();
+		$this->assertResponseStatusCodeSame(Response::HTTP_OK, 'La requête pour récupérer l\'IRI de l\'utilisateur a échoué.');
+
+		$data = json_decode($response->getContent(), true);
+		return $data['@id'] ?? null;
+	}
+
+	/**
+	 * Modifie la méthode getUserId pour accepter un client spécifique.
+	 *
+	 * @param Client $client
+	 * @return int|null
+	 */
+	public function getUserId(Client $client): ?int
+	{
+		$client->request('GET', '/api/utilisateurs/me', [
+			'headers' => [
+				'Accept' => 'application/json',
+			],
+		]);
+
+		$response = $client->getResponse();
+		$this->assertResponseStatusCodeSame(Response::HTTP_OK, 'La requête pour récupérer l\'ID de l\'utilisateur a échoué.');
+
+		$data = json_decode($response->getContent(), true);
+		return isset($data['idUtilisateur']) ? (int) $data['idUtilisateur'] : null;
 	}
 }

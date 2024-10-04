@@ -17,7 +17,7 @@ class UtilisateurTest extends TestAuthentificator
 	 * @param array $roles Les rôles de l'utilisateur à créer.
 	 * @return array Un tableau contenant l'IRI, l'email et le mot de passe de l'utilisateur créé.
 	 */
-	private function createUtilisateur(Client $client = null, array $roles = ['ROLE_USER']): array
+	public function createUtilisateur(Client $client = null, array $roles = ['ROLE_USER']): array
 	{
 		if (!$client) {
 			$client = static::createClient();

@@ -9,6 +9,7 @@ use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\Delete;
 use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\ApiProperty;
 use App\Repository\UtilisateurRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -23,41 +24,369 @@ use ApiPlatform\Metadata\ApiFilter;
 use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
 use App\Controller\GenerateResetTokenController;
 use App\Controller\ResetPasswordController;
+use App\Controller\CurrentUserController;
 
 #[ORM\Entity(repositoryClass: UtilisateurRepository::class)]
 #[ApiResource(
 	normalizationContext: ['groups' => ['user:read']],
 	denormalizationContext: ['groups' => ['user:write']],
 	operations: [
-		// Récupération de tous les utilisateurs (accessible uniquement à l'administrateur)
-		new GetCollection(security: "is_granted('ROLE_ADMIN')"),
+		// Opérations Standards
 
-		// Récupération d'un utilisateur (accessible uniquement à l'utilisateur lui-même ou à l'administrateur)
+		// Récupération d'un utilisateur spécifique (accessible uniquement à l'utilisateur lui-même ou à l'administrateur)
 		new Get(
-			security: "is_granted('ROLE_USER') and object == user or is_granted('ROLE_ADMIN')"
-		),
-
-		// Modification complète d'un utilisateur (accessible uniquement à l'utilisateur lui-même ou à l'administrateur)
-		new Put(
+			uriTemplate: '/utilisateurs/{id_utilisateur}',
+			requirements: ['id_utilisateur' => '\d+'], // Accepte uniquement des chiffres
 			security: "is_granted('ROLE_USER') and object == user or is_granted('ROLE_ADMIN')",
-			processor: UserPasswordHasher::class
+			normalizationContext: ['groups' => ['user:read:item']],
+			openapiContext: [
+				'summary' => 'Récupère un utilisateur spécifique.',
+				'requestBody' => [
+					'content' => [
+						'application/json' => [
+							'schema' => [
+								'type' => 'object',
+								'properties' => [
+									'id_utilisateur' => [
+										'type' => 'integer',
+										'example' => 1
+									],
+								],
+								'required' => ['id_utilisateur'],
+							],
+						],
+					],
+				],
+				'responses' => [
+					'200' => [
+						'description' => 'Utilisateur récupéré avec succès.',
+					],
+					'404' => [
+						'description' => 'Utilisateur non trouvé.',
+					],
+				],
+			]
 		),
 
-		// Modification partielle d'un utilisateur (PATCH, accessible uniquement à l'utilisateur lui-même ou à l'administrateur)
-		new Patch(
-			security: "is_granted('ROLE_USER') and object == user or is_granted('ROLE_ADMIN')",
-			processor: UserPasswordHasher::class
+		// Opération Personnalisée pour récupérer l'utilisateur connecté
+		new Get(
+			name: 'get_current_user',
+			uriTemplate: '/utilisateurs/me', // Chemin absolu
+			controller: CurrentUserController::class,
+			security: "is_granted('ROLE_USER')",
+			read: false, // Indique que cette opération ne lit pas l'entité directement
+			normalizationContext: ['groups' => ['user:read:item']],
+			openapiContext: [
+				'summary' => 'Récupère les informations de l\'utilisateur connecté.',
+				'responses' => [
+					'200' => [
+						'description' => 'Utilisateur connecté récupéré avec succès.',
+					],
+					'404' => [
+						'description' => 'Utilisateur non trouvé.',
+					],
+				],
+			]
 		),
 
-		// Suppression d'un utilisateur (accessible uniquement à l'utilisateur lui-même ou à l'administrateur)
-		new Delete(
-			security: "is_granted('ROLE_USER') and object == user or is_granted('ROLE_ADMIN')"
+		// Récupération de la collection d'utilisateurs (accessible uniquement à l'administrateur)
+		new GetCollection(
+			security: "is_granted('ROLE_ADMIN')",
+			normalizationContext: ['groups' => ['user:read:collection']],
+			openapiContext: [
+				'summary' => 'Récupère la liste des utilisateurs si connecté en administrateur.',
+				'requestBody' => [
+					'content' => [
+						'application/json' => [
+							'schema' => [
+								'type' => 'object',
+								'properties' => [
+									'page' => [
+										'type' => 'integer',
+										'example' => 1
+									],
+								],
+							],
+						],
+					],
+				],
+				'responses' => [
+					'200' => [
+						'description' => 'Liste des utilisateurs récupérée avec succès.',
+					],
+				],
+			]
 		),
 
-		// Création d'un nouvel utilisateur (accessible à tous sauf aux utilisateurs connectés)
+		// Création d'un nouvel utilisateur
 		new Post(
 			security: "user == null or is_granted('ROLE_ADMIN')",
 			processor: UserPasswordHasher::class,
+			normalizationContext: ['groups' => ['user:read:item']],
+			denormalizationContext: ['groups' => ['user:write']],
+			openapiContext: [
+				'summary' => 'Crée un nouvel utilisateur.',
+				'requestBody' => [
+					'content' => [
+						'application/json' => [
+							'schema' => [
+								'type' => 'object',
+								'properties' => [
+									'prenom' => [
+										'type' => 'string',
+										'example' => 'Maxime'
+									],
+									'nom' => [
+										'type' => 'string',
+										'example' => 'Duplaissy'
+									],
+									'email' => [
+										'type' => 'string',
+										'example' => 'maxime.duplaissy@boss.fr'
+										],
+										'password' => [
+											'type' => 'string',
+											'example' => 'UserPassword+123'
+										],
+										'roles' => [
+											'type' => 'array',
+											'items' => [
+												'type' => 'string',
+												'enum' => ['ROLE_USER', 'ROLE_ADMIN']
+											],
+											'example' => ['ROLE_USER']
+										],
+										'email_valide' => [
+											'type' => 'boolean',
+											'example' => false
+										],
+									'telephone' => [
+										'type' => 'string',
+										'example' => '+33612345678'
+									],
+									'token_reinitialisation' => [
+										'type' => 'string',
+										'example' => 'R8fAJgEUwxMkBlW7KfkwQUtZISxzYLEZWEDZMO9lbjw02EKIHHtqSGMC0rcciki8'
+									],
+								],
+								'required' => ['prenom', 'nom', 'email', 'password', 'roles', 'email_valide'],
+							],
+						],
+					],
+				],
+				'responses' => [
+					'201' => [
+						'description' => 'Utilisateur créé avec succès.',
+						'content' => [
+							'application/json' => [
+								'schema' => [
+									'type' => 'object',
+									'properties' => [
+										'id_utilisateur' => [
+											'type' => 'integer',
+											'example' => 1
+										],
+										'prenom' => [
+											'type' => 'string',
+											'example' => 'Maxime'
+										],
+										'nom' => [
+											'type' => 'string',
+											'example' => 'Duplaissy'
+										],
+										'email' => [
+											'type' => 'string',
+											'example' => 'maxime.duplaissy@boss.fr'
+										],
+										'telephone' => [
+											'type' => 'string',
+											'example' => '+33612345678'
+										],
+										'roles' => [
+											'type' => 'array',
+											'items' => [
+												'type' => 'string',
+												'enum' => ['ROLE_USER', 'ROLE_ADMIN']
+											],
+											'example' => ['ROLE_USER']
+										],
+									],
+								],
+							],
+						],
+					],
+				],
+			],
+		),
+
+		// Modification complète d'un utilisateur
+		new Put(
+			security: "is_granted('ROLE_USER') and object == user or is_granted('ROLE_ADMIN')",
+			processor: UserPasswordHasher::class,
+			normalizationContext: ['groups' => ['user:read:item']],
+			denormalizationContext: ['groups' => ['user:write']],
+			openapiContext: [
+				'summary' => 'Met à jour les informations d\'un utilisateur.',
+				'requestBody' => [
+					'content' => [
+						'application/json' => [
+							'schema' => [
+								'type' => 'object',
+								'properties' => [
+									'prenom' => [
+										'type' => 'string',
+										'example' => 'Maxime'
+									],
+									'nom' => [
+										'type' => 'string',
+										'example' => 'Duplaissy'
+									],
+									'email' => [
+										'type' => 'string',
+										'example' => ' ',
+									],
+									'telephone' => [
+										'type' => 'string',
+										'example' => '+33612345678'
+									],
+									'password' => [
+										'type' => 'string',
+										'example' => 'UserPassword+123'
+									],
+									'roles' => [
+										'type' => 'array',
+										'items' => [
+											'type' => 'string',
+											'enum' => ['ROLE_USER', 'ROLE_ADMIN']
+										],
+										'example' => ['ROLE_USER']
+									],
+								],
+								'required' => ['prenom', 'nom', 'email', 'password', 'roles'],
+							],
+						],
+					],
+				],
+				'responses' => [
+					'200' => [
+						'description' => 'Utilisateur mis à jour avec succès.',
+						'content' => [
+							'application/json' => [
+								'schema' => [
+									'type' => 'object',
+									'properties' => [
+										'id_utilisateur' => [
+											'type' => 'integer',
+											'example' => 1
+										],
+										'prenom' => [
+											'type' => 'string',
+											'example' => 'Maxime'
+										],
+										'nom' => [
+											'type' => 'string',
+											'example' => 'Duplaissy'
+										],
+										'email' => [
+											'type' => 'string',
+											'example' => 'maxime.duplaissy@boss.fr'
+										],
+										'telephone' => [
+											'type' => 'string',
+											'example' => '+33612345678'
+										],
+										"roles" => [
+											'type' => 'array',
+											'items' => [
+												'type' => 'string',
+												'enum' => ['ROLE_USER', 'ROLE_ADMIN']
+											],
+											'example' => ['ROLE_USER']
+										],
+									],
+								],
+							],
+						],
+					],
+				],
+			],
+		),
+
+		// Modification partielle d'un utilisateur (PATCH)
+		new Patch(
+			security: "is_granted('ROLE_USER') and object == user or is_granted('ROLE_ADMIN')",
+			processor: UserPasswordHasher::class,
+			normalizationContext: ['groups' => ['user:read:item']],
+			denormalizationContext: ['groups' => ['user:write']],
+			openapiContext: [
+				'summary' => 'Met à jour partiellement les informations d\'un utilisateur.',
+				'requestBody' => [
+					'content' => [
+						'application/merge-patch+json' => [
+							'schema' => [
+								'type' => 'object',
+								'properties' => [
+									'prenom' => [
+										'type' => 'string',
+										'example' => 'Félix'
+									],
+									'nom' => [
+										'type' => 'string',
+										'example' => 'Junot'
+									],
+									'email' => [
+										'type' => 'string',
+										'example' => 'felix.junot@boss.fr'
+									],
+								],
+							],
+						],
+					],
+				],
+				'responses' => [
+					'200' => [
+						'description' => 'Utilisateur mis à jour avec succès.',
+						'content' => [
+							'application/json' => [
+								'schema' => [
+									'type' => 'object',
+									'properties' => [
+										'id_utilisateur' => [
+											'type' => 'integer',
+											'example' => 1
+										],
+										'prenom' => [
+											'type' => 'string',
+											'example' => 'Félix'
+										],
+										'nom' => [
+											'type' => 'string',
+											'example' => 'Junot'
+										],
+										'email' => [
+											'type' => 'string',
+											'example' => 'felix.junot@boss.fr'
+										],
+									],
+								],
+							],
+						],
+					],
+				],
+			],
+		),
+
+		// Suppression d'un utilisateur
+		new Delete(
+			security: "is_granted('ROLE_USER') and object == user or is_granted('ROLE_ADMIN')",
+			openapiContext: [
+				'summary' => 'Supprime un utilisateur.',
+				'responses' => [
+					'204' => [
+						'description' => 'Utilisateur supprimé avec succès.',
+					],
+				],
+			],
 		),
 
 		// Opération pour demander une réinitialisation de mot de passe
@@ -184,19 +513,20 @@ class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
 	#[ORM\Id]
 	#[ORM\GeneratedValue]
 	#[ORM\Column(type: 'integer')]
-	#[Groups(['user:read', 'adresse:read'])]
+	#[ApiProperty(identifier: true)]
+	#[Groups(['user:read:collection', 'user:read:item', 'adresse:read'])]
 	private ?int $id_utilisateur = null;
 
 	// Prénom de l'utilisateur, ne doit pas être vide
 	#[ORM\Column(type: 'string', length: 50)]
 	#[Assert\NotBlank(message: "Le prénom est obligatoire.")]
-	#[Groups(['user:read', 'user:write'])]
+	#[Groups(['user:read:collection', 'user:read:item', 'user:write'])]
 	private ?string $prenom = null;
 
 	// Nom de l'utilisateur, ne doit pas être vide
 	#[ORM\Column(type: 'string', length: 50)]
 	#[Assert\NotBlank(message: "Le nom est obligatoire.")]
-	#[Groups(['user:read', 'user:write'])]
+	#[Groups(['user:read:collection', 'user:read:item', 'user:write'])]
 	private ?string $nom = null;
 
 	// Email de l'utilisateur, unique et format valide
@@ -204,7 +534,7 @@ class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
 	#[Assert\NotBlank(message: "L'email est obligatoire.")]
 	#[Assert\Email(message: "L'email n'est pas valide.")]
 	#[Assert\Length(max: 100, maxMessage: "L'email ne peut pas dépasser 100 caractères.")]
-	#[Groups(['user:read', 'user:write'])]
+	#[Groups(['user:read:collection', 'user:read:item', 'user:write'])]
 	private ?string $email = null;
 
 	// Téléphone de l'utilisateur, optionnel
@@ -214,7 +544,7 @@ class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
 		pattern: "/^\+?[1-9]\d{1,14}$|^(0|\+33)[1-9](\s?\d{2}){4}$/",
 		message: "Le numéro de téléphone n'est pas valide."
 	)]
-	#[Groups(['user:read', 'user:write'])]
+	#[Groups(['user:read:item', 'user:write'])]
 	private ?string $telephone = null;
 
 	// Mot de passe de l'utilisateur, ne doit pas être vide
@@ -231,7 +561,7 @@ class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
 	// Rôles de l'utilisateur, ne doit pas être vide
 	#[ORM\Column(type: 'json')]
 	#[Assert\NotBlank(message: "Le rôle est obligatoire.")]
-	#[Groups(['user:read', 'user:write'])]
+	#[Groups(['user:read:collection', 'user:read:item', 'user:write'])]
 	private array $roles = [];
 
 	// Token de réinitialisation du mot de passe, optionnel
@@ -240,24 +570,24 @@ class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
 	private ?string $token_reinitialisation = null;
 
 	#[ORM\Column(type: 'boolean', options: ['default' => false])]
-	#[Groups(['user:read', 'user:write'])]
+	#[Groups(['user:read:collection', 'user:read:item', 'user:write'])]
 	private ?bool $email_valide = false;
 
 	// Relations avec d'autres entités
 	#[ORM\OneToMany(targetEntity: Adresse::class, mappedBy: 'utilisateur')]
-	#[Groups(['user:read'])]
+	#[Groups(['user:read:item', 'user:write'])]
 	private Collection $adresses;
 
 	#[ORM\OneToMany(targetEntity: Commande::class, mappedBy: 'utilisateur')]
-	#[Groups(['user:read'])]
+	#[Groups(['user:read:item', 'user:write'])]
 	private Collection $commandes;
 
 	#[ORM\OneToMany(targetEntity: Panier::class, mappedBy: 'utilisateur')]
-	#[Groups(['user:read'])]
+	#[Groups(['user:read:item', 'user:write'])]
 	private Collection $paniers;
 
 	#[ORM\OneToMany(targetEntity: Favoris::class, mappedBy: 'utilisateur')]
-	#[Groups(['user:read'])]
+	#[Groups(['user:read:item', 'user:write'])]
 	private Collection $favoris;
 
 
