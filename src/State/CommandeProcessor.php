@@ -4,6 +4,7 @@ namespace App\State;
 
 use App\Entity\Commande;
 use App\Entity\EtatCommande;
+use App\Entity\HistoriqueEtatCommande;
 use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProcessorInterface;
 use Symfony\Bundle\SecurityBundle\Security;
@@ -14,6 +15,7 @@ class CommandeProcessor implements ProcessorInterface
 	private $security;
 	private $entityManager;
 
+	// Constructeur pour injecter la sécurité et l'EntityManager
 	public function __construct(Security $security, EntityManagerInterface $entityManager)
 	{
 		$this->security = $security;
@@ -32,35 +34,42 @@ class CommandeProcessor implements ProcessorInterface
 	 */
 	public function process($data, Operation $operation, array $uriVariables = [], array $context = []): mixed
 	{
+		// Vérifier si l'objet est bien une instance de Commande
 		if ($data instanceof Commande) {
+			// Récupérer l'utilisateur connecté
 			$currentUser = $this->security->getUser();
 
-			// Gestion de l'utilisateur lié à la commande
+			// Vérifier si c'est une nouvelle commande
+			$isNewCommande = $data->getIdCommande() === null;
+
+			// Si l'utilisateur lié à la commande est null, assigner l'utilisateur connecté ou spécifié
 			if ($data->getUtilisateur() === null) {
-				// Pour un utilisateur standard
+				// Pour un utilisateur non-admin, associer la commande à l'utilisateur actuel
 				if (!$this->security->isGranted('ROLE_ADMIN')) {
 					$data->setUtilisateur($currentUser);
-				}
-
-				// Pour un administrateur
-				if ($this->security->isGranted('ROLE_ADMIN')) {
+				} else {
+					// Pour un administrateur, permettre de spécifier un utilisateur ou utiliser l'utilisateur actuel
 					$specifiedUser = $data->getUtilisateur();
-					if ($specifiedUser !== null) {
-						$data->setUtilisateur($specifiedUser);
-					} else {
-						$data->setUtilisateur($currentUser);
-					}
+					$data->setUtilisateur($specifiedUser ?? $currentUser);
 				}
 			}
 
-			// Associe un état par défaut si non défini
+			// Si la référence de la commande n'existe pas encore, la générer
+			if ($data->getReference() === null) {
+				$data->generateReference();
+			}
+
+			// Si l'état de la commande n'est pas défini, associer un état par défaut
 			if ($data->getEtatCommande() === null) {
+				// Chercher l'état "En attente de paiement" dans la base de données
 				$etatCommande = $this->entityManager->getRepository(EtatCommande::class)
 					->findOneBy(['libelle' => 'En attente de paiement']);
+
+				// Si l'état existe, l'associer à la commande
 				if ($etatCommande) {
 					$data->setEtatCommande($etatCommande);
 				} else {
-					// Crée l'état de commande par défaut s'il n'existe pas
+					// Si l'état n'existe pas, le créer et l'associer à la commande
 					$etatCommande = new EtatCommande();
 					$etatCommande->setLibelle('En attente de paiement');
 					$this->entityManager->persist($etatCommande);
@@ -68,17 +77,34 @@ class CommandeProcessor implements ProcessorInterface
 				}
 			}
 
-			// Génère la référence si elle n'existe pas encore
-			if ($data->getReference() === null) {
-				$data->generateReference();
+			// Si c'est une nouvelle commande, créer une nouvelle entrée dans l'historique
+			if ($isNewCommande) {
+				// Créer l'historique avec l'état initial et la date actuelle
+				$historiqueEtatCommande = new HistoriqueEtatCommande();
+				$historiqueEtatCommande->setCommande($data);
+				$historiqueEtatCommande->setDateEtat(new \DateTime());
+				$historiqueEtatCommande->setEtatCommande($data->getEtatCommande());
+				$this->entityManager->persist($historiqueEtatCommande);
+			} else {
+				// Si la commande existe déjà, vérifier si l'état de la commande a changé
+				$oldCommande = $this->entityManager->getRepository(Commande::class)->find($data->getIdCommande());
+
+				// Si l'état de la commande a changé, créer une nouvelle entrée dans l'historique
+				if ($oldCommande && $oldCommande->getEtatCommande() !== $data->getEtatCommande()) {
+					$historiqueEtatCommande = new HistoriqueEtatCommande();
+					$historiqueEtatCommande->setCommande($data);
+					$historiqueEtatCommande->setDateEtat(new \DateTime());
+					$historiqueEtatCommande->setEtatCommande($data->getEtatCommande());
+					$this->entityManager->persist($historiqueEtatCommande);
+				}
 			}
 		}
 
-		// Persiste la commande dans la base de données
+		// Persister la commande dans la base de données
 		$this->entityManager->persist($data);
 		$this->entityManager->flush();
 
-		// Retourne la commande modifiée
+		// Retourner l'objet Commande traité
 		return $data;
 	}
 }

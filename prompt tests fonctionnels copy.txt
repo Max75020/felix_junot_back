@@ -1,0 +1,37 @@
+Je développe une application Symfony avec API Platform et j'ai une entité HistoriqueEtatCommandeTest. Je souhaite créer une classe de test fonctionnel en PHPUnit appelée HistoriqueEtatCommandeTest. Cette classe doit :
+
+Hériter et Utiliser les Bonnes Classes :
+
+Étendre la classe TestAuthentificator située dans le namespace App\Tests\Authentificator\TestAuthentificator.
+Utiliser l'espace de noms Symfony\Component\HttpFoundation\Response.
+
+Les espaces de noms doivent bien être placé APRES le namespace de la classe namespace App\Tests\Functional;
+Couvrir les Scénarios d'Utilisateurs et d'Administrateurs :
+
+Pour les utilisateurs standards :
+Pouvoir effectuer des requêtes GET pour récupérer un élément spécifique pour l'utilisateur en question.
+Pouvoir effectuer des requêtes GET pour récupérer la collection des éléments pour l'utilisateur en question.
+
+Pour les administrateurs :
+Pouvoir effectuerles opérations GET, GET collection et POST sur les éléments.
+
+Pour les différentes méthodes si besoin de modifier le Content-Type :
+exemple :
+		$client->request('PATCH', $iri, [
+			'json' => [
+			],
+			'headers' => ['Content-Type' => 'application/merge-patch+json']
+		]);
+
+Utiliser des Méthodes de Support :
+
+createCommandeTest() : Pour créer une commande via une requête POST et retourner son IRI depuis CommandeTest (use App\Tests\Functional\CommandeTest)
+createUniqueUser() : Pour créer un utilisateur aléatoire
+
+Assurer la Qualité des Tests :
+
+Vérifier les statuts HTTP appropriés pour chaque opération (ex. 200 OK, 201 Created, 403 Forbidden, etc.).
+S'assurer que les données retournées sont correctes (ex. vérifier les champs pertinents).
+Générer des valeurs uniques pour éviter les violations de contraintes d'unicité.
+Assurer que la base de données est réinitialisée entre les tests pour garantir l'isolation des tests.
+Génère la classe de test complète HistoriqueEtatCommandeTest en respectant les spécifications ci-dessus.

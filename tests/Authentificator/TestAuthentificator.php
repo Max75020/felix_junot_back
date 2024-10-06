@@ -21,7 +21,7 @@ abstract class TestAuthentificator extends ApiTestCase
 	private string $userPassword = 'UserPassword+123'; // Au moins 12 caractères
 
 	/**
-	 * Vérifie et crée un administrateur si nécessaire.
+	 * Vérifie et crée un administrateur de test si nécessaire.
 	 */
 	protected function ensureAdminExists(): void
 	{
@@ -56,9 +56,9 @@ abstract class TestAuthentificator extends ApiTestCase
 	}
 
 	/**
-	 * Obtient le jeton JWT de l'administrateur.
+	 * Obtient le jeton JWT de l'administrateur de test.
 	 *
-	 * @return string Le jeton JWT de l'administrateur.
+	 * @return string Le jeton JWT de l'administrateur de test.
 	 */
 	protected function getTokenAdmin(): string
 	{
@@ -92,7 +92,7 @@ abstract class TestAuthentificator extends ApiTestCase
 	}
 
 	/**
-	 * Vérifie et crée un utilisateur standard si nécessaire.
+	 * Vérifie et crée l'utilisateur standard de test si nécessaire.
 	 */
 	protected function ensureUserExists(): void
 	{
@@ -127,9 +127,9 @@ abstract class TestAuthentificator extends ApiTestCase
 	}
 
 	/**
-	 * Obtient le jeton JWT d'un utilisateur standard.
+	 * Obtient le jeton JWT de l'utilisateur standard.
 	 *
-	 * @return string Le jeton JWT de l'utilisateur standard.
+	 * @return string Le jeton JWT de l'utilisateur de test.
 	 */
 	protected function getTokenUser(): string
 	{
@@ -163,10 +163,9 @@ abstract class TestAuthentificator extends ApiTestCase
 	}
 
 	/**
-	 * Authentifie un client avec un token spécifique.
+	 * Authentifie l'utilisateur ou l'administration de test avec un token spécifique.
 	 *
-	 * @param Client $client Le client à authentifier.
-	 * @param bool $admin Indique si le client doit être un administrateur.
+	 * @param bool $admin Indique si l'utilisateur de test doit être un administrateur.
 	 * @return \ApiPlatform\Symfony\Bundle\Test\Client Le client authentifié.
 	 */
 	protected function createAuthenticatedClient(bool $admin = false): Client
@@ -187,7 +186,7 @@ abstract class TestAuthentificator extends ApiTestCase
 	 * @param array $roles
 	 * @return array Contient le client authentifié, l'IRI et l'ID de l'utilisateur.
 	 */
-	protected function createUniqueUser(string $email = null, string $password = null, array $roles = ['ROLE_USER']): array
+	public function createUniqueUser(string $email = null, string $password = null, array $roles = ['ROLE_USER']): array
 	{
 		/** @var EntityManagerInterface */
 		$entityManager = self::getContainer()->get('doctrine')->getManager();

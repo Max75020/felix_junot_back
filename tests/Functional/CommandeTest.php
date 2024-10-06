@@ -25,11 +25,6 @@ class CommandeTest extends TestAuthentificator
 			$utilisateurIri = $this->getUserIri($client);
 		}
 
-		// Créer un etat commande
-		$etatCommandeTest = new EtatCommandeTest();
-		// Créer un etat commande basique
-		$etatCommandeIri = $etatCommandeTest->createEtatCommandeTest();
-
 		// Nom du transporteur
 		$transporteur = 'Colissimo';
 
@@ -40,7 +35,6 @@ class CommandeTest extends TestAuthentificator
 			'json' => [
 				"utilisateur" => $utilisateurIri,
 				"total" => "19.99",
-				"etat_commande" => $etatCommandeIri,
 				"transporteur" => $transporteur,
 				"poids" => "1.2",
 				"frais_livraison" => "4.95",
@@ -52,6 +46,44 @@ class CommandeTest extends TestAuthentificator
 
 		// Retourne l'IRI de la commande
 		return $client->getResponse()->toArray()['@id'];
+	}
+
+	public function createCommandeWithFullResponse(Client $client = null): array
+	{
+		if ($client == null) {
+			$client = $this->createAdminClient();
+			// Créer un utilisateur pour la commande
+			$utilisateurTest = new UtilisateurTest();
+			// Créer un utilisateur basique
+			$utilisateurBasique = $utilisateurTest->createUtilisateur($client);
+			// Réccupérer l'IRI de l'utilisateur
+			$utilisateurIri = $utilisateurBasique['iri'];
+		} else {
+			$utilisateurIri = $this->getUserIri($client);
+		}
+
+		// Nom du transporteur
+		$transporteur = 'Colissimo';
+
+		// Numéro de suivi aléatoire
+		$numeroSuivi = uniqid();
+
+		$client->request('POST', '/api/commandes', [
+			'json' => [
+				"utilisateur" => $utilisateurIri,
+				"total" => "19.99",
+				"transporteur" => $transporteur,
+				"poids" => "1.2",
+				"frais_livraison" => "4.95",
+				"numero_suivi" => $numeroSuivi
+			]
+		]);
+
+		// Vérifier le statut de la réponse
+		$this->assertResponseStatusCodeSame(Response::HTTP_CREATED);
+
+		// Retourner toute la réponse au lieu de l'IRI seulement
+		return $client->getResponse()->toArray();
 	}
 
 	public function createAdminClient()

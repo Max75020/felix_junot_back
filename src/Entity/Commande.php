@@ -17,6 +17,7 @@ use App\State\CommandeProcessor;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use App\Filter\CurrentUserFilter;
+use Symfony\Component\Serializer\Normalizer\DateTimeNormalizer;
 
 #[ApiResource(
 	normalizationContext: ['groups' => ['commande:read']],
@@ -47,7 +48,8 @@ use App\Filter\CurrentUserFilter;
 							'schema' => [
 								'type' => 'object',
 								'properties' => [
-									'utilisateur' => ['type' => 'string', 'format' => 'iri', 'description' => 'IRI de l\'utilisateur'], 'exemple' => '/api/utilisateurs/1',
+									'utilisateur' => ['type' => 'string', 'format' => 'iri', 'description' => 'IRI de l\'utilisateur'],
+									'exemple' => '/api/utilisateurs/1',
 									'etat_commande' => ['type' => 'string', 'format' => 'iri', 'description' => 'IRI de l\'état de la commande', 'exemple' => '/api/etats_commande/1'],
 									'total' => ['type' => 'number', 'description' => 'Total de la commande', 'exemple' => '19.99'],
 									'transporteur' => ['type' => 'string', 'description' => 'Nom du transporteur', 'exemple' => 'Colissimo'],
@@ -62,7 +64,7 @@ use App\Filter\CurrentUserFilter;
 					]
 				]
 			]
-		)
+		),
 	]
 )]
 #[ApiFilter(CurrentUserFilter::class)]
@@ -76,7 +78,7 @@ class Commande
 	#[ORM\Id]
 	#[ORM\GeneratedValue]
 	#[ORM\Column(type: 'integer')]
-	#[Groups(['commande:read'])]
+	#[Groups(['commande:read', 'historiqueEtatCommande:read'])]
 	private ?int $id_commande = null;
 
 	// Relation ManyToOne avec l'entité Utilisateur
@@ -86,7 +88,8 @@ class Commande
 	private ?Utilisateur $utilisateur = null;
 
 	// Date de la commande
-	#[ORM\Column(type: 'date')]
+	#[ORM\Column(type: 'datetime')]
+	#[DateTimeNormalizer(format: 'd-m-Y H:i:s')]
 	#[Assert\NotBlank(message: "La date de commande est obligatoire.")]
 	#[Assert\Type(\DateTimeInterface::class, message: "La date de commande doit être une date valide.")]
 	#[Groups(['commande:read'])]
@@ -135,7 +138,7 @@ class Commande
 
 	// Référence de la commande
 	#[ORM\Column(type: 'string', length: 30)]
-	#[Assert\Length(max:30, maxMessage:"La référence doit contenir {{ limit }} caractères maximum.")]
+	#[Assert\Length(max: 30, maxMessage: "La référence doit contenir {{ limit }} caractères maximum.")]
 	#[Groups(['commande:read'])]
 	private ?string $reference = null;
 
@@ -147,6 +150,7 @@ class Commande
 	// Relation OneToMany avec l'entité HistoriqueEtatCommande
 	// Cascade persist et remove pour enregistrer et supprimer automatiquement les historiques d'états associés
 	#[ORM\OneToMany(mappedBy: 'commande', targetEntity: HistoriqueEtatCommande::class, cascade: ['persist', 'remove'])]
+	#[Groups(['commande:read'])]
 	private Collection $historiqueEtats;
 
 	// Constructeur pour initialiser automatiquement la date de commande et générer une référence unique
@@ -300,7 +304,7 @@ class Commande
 	public function removeCommandeProduit(CommandeProduit $commandeProduit): self
 	{
 		if ($this->commandeProduits->removeElement($commandeProduit)) {
-			
+
 			if ($commandeProduit->getCommande() === $this) {
 				$commandeProduit->setCommande(null);
 			}
