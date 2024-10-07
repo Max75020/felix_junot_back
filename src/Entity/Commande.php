@@ -31,7 +31,10 @@ use Symfony\Component\Serializer\Normalizer\DateTimeNormalizer;
 		new Get(security: "is_granted('ROLE_USER') and object.getUtilisateur() == user or is_granted('ROLE_ADMIN')"),
 
 		// Modification partielle d'une commande (accessible uniquement à l'administrateur)
-		new Patch(security: "is_granted('ROLE_ADMIN')"),
+		new Patch(
+			security: "is_granted('ROLE_ADMIN')",
+			processor: CommandeProcessor::class,
+		),
 
 		// Suppression d'une commande (accessible uniquement aux administrateurs)
 		new Delete(security: "is_granted('ROLE_ADMIN')"),
@@ -48,15 +51,48 @@ use Symfony\Component\Serializer\Normalizer\DateTimeNormalizer;
 							'schema' => [
 								'type' => 'object',
 								'properties' => [
-									'utilisateur' => ['type' => 'string', 'format' => 'iri', 'description' => 'IRI de l\'utilisateur'],
-									'exemple' => '/api/utilisateurs/1',
-									'etat_commande' => ['type' => 'string', 'format' => 'iri', 'description' => 'IRI de l\'état de la commande', 'exemple' => '/api/etats_commande/1'],
-									'total' => ['type' => 'number', 'description' => 'Total de la commande', 'exemple' => '19.99'],
-									'transporteur' => ['type' => 'string', 'description' => 'Nom du transporteur', 'exemple' => 'Colissimo'],
-									'poids' => ['type' => 'number', 'description' => 'Poids de la commande', 'exemple' => '1.2'],
-									'frais_livraison' => ['type' => 'number', 'description' => 'Frais de livraison', 'exemple' => '4.95'],
-									'numero_suivi' => ['type' => 'string', 'description' => 'Numéro de suivi', 'exemple' => '1234567890'],
-									'reference' => ['type' => 'string', 'description' => 'Référence de la commande', 'exemple' => 'CMD-1-01012021120000']
+									'utilisateur' => [
+										'type' => 'string',
+										'format' => 'iri',
+										'description' => 'IRI de l\'utilisateur',
+										'example' => '/api/utilisateurs/1'
+									],
+									'etat_commande' => [
+										'type' => 'string',
+										'format' => 'iri',
+										'description' => 'IRI de l\'état de la commande',
+										'example' => '/api/etat_commandes/1'
+									],
+									'total' => [
+										'type' => 'string',
+										'description' => 'Total de la commande',
+										'example' => '19.99'
+									],
+									'transporteur' => [
+										'type' => 'string',
+										'description' => 'Nom du transporteur',
+										'example' => 'Colissimo'
+									],
+									'poids' => [
+										'type' => 'string',
+										'description' => 'Poids de la commande en kg',
+										'example' => '1.2'
+									],
+									'frais_livraison' => [
+										'type' => 'string',
+										'description' => 'Frais de livraison',
+										'example' => '4.95'
+									],
+									'numero_suivi' => [
+										'type' => 'string',
+										'description' => 'Numéro de suivi du colis',
+										'example' => '1234567890'
+									],
+									'reference' => [
+										'type' => 'string',
+										'description' => 'Référence unique de la commande',
+										'example' => 'CMD-1-01012021120000'
+									]
 								],
 								'required' => ['utilisateur', 'total', 'etat_commande', 'transporteur', 'poids', 'frais_livraison', 'numero_suivi', 'reference']
 							]

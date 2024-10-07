@@ -36,6 +36,10 @@ services:
         bind:
             $processor: '@api_platform.doctrine.orm.state.persist_processor'
 
+    App\State\CommandeProcessor:
+        tags:
+            - { name: 'api_platform.state_processor' }
+
     App\Filter\CurrentUserFilter:
         arguments:
             - '@doctrine'
