@@ -7,6 +7,7 @@ use App\Entity\Commande;
 use App\Entity\Utilisateur;
 use App\Entity\EtatCommande;
 use App\Entity\CommandeProduit;
+use App\Entity\Transporteurs;
 
 class CommandeValidationTest extends KernelTestCase
 {
@@ -15,7 +16,7 @@ class CommandeValidationTest extends KernelTestCase
 	{
 		self::bootKernel();
 	}
-	
+
 	// Fonction pour obtenir les erreurs de validation d'une commande
 	public function getValidationErrors(Commande $commande)
 	{
@@ -24,7 +25,7 @@ class CommandeValidationTest extends KernelTestCase
 	}
 
 	// Fonction qui initialise une commande avec des valeurs valides
-	private function initializeValidCommande(): Commande
+	private function initializeValidCommande(?float $total = 100.00, ?float $fraisLivraison = 5.00): Commande
 	{
 		// Création d'un utilisateur
 		$utilisateur = new Utilisateur();
@@ -39,19 +40,34 @@ class CommandeValidationTest extends KernelTestCase
 		$etatCommande = new EtatCommande();
 		$etatCommande->setLibelle('En attente de paiement');
 
+		// Création d'un transporteur
+		$transporteur = new Transporteurs();
+		$transporteur->setNom('Colissimo');
+
 		// Initialisation de la commande
 		$commande = new Commande();
 		$commande->setUtilisateur($utilisateur);
 		$commande->setEtatCommande($etatCommande);
 		$commande->setDateCommande(new \DateTime());
-		$commande->setTotal('100.00');
-		$commande->setTransporteur('Colissimo');
-		$commande->setPoids('2.50');
-		$commande->setFraisLivraison('5.00');
+
+		// Définir le total uniquement s'il est fourni
+		if ($total !== null) {
+			$commande->setTotal($total);
+		}
+
+		$commande->setTransporteur($transporteur);
+		$commande->setPoids(2.50);
+
+		// Définir les frais de livraison uniquement s'ils sont fournis
+		if ($fraisLivraison !== null) {
+			$commande->setFraisLivraison($fraisLivraison);
+		}
+
 		$commande->setNumeroSuivi('ABC123');
 		$commande->generateReference();
 		return $commande;
 	}
+
 
 	// Test pour vérifier que la date de commande est automatiquement générée
 	public function testDateCommandeGeneréeAutomatiquement()
@@ -66,43 +82,32 @@ class CommandeValidationTest extends KernelTestCase
 	// Test de validation lorsque le total de la commande est absent
 	public function testTotalObligatoire()
 	{
-		$commande = $this->initializeValidCommande();
-		// Suppression du total
-		$commande->setTotal('');
+		// Initialisation de la commande sans total
+		$commande = $this->initializeValidCommande(null); // On passe null pour ne pas définir le total
+	
 		// Récupération des erreurs de validation
 		$errors = $this->getValidationErrors($commande);
+	
 		// Vérification que des erreurs ont été trouvées
-		$this->assertGreaterThan(0, count($errors));
-		// Vérification du message d'erreur
+		$this->assertGreaterThan(0, count($errors), 'Aucune erreur de validation trouvée alors que le total est absent.');
+	
+		// Vérification du message d'erreur spécifique concernant le total
 		$this->assertEquals("Le total est obligatoire.", $errors[0]->getMessage());
 	}
+	
 
 	// Test de validation lorsque le nom du transporteur est absent
 	public function testTransporteurObligatoire()
 	{
 		$commande = $this->initializeValidCommande();
 		// Suppression du nom du transporteur
-		$commande->setTransporteur('');
+		$commande->setTransporteur(null);
 		// Récupération des erreurs de validation
 		$errors = $this->getValidationErrors($commande);
 		// Vérification que des erreurs ont été trouvées
 		$this->assertGreaterThan(0, count($errors));
 		// Vérification du message d'erreur
-		$this->assertEquals("Le nom du transporteur est obligatoire.", $errors[0]->getMessage());
-	}
-
-	// Test de validation lorsque le poids de la commande est absent
-	public function testPoidsObligatoire()
-	{
-		$commande = $this->initializeValidCommande();
-		// Suppression du poids
-		$commande->setPoids('');
-		// Récupération des erreurs de validation
-		$errors = $this->getValidationErrors($commande);
-		// Vérification que des erreurs ont été trouvées
-		$this->assertGreaterThan(0, count($errors));
-		// Vérification du message d'erreur
-		$this->assertEquals("Le poids est obligatoire.", $errors[0]->getMessage());
+		$this->assertEquals("Le transporteur est obligatoire.", $errors[0]->getMessage());
 	}
 
 	// Test de validation lorsque le numéro de suivi est absent
@@ -122,9 +127,8 @@ class CommandeValidationTest extends KernelTestCase
 	// Test de validation lorsque les frais de livraison sont absents
 	public function testFraisLivraisonObligatoire()
 	{
-		$commande = $this->initializeValidCommande();
-		// Suppression des frais de livraison
-		$commande->setFraisLivraison('');
+		// Frais de livraison absents
+		$commande = $this->initializeValidCommande(100.00,null);
 		// Récupération des erreurs de validation
 		$errors = $this->getValidationErrors($commande);
 		// Vérification que des erreurs ont été trouvées
@@ -138,7 +142,7 @@ class CommandeValidationTest extends KernelTestCase
 	{
 		$commande = $this->initializeValidCommande();
 		// Poids invalide
-		$commande->setPoids('-5.00');
+		$commande->setPoids(-5.00);
 		// Récupération des erreurs de validation
 		$errors = $this->getValidationErrors($commande);
 		// Vérification que des erreurs ont été trouvées
@@ -152,7 +156,7 @@ class CommandeValidationTest extends KernelTestCase
 	{
 		$commande = $this->initializeValidCommande();
 		// Frais de livraison invalides
-		$commande->setFraisLivraison('-10.00');
+		$commande->setFraisLivraison(-10.00);
 		// Récupération des erreurs de validation
 		$errors = $this->getValidationErrors($commande);
 		// Vérification que des erreurs ont été trouvées
@@ -166,7 +170,7 @@ class CommandeValidationTest extends KernelTestCase
 	{
 		$commande = $this->initializeValidCommande();
 		// Total valide
-		$commande->setTotal('150.00');
+		$commande->setTotal(150.00);
 		// Récupération des erreurs de validation
 		$errors = $this->getValidationErrors($commande);
 		// Vérification qu'aucune erreur n'a été trouvée

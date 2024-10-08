@@ -68,10 +68,11 @@ use Symfony\Component\Serializer\Normalizer\DateTimeNormalizer;
 										'description' => 'Total de la commande',
 										'example' => '19.99'
 									],
-									'transporteur' => [
+									'id_transporteur' => [
 										'type' => 'string',
-										'description' => 'Nom du transporteur',
-										'example' => 'Colissimo'
+										'format' => 'iri',
+										'description' => 'IRI du transporteur',
+										'example' => '/api/transporteurs/1'
 									],
 									'poids' => [
 										'type' => 'string',
@@ -108,6 +109,7 @@ use Symfony\Component\Serializer\Normalizer\DateTimeNormalizer;
 #[ORM\Index(name: 'idx_utilisateur_id', columns: ['utilisateur_id'])]
 #[ORM\Index(name: 'idx_etat_commande_id', columns: ['etat_commande_id'])]
 #[ORM\Index(name: 'idx_date_commande', columns: ['date_commande'])]
+#[ORM\Index(name: 'idx_transporteurs_id', columns: ['transporteur_id'])]
 class Commande
 {
 	// Clé primaire avec auto-incrémentation
@@ -118,7 +120,7 @@ class Commande
 	private ?int $id_commande = null;
 
 	// Relation ManyToOne avec l'entité Utilisateur
-	#[ORM\ManyToOne(targetEntity: Utilisateur::class, inversedBy: 'commandes', cascade: ['persist', 'remove'])]
+	#[ORM\ManyToOne(targetEntity: Utilisateur::class, inversedBy: 'commandes', cascade: ['persist'])]
 	#[ORM\JoinColumn(name: 'utilisateur_id', referencedColumnName: 'id_utilisateur', nullable: false)]
 	#[Groups(['commande:read', 'commande:write'])]
 	private ?Utilisateur $utilisateur = null;
@@ -136,7 +138,7 @@ class Commande
 	#[Assert\NotBlank(message: "Le total est obligatoire.")]
 	#[Assert\Positive(message: "Le total doit être positif.")]
 	#[Groups(['commande:read', 'commande:write'])]
-	private ?string $total = null;
+	private float $total;
 
 	// Relation ManyToOne avec l'entité EtatCommande
 	#[ORM\ManyToOne(targetEntity: EtatCommande::class, inversedBy: 'commandes')]
@@ -144,26 +146,25 @@ class Commande
 	#[Groups(['commande:read', 'commande:write'])]
 	private ?EtatCommande $etat_commande = null;
 
-	// Transporteur de la commande
-	#[ORM\Column(type: 'string', length: 100)]
-	#[Assert\NotBlank(message: "Le nom du transporteur est obligatoire.")]
-	#[Assert\Length(max: 100, maxMessage: "Le nom du transporteur ne peut pas dépasser {{ limit }} caractères.")]
+	// Relation ManyToOne avec l'entité Transporteurs
+	#[ORM\ManyToOne(targetEntity: Transporteurs::class, cascade: ['persist'])]
+	#[ORM\JoinColumn(name: 'transporteur_id', referencedColumnName: 'id_transporteur', nullable: false)]
+	#[Assert\NotBlank(message: "Le transporteur est obligatoire.")]
 	#[Groups(['commande:read', 'commande:write'])]
-	private ?string $transporteur = null;
+	private ?Transporteurs $transporteur = null;
 
 	// Poids de la commande
 	#[ORM\Column(type: 'decimal', precision: 10, scale: 2)]
-	#[Assert\NotBlank(message: "Le poids est obligatoire.")]
 	#[Assert\PositiveOrZero(message: "Le poids ne peut pas être négatif.")]
 	#[Groups(['commande:read', 'commande:write'])]
-	private ?string $poids = null;
+	private ?float $poids = null;
 
 	// Frais de livraison de la commande
 	#[ORM\Column(type: 'decimal', precision: 10, scale: 2)]
 	#[Assert\NotBlank(message: "Les frais de livraison sont obligatoires.")]
 	#[Assert\PositiveOrZero(message: "Les frais de livraison ne peuvent pas être négatifs.")]
 	#[Groups(['commande:read', 'commande:write'])]
-	private ?string $frais_livraison = null;
+	private float $frais_livraison;
 
 	// Numéro de suivi de la commande
 	#[ORM\Column(type: 'string', length: 100)]
@@ -230,12 +231,12 @@ class Commande
 		return $this;
 	}
 
-	public function getTotal(): ?string
+	public function getTotal(): ?float
 	{
 		return $this->total;
 	}
 
-	public function setTotal(string $total): self
+	public function setTotal(float $total): self
 	{
 		$this->total = $total;
 		return $this;
@@ -252,34 +253,39 @@ class Commande
 		return $this;
 	}
 
-	public function getTransporteur(): ?string
+	public function getTransporteur(): ?Transporteurs
 	{
 		return $this->transporteur;
 	}
 
-	public function setTransporteur(string $transporteur): self
+	public function setTransporteur(?Transporteurs $transporteur): self
 	{
 		$this->transporteur = $transporteur;
 		return $this;
 	}
 
-	public function getPoids(): ?string
+	public function getNomTransporteur(): ?string
+	{
+		return $this->transporteur ? $this->transporteur->getNom() : null;
+	}
+
+	public function getPoids(): ?float
 	{
 		return $this->poids;
 	}
 
-	public function setPoids(string $poids): self
+	public function setPoids(float $poids): self
 	{
 		$this->poids = $poids;
 		return $this;
 	}
 
-	public function getFraisLivraison(): ?string
+	public function getFraisLivraison(): ?float
 	{
 		return $this->frais_livraison;
 	}
 
-	public function setFraisLivraison(string $frais_livraison): self
+	public function setFraisLivraison(float $frais_livraison): self
 	{
 		$this->frais_livraison = $frais_livraison;
 		return $this;

@@ -11,6 +11,7 @@ use App\Entity\CommandeProduit;
 use App\Entity\Produit;
 use App\Entity\Categorie;
 use App\Entity\Tva;
+use App\Entity\Transporteurs;
 
 class HistoriqueEtatCommandeValidationTest extends KernelTestCase
 {
@@ -81,13 +82,17 @@ class HistoriqueEtatCommandeValidationTest extends KernelTestCase
 		$produit->setPrixHt(19.99);
 		$produit->addCategorie($categorie);
 
+		// Création d'un nouveau transporteur
+		$transporteur = new Transporteurs();
+		$transporteur->setNom('Colissimo');
+
         // Création de la Commande
         $commande = new Commande();
         $commande->setUtilisateur($utilisateur);
         $commande->setDateCommande(new \DateTime());
         $commande->setTotal(24.98);
         $commande->setEtatCommande($etatCommande);
-        $commande->setTransporteur('Colissimo');
+        $commande->setTransporteur($transporteur);
         $commande->setPoids(1.5);
         $commande->setFraisLivraison(4.99);
         $commande->setNumeroSuivi('1234567810');

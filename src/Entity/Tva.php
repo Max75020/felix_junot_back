@@ -19,7 +19,6 @@ use Doctrine\Common\Collections\Collection;
 	normalizationContext: ['groups' => ['tva:read']],
 	denormalizationContext: ['groups' => ['tva:write']],
 	operations: [
-
 		// Récupération de tous les taux de TVA (accessible uniquement aux administrateurs)
 		new GetCollection(security: "is_granted('ROLE_ADMIN')"),
 
@@ -37,7 +36,7 @@ use Doctrine\Common\Collections\Collection;
 	]
 )]
 #[ORM\Entity(repositoryClass: TvaRepository::class)]
-#[ORM\Index(name: 'idx_taux', columns: ['taux'])]
+#[ORM\UniqueConstraint(name: 'unique_taux', columns: ['taux'])]
 class Tva
 {
 	// Clé primaire avec auto-incrémentation
@@ -47,13 +46,13 @@ class Tva
 	#[Groups(['tva:read'])]
 	private ?int $id_tva = null;
 
-	// Taux de TVA avec validation supplémentaire pour s'assurer qu'il est dans une plage raisonnable
-	#[ORM\Column(type: 'decimal', precision: 4, scale: 2)]
+	// Taux de TVA, maintenant de type decimal avec une précision de 5 et une échelle de 2
+	#[ORM\Column(type: 'decimal', precision: 5, scale: 2, unique: true)]
 	#[Assert\NotBlank(message: "Le taux de TVA est obligatoire.")]
 	#[Assert\PositiveOrZero(message: "Le taux de TVA doit être un nombre positif ou zéro.")]
 	#[Assert\Range(min: 0, max: 100, notInRangeMessage: "Le taux de TVA doit être compris entre 0 et 100.")]
 	#[Groups(['tva:read', 'tva:write'])]
-	private ?string $taux = null;
+	private ?float $taux = null;
 
 	#[ORM\OneToMany(mappedBy: 'tva', targetEntity: Produit::class)]
 	private Collection $produits;
@@ -70,12 +69,12 @@ class Tva
 		return $this->id_tva;
 	}
 
-	public function getTaux(): ?string
+	public function getTaux(): ?float
 	{
 		return $this->taux;
 	}
 
-	public function setTaux(string $taux): self
+	public function setTaux(float $taux): self
 	{
 		$this->taux = $taux;
 		return $this;

@@ -25,8 +25,8 @@ class CommandeTest extends TestAuthentificator
 			$utilisateurIri = $this->getUserIri($client);
 		}
 
-		// Nom du transporteur
-		$transporteur = 'Colissimo';
+		//Création du transporteur
+		$transporteur = $this->createTransporteur();
 
 		// Numéro de suivi aléatoire
 		$numeroSuivi = uniqid();
@@ -63,7 +63,7 @@ class CommandeTest extends TestAuthentificator
 		}
 
 		// Nom du transporteur
-		$transporteur = 'Colissimo';
+		$transporteur = $this->createTransporteur();
 
 		// Numéro de suivi aléatoire
 		$numeroSuivi = uniqid();

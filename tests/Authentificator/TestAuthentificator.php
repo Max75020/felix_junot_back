@@ -297,4 +297,27 @@ abstract class TestAuthentificator extends ApiTestCase
 
 		return $userIri;
 	}
+
+		// Méthode pour créer un transporteur
+		public function createTransporteur(): string
+		{
+			// Créer un administrateur
+			$client = $this->createAuthenticatedClient(true);
+	
+			// Nom du transporteur unique
+			$nomTransporteur = 'Colissimo' . uniqid();
+	
+			// Créer un transporteur via l'administrateur
+			$client->request('POST', '/api/transporteurss', [
+				'json' => [
+					'nom' => $nomTransporteur
+				]
+			]);
+			
+			// Vérifier le statut de la réponse
+			$this->assertResponseStatusCodeSame(Response::HTTP_CREATED);
+	
+			// Retourner l'IRI du transporteur
+			return $client->getResponse()->toArray()['@id'];
+		}
 }

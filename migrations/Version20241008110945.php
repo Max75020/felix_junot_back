@@ -10,7 +10,7 @@ use Doctrine\Migrations\AbstractMigration;
 /**
  * Auto-generated Migration: Please modify to your needs!
  */
-final class Version20241008081937 extends AbstractMigration
+final class Version20241008110945 extends AbstractMigration
 {
     public function getDescription(): string
     {
@@ -20,19 +20,15 @@ final class Version20241008081937 extends AbstractMigration
     public function up(Schema $schema): void
     {
         // this up() migration is auto-generated, please modify it to your needs
-        $this->addSql('DROP INDEX idx_prix ON produit');
-        $this->addSql('ALTER TABLE produit ADD prix_ttc NUMERIC(10, 2) NOT NULL, CHANGE prix prix_ht NUMERIC(10, 2) NOT NULL');
-        $this->addSql('CREATE INDEX idx_prix ON produit (prix_ttc)');
+        $this->addSql('ALTER TABLE tva CHANGE taux taux NUMERIC(5, 2) NOT NULL');
     }
 
     public function down(Schema $schema): void
     {
         // this down() migration is auto-generated, please modify it to your needs
+        $this->addSql('ALTER TABLE tva CHANGE taux taux DOUBLE PRECISION NOT NULL');
         $this->addSql('DROP INDEX idx_roles ON utilisateur');
         $this->addSql('ALTER TABLE utilisateur ADD roles_generated VARCHAR(255) DEFAULT NULL');
-        $this->addSql('CREATE INDEX idx_roles ON utilisateur (roles_generated)');
-        $this->addSql('DROP INDEX idx_prix ON produit');
-        $this->addSql('ALTER TABLE produit ADD prix NUMERIC(10, 2) NOT NULL, DROP prix_ht, DROP prix_ttc');
-        $this->addSql('CREATE INDEX idx_prix ON produit (prix)');
+        $this->addSql('CREATE INDEX idx_roles_generated ON utilisateur (roles_generated)');
     }
 }

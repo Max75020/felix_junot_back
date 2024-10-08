@@ -45,6 +45,7 @@ use DateTime;
 #[ORM\UniqueConstraint(name: 'uq_reference', columns: ['reference'])]
 #[ORM\Index(name: 'idx_nom', columns: ['nom'])]
 #[ORM\Index(name: 'idx_prix', columns: ['prix_ttc'])]
+#[ORM\Index(name: 'idx_tva', columns: ['tva_id'])]
 class Produit
 {
 	// Clé primaire avec auto-incrémentation

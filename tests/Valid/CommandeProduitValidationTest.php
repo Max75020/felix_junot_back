@@ -9,6 +9,7 @@ use App\Entity\Commande;
 use App\Entity\Tva;
 use App\Entity\Utilisateur;
 use App\Entity\EtatCommande;
+use App\Entity\Transporteurs;
 
 class CommandeProduitValidationTest extends KernelTestCase
 {
@@ -53,13 +54,17 @@ class CommandeProduitValidationTest extends KernelTestCase
 		$etatCommande = new EtatCommande();
 		$etatCommande->setLibelle('En attente de paiement');
 
+		// Création d'un nouveau transporteur
+		$transporteur = new Transporteurs();
+		$transporteur->setNom('Colissimo');
+
 		// Initialisation de la commande
 		$commande = new Commande();
 		$commande->setUtilisateur($utilisateur);
 		$commande->setEtatCommande($etatCommande);
 		$commande->setDateCommande(new \DateTime());
 		$commande->setTotal('100.00');
-		$commande->setTransporteur('Colissimo');
+		$commande->setTransporteur($transporteur);
 		$commande->setPoids('2.50');
 		$commande->setFraisLivraison('5.00');
 		$commande->setNumeroSuivi('ABC123');

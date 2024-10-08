@@ -6,6 +6,7 @@ use PHPUnit\Framework\TestCase;
 use App\Entity\Commande;
 use App\Entity\Utilisateur;
 use App\Entity\EtatCommande;
+use App\Entity\Transporteurs;
 
 class CommandeTest extends TestCase
 {
@@ -33,8 +34,15 @@ class CommandeTest extends TestCase
 		$this->assertSame($etatCommande, $commande->getEtatCommande());
 
 		// Test du setter et getter pour le transporteur
-		$commande->setTransporteur('DHL');
-		$this->assertEquals('DHL', $commande->getTransporteur());
+		// Création d'un transporteur
+		$transporteur = new Transporteurs();
+		$transporteur->setNom('Colissimo');
+		// Associer le transporteur à la commande
+		$commande->setTransporteur($transporteur);
+		// Vérifier que l'objet transporteur est bien celui associé à la commande
+		$this->assertSame($transporteur, $commande->getTransporteur());
+		// Vérifier également le nom du transporteur si besoin
+		$this->assertEquals('Colissimo', $commande->getTransporteur()->getNom());
 
 		// Test du setter et getter pour le poids
 		$commande->setPoids('2.5');
