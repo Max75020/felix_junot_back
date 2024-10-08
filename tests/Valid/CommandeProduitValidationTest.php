@@ -37,7 +37,7 @@ class CommandeProduitValidationTest extends KernelTestCase
 		$produit->setReference($produit->generateProductReference());
 		$produit->setNom('Produit Test');
 		$produit->setDescription('Description test');
-		$produit->setPrix(19.99);
+		$produit->setPrixHt(19.99);
 		$produit->setTva($tva);
 		
 		// Création d'un utilisateur

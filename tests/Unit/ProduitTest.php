@@ -20,7 +20,7 @@ class ProduitTest extends TestCase
 		$produit->setDescription('Description du produit test');
 		$this->assertEquals('Description du produit test', $produit->getDescription());
 
-		$produit->setPrix(19.99);
-		$this->assertEquals(19.99, $produit->getPrix());
+		$produit->setPrixHt(19.99);
+		$this->assertEquals(19.99, $produit->getPrixHT());
 	}
 }

@@ -28,7 +28,7 @@ use DateTime;
 
 		// Récupération d'un produit (accessible à tous)
 		new Get(),
-		
+
 		// Modification partielle d'un produit (accessible uniquement aux administrateurs)
 		new Patch(security: "is_granted('ROLE_ADMIN')"),
 
@@ -44,7 +44,7 @@ use DateTime;
 #[ORM\Index(name: 'idx_reference', columns: ['reference'])]
 #[ORM\UniqueConstraint(name: 'uq_reference', columns: ['reference'])]
 #[ORM\Index(name: 'idx_nom', columns: ['nom'])]
-#[ORM\Index(name: 'idx_prix', columns: ['prix'])]
+#[ORM\Index(name: 'idx_prix', columns: ['prix_ttc'])]
 class Produit
 {
 	// Clé primaire avec auto-incrémentation
@@ -78,7 +78,7 @@ class Produit
 	#[Assert\NotBlank(message: "Le prix est obligatoire.")]
 	#[Assert\Positive(message: "Le prix doit être un nombre positif.")]
 	#[Groups(['produit:read', 'produit:write'])]
-	private ?string $prix = null;
+	private ?float $prix_ht = null;
 
 	// Relation ManyToMany avec l'entité Categorie
 	#[ORM\ManyToMany(targetEntity: Categorie::class, inversedBy: 'produits')]
@@ -122,6 +122,12 @@ class Produit
 	#[Groups(['produit:read'])]
 	private Collection $commandeProduits;
 
+	#[ORM\Column(type: 'decimal', precision: 10, scale: 2)]
+	#[Assert\NotBlank(message: "Le prix est obligatoire.")]
+	#[Assert\Positive(message: "Le prix doit être un nombre positif.")]
+	#[Groups(['produit:read', 'produit:write'])]
+	private ?float $prix_ttc = null;
+
 	public function __construct()
 	{
 		$this->categories = new ArrayCollection();
@@ -153,16 +159,16 @@ class Produit
 	{
 		// Crée un objet DateTime avec la date et l'heure actuelles
 		$now = new \DateTime();
-		
+
 		// Génère une partie aléatoire de 4 chiffres
 		$randomPart = mt_rand(1000, 9999);
-		
+
 		// Génère la référence avec le format jour, mois, année + 4 chiffres aléatoires
 		$reference = 'REF' . $now->format('dmY') . $randomPart;
-		
+
 		return $reference;
 	}
-	
+
 
 	public function getNom(): ?string
 	{
@@ -186,14 +192,16 @@ class Produit
 		return $this;
 	}
 
-	public function getPrix(): ?string
+	public function getPrixHt(): ?float
 	{
-		return $this->prix;
+		return $this->prix_ht;
 	}
 
-	public function setPrix(string $prix): self
+	public function setPrixHt(float $prix_ht): self
 	{
-		$this->prix = $prix;
+		$this->prix_ht = $prix_ht;
+		// Met à jour le prix TTC dès qu'on modifie le prix HT
+		$this->updatePrixTtc();
 		return $this;
 	}
 
@@ -245,11 +253,13 @@ class Produit
 		return $this->tva;
 	}
 
-	public function setTva(?Tva $tva): self
-	{
-		$this->tva = $tva;
-		return $this;
-	}
+    public function setTva(?Tva $tva): self
+    {
+        $this->tva = $tva;
+		// Met à jour le prix TTC dès qu'on modifie la TVA
+        $this->updatePrixTtc();
+        return $this;
+    }
 
 	public function getFavoris(): Collection
 	{
@@ -353,5 +363,28 @@ class Produit
 		}
 
 		return $this;
+	}
+
+	public function getPrixTtc(): ?float
+	{
+		return $this->prix_ttc;
+	}
+
+	public function setPrixTtc(float $prix_ttc): static
+	{
+		$this->prix_ttc = $prix_ttc;
+
+		return $this;
+	}
+
+	/**
+	 * Met à jour le prix TTC en fonction du prix HT et du taux de TVA.
+	 */
+	private function updatePrixTtc(): void
+	{
+		if ($this->prix_ht !== null && $this->tva !== null
+		) {
+			$this->prix_ttc = $this->prix_ht * (1 + $this->tva->getTaux() / 100);
+		}
 	}
 }

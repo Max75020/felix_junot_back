@@ -61,7 +61,7 @@ class PanierProduitValidationTest extends KernelTestCase
 			$produit->setReference($produit->generateProductReference());
 			$produit->setNom('Produit Test');
 			$produit->setDescription('Description test');
-			$produit->setPrix(19.99);
+			$produit->setPrixHt(19.99);
 			$produit->addCategorie($categorie);
 			// Définissez les autres propriétés requises du Produit
 			$this->entityManager->persist($produit);

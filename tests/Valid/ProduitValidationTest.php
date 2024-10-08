@@ -50,7 +50,7 @@ class ProduitValidationTest extends KernelTestCase
 		$produit->setReference($produit->generateProductReference());
 		$produit->setNom('Produit Test');
 		$produit->setDescription('Description test');
-		$produit->setPrix(19.99);
+		$produit->setPrixHt(19.99);
 		$produit->addCategorie($categorie);
 
 		return $produit;
@@ -103,7 +103,7 @@ class ProduitValidationTest extends KernelTestCase
 	public function testPrixNegatif()
 	{
 		$produit = $this->initializeValidProduit(); // Référence valide
-		$produit->setPrix(-10.00); // Prix négatif
+		$produit->setPrixHt(-10.00); // Prix négatif
 		$produit->setReference("REF260920241530");
 
 		$errors = $this->getValidationErrors($produit);

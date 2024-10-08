@@ -70,7 +70,7 @@ class ProduitTest extends TestAuthentificator
 				'reference' => $produitReference,
 				'nom' => $produitNom,
 				'description' => $produitDescription,
-				'prix' => '99.99',
+				'prix_ht' => '99.99',
 				'tva' => $tvaIri,
 				'categories' => [$categorieIri]
 			]
