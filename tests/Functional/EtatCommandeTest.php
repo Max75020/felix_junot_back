@@ -7,26 +7,6 @@ use Symfony\Component\HttpFoundation\Response;
 
 class EtatCommandeTest extends TestAuthentificator
 {
-	/**
-	 * Crée un état de commande temporaire et retourne son IRI.
-	 *
-	 * @return string
-	 */
-	public function createEtatCommandeTest(): string
-	{
-		$client = $this->createAdminClient();
-		$libelle = 'Test ' . uniqid();
-		$client->request('POST', '/api/etat_commandes', [
-			'json' => [
-				'libelle' => $libelle,
-			],
-		]);
-		$this->assertEquals(Response::HTTP_CREATED, $client->getResponse()->getStatusCode(), 'La création de l\'état de commande a échoué.');
-
-		$data = json_decode($client->getResponse()->getContent(), true);
-		return $data['@id'];
-	}
-
 	private function createAdminClient()
 	{
 		return $this->createAuthenticatedClient(true);

@@ -52,7 +52,7 @@ class Tva
 	#[Assert\PositiveOrZero(message: "Le taux de TVA doit être un nombre positif ou zéro.")]
 	#[Assert\Range(min: 0, max: 100, notInRangeMessage: "Le taux de TVA doit être compris entre 0 et 100.")]
 	#[Groups(['tva:read', 'tva:write'])]
-	private ?float $taux = null;
+	private ?string $taux = null;
 
 	#[ORM\OneToMany(mappedBy: 'tva', targetEntity: Produit::class)]
 	private Collection $produits;
@@ -69,12 +69,12 @@ class Tva
 		return $this->id_tva;
 	}
 
-	public function getTaux(): ?float
+	public function getTaux(): ?string
 	{
 		return $this->taux;
 	}
 
-	public function setTaux(float $taux): self
+	public function setTaux(string $taux): self
 	{
 		$this->taux = $taux;
 		return $this;

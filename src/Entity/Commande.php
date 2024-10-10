@@ -63,9 +63,9 @@ use Symfony\Component\Serializer\Normalizer\DateTimeNormalizer;
 										'description' => 'IRI de l\'état de la commande',
 										'example' => '/api/etat_commandes/1'
 									],
-									'total' => [
+									'prix_total_commande' => [
 										'type' => 'string',
-										'description' => 'Total de la commande',
+										'description' => 'Prix total de la commande',
 										'example' => '19.99'
 									],
 									'id_transporteur' => [
@@ -95,7 +95,7 @@ use Symfony\Component\Serializer\Normalizer\DateTimeNormalizer;
 										'example' => 'CMD-1-01012021120000'
 									]
 								],
-								'required' => ['utilisateur', 'total', 'etat_commande', 'transporteur', 'poids', 'frais_livraison', 'numero_suivi', 'reference']
+								'required' => ['utilisateur', 'prix_total_commande', 'etat_commande', 'transporteur', 'poids', 'frais_livraison', 'numero_suivi', 'reference']
 							]
 						]
 					]
@@ -110,6 +110,9 @@ use Symfony\Component\Serializer\Normalizer\DateTimeNormalizer;
 #[ORM\Index(name: 'idx_etat_commande_id', columns: ['etat_commande_id'])]
 #[ORM\Index(name: 'idx_date_commande', columns: ['date_commande'])]
 #[ORM\Index(name: 'idx_transporteurs_id', columns: ['transporteur_id'])]
+#[ORM\Index(name: 'idx_panier_id', columns: ['panier_id'])]
+#[ORM\Index(name: 'idx_adresse_facturation_id', columns: ['id_adresse_facturation'])]
+#[ORM\Index(name: 'idx_adresse_livraison_id', columns: ['id_adresse_livraison'])]
 class Commande
 {
 	// Clé primaire avec auto-incrémentation
@@ -133,12 +136,12 @@ class Commande
 	#[Groups(['commande:read'])]
 	private ?\DateTimeInterface $date_commande = null;
 
-	// Total de la commande
-	#[ORM\Column(type: 'decimal', precision: 10, scale: 2)]
-	#[Assert\NotBlank(message: "Le total est obligatoire.")]
-	#[Assert\Positive(message: "Le total doit être positif.")]
+	// Total des produits dans la commande
+	#[ORM\Column(type: 'decimal', precision: 10, scale: 2, name: 'total_produits_commande')]
+	#[Assert\NotBlank(message: "Le total des produits dans la commande ne peut pas être vide.")]
+	#[Assert\Positive(message: "Le total des produits doit être positif.")]
 	#[Groups(['commande:read', 'commande:write'])]
-	private float $total;
+	private string $total_produits_commande = '10.00';
 
 	// Relation ManyToOne avec l'entité EtatCommande
 	#[ORM\ManyToOne(targetEntity: EtatCommande::class, inversedBy: 'commandes')]
@@ -147,7 +150,7 @@ class Commande
 	private ?EtatCommande $etat_commande = null;
 
 	// Relation ManyToOne avec l'entité Transporteurs
-	#[ORM\ManyToOne(targetEntity: Transporteurs::class, cascade: ['persist'])]
+	#[ORM\ManyToOne(targetEntity: Transporteurs::class, inversedBy: 'commandes', cascade: ['persist'])]
 	#[ORM\JoinColumn(name: 'transporteur_id', referencedColumnName: 'id_transporteur', nullable: false)]
 	#[Assert\NotBlank(message: "Le transporteur est obligatoire.")]
 	#[Groups(['commande:read', 'commande:write'])]
@@ -157,14 +160,14 @@ class Commande
 	#[ORM\Column(type: 'decimal', precision: 10, scale: 2)]
 	#[Assert\PositiveOrZero(message: "Le poids ne peut pas être négatif.")]
 	#[Groups(['commande:read', 'commande:write'])]
-	private ?float $poids = null;
+	private ?string $poids = null;
 
 	// Frais de livraison de la commande
 	#[ORM\Column(type: 'decimal', precision: 10, scale: 2)]
 	#[Assert\NotBlank(message: "Les frais de livraison sont obligatoires.")]
 	#[Assert\PositiveOrZero(message: "Les frais de livraison ne peuvent pas être négatifs.")]
 	#[Groups(['commande:read', 'commande:write'])]
-	private float $frais_livraison;
+	private string $frais_livraison;
 
 	// Numéro de suivi de la commande
 	#[ORM\Column(type: 'string', length: 100)]
@@ -179,6 +182,22 @@ class Commande
 	#[Groups(['commande:read'])]
 	private ?string $reference = null;
 
+	// Prix total de la commande (total des produits + frais de livraison)
+	#[ORM\Column(type: 'decimal', precision: 10, scale: 2, name: 'prix_total_commande')]
+	#[Assert\NotBlank(message: "Le prix total de la commande est obligatoire.")]
+	#[Assert\GreaterThanOrEqual(value: 0, message: "Le prix total de la commande ne peut pas être négatif.")]
+	// Le prix total de la commande est bien la somme du total produits et des frais de livraison
+	#[Assert\Expression(
+		"this.getPrixTotalCommande() === (this.getTotalProduitsCommande() + this.getFraisLivraison())",
+		message: "Le prix total de la commande doit correspondre à la somme du total des produits et des frais de livraison."
+	)]
+	private string $prix_total_commande = '0.00';
+
+	// Relation ManyToOne avec l'entité Panier
+	#[ORM\ManyToOne(targetEntity: Panier::class)]
+	#[ORM\JoinColumn(name: 'panier_id', referencedColumnName: 'id_panier', nullable: false)]
+	private ?Panier $panier = null;
+
 	// Relation OneToMany avec l'entité CommandeProduit
 	// Cascade persist et remove pour enregistrer et supprimer automatiquement les commandes produits associées
 	#[ORM\OneToMany(mappedBy: 'commande', targetEntity: CommandeProduit::class, cascade: ['persist', 'remove'])]
@@ -189,6 +208,16 @@ class Commande
 	#[ORM\OneToMany(mappedBy: 'commande', targetEntity: HistoriqueEtatCommande::class, cascade: ['persist', 'remove'])]
 	#[Groups(['commande:read'])]
 	private Collection $historiqueEtats;
+
+	#[ORM\ManyToOne(targetEntity: Adresse::class)]
+	#[ORM\JoinColumn(name: 'id_adresse_facturation', referencedColumnName: 'id_adresse', nullable: false)]
+	#[Groups(['commande:read', 'commande:write'])]
+	private ?Adresse $adresseFacturation = null;
+
+	#[ORM\ManyToOne(targetEntity: Adresse::class)]
+	#[ORM\JoinColumn(name: 'id_adresse_livraison', referencedColumnName: 'id_adresse', nullable: false)]
+	#[Groups(['commande:read', 'commande:write'])]
+	private ?Adresse $adresseLivraison = null;
 
 	// Constructeur pour initialiser automatiquement la date de commande et générer une référence unique
 	public function __construct()
@@ -231,17 +260,6 @@ class Commande
 		return $this;
 	}
 
-	public function getTotal(): ?float
-	{
-		return $this->total;
-	}
-
-	public function setTotal(float $total): self
-	{
-		$this->total = $total;
-		return $this;
-	}
-
 	public function getEtatCommande(): ?EtatCommande
 	{
 		return $this->etat_commande;
@@ -269,23 +287,23 @@ class Commande
 		return $this->transporteur ? $this->transporteur->getNom() : null;
 	}
 
-	public function getPoids(): ?float
+	public function getPoids(): ?string
 	{
 		return $this->poids;
 	}
 
-	public function setPoids(float $poids): self
+	public function setPoids(string $poids): self
 	{
 		$this->poids = $poids;
 		return $this;
 	}
 
-	public function getFraisLivraison(): ?float
+	public function getFraisLivraison(): ?string
 	{
 		return $this->frais_livraison;
 	}
 
-	public function setFraisLivraison(float $frais_livraison): self
+	public function setFraisLivraison(string $frais_livraison): self
 	{
 		$this->frais_livraison = $frais_livraison;
 		return $this;
@@ -378,6 +396,84 @@ class Commande
 			}
 		}
 
+		return $this;
+	}
+
+	/**
+	 * Retourne le panier associé à cette commande.
+	 *
+	 * @return Panier|null Le panier associé, ou null s'il n'y en a pas.
+	 */
+	public function getPanier(): ?Panier
+	{
+		return $this->panier;
+	}
+
+	/**
+	 * Définit le prix total de la commande.
+	 *
+	 * @param string|null $prixTotalCommande Le prix total de la commande au format string (ex: "100.00") ou null.
+	 * @return self
+	 */
+	public function setPrixTotalCommande(?string $prixTotalCommande): self
+	{
+		$this->prix_total_commande = $prixTotalCommande;
+
+		return $this;
+	}
+
+	/**
+	 * Retourne le prix total de la commande.
+	 *
+	 * @return string|null Le prix total de la commande au format string ou null.
+	 */
+	public function getPrixTotalCommande(): ?string
+	{
+		return $this->prix_total_commande;
+	}
+
+	/**
+	 * Définit le total des produits dans la commande.
+	 *
+	 * @param string|null $totalProduitsCommande Le total des produits dans la commande au format string (ex: "100.00") ou null.
+	 * @return self
+	 */
+	public function setTotalProduitsCommande(?string $totalProduitsCommande): self
+	{
+		$this->total_produits_commande = $totalProduitsCommande;
+
+		return $this;
+	}
+
+	/**
+	 * Retourne le total des produits dans la commande.
+	 *
+	 * @return string|null Le total des produits dans la commande au format string ou null.
+	 */
+	public function getTotalProduitsCommande(): ?string
+	{
+		return $this->total_produits_commande;
+	}
+
+	public function getAdresseFacturation(): ?Adresse
+	{
+		return $this->adresseFacturation;
+	}
+
+	public function setAdresseFacturation(?Adresse $adresseFacturation): self
+	{
+		$this->adresseFacturation = $adresseFacturation;
+		return $this;
+	}
+
+	public function getAdresseLivraison(): ?Adresse
+	{
+		return $this->adresseLivraison;
+	}
+
+	public function setAdresseLivraison(?Adresse $adresseLivraison): self
+	{
+		$this->adresseLivraison = $adresseLivraison;
 		return $this;
 	}
 }

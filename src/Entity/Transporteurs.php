@@ -99,12 +99,17 @@ class Transporteurs
 	private ?string $nom = null;
 
 	// Relation OneToMany avec l'entité Commande
-	#[ORM\OneToMany(mappedBy: 'transporteur', targetEntity: Commande::class)]
+	#[ORM\OneToMany(mappedBy: 'transporteur', targetEntity: Commande::class, cascade: ['persist'])]
 	private Collection $commandes;
+
+	#[ORM\OneToMany(mappedBy: 'transporteur', targetEntity: MethodeLivraison::class, cascade: ['persist', 'remove'])]
+	#[ORM\JoinColumn(referencedColumnName: 'id_methode_livraison')]
+	private Collection $methodeLivraisons;
 
 	public function __construct()
 	{
 		$this->commandes = new ArrayCollection();
+		$this->methodeLivraisons = new ArrayCollection();
 	}
 
 	public function getIdTransporteur(): ?int
@@ -147,6 +152,36 @@ class Transporteurs
 				$commande->setTransporteur(null);
 			}
 		}
+		return $this;
+	}
+
+	/**
+	 * @return Collection<int, MethodeLivraison>
+	 */
+	public function getMethodeLivraisons(): Collection
+	{
+		return $this->methodeLivraisons;
+	}
+
+	public function addMethodeLivraison(MethodeLivraison $methodeLivraison): static
+	{
+		if (!$this->methodeLivraisons->contains($methodeLivraison)) {
+			$this->methodeLivraisons->add($methodeLivraison);
+			$methodeLivraison->setTransporteur($this);
+		}
+
+		return $this;
+	}
+
+	public function removeMethodeLivraison(MethodeLivraison $methodeLivraison): static
+	{
+		if ($this->methodeLivraisons->removeElement($methodeLivraison)) {
+			// set the owning side to null (unless already changed)
+			if ($methodeLivraison->getTransporteur() === $this) {
+				$methodeLivraison->setTransporteur(null);
+			}
+		}
+
 		return $this;
 	}
 }

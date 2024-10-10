@@ -61,9 +61,15 @@ class CommandeProduit
 	#[ORM\Column(type: 'integer')]
 	#[Assert\NotBlank(message: "La quantité est obligatoire.")]
 	#[Assert\Positive(message: "La quantité doit être positive.")]
-	#[Assert\Range(min: 1,max: 500,notInRangeMessage: "La quantité doit être comprise entre {{ min }} et {{ max }}.")]
+	#[Assert\Range(min: 1, max: 500, notInRangeMessage: "La quantité doit être comprise entre {{ min }} et {{ max }}.")]
 	#[Groups(['commandeProduit:read', 'commandeProduit:write'])]
-	private ?int $quantite = null;
+	private int $quantite = 1;
+
+	// Prix total du produit dans la commande
+	#[ORM\Column(type: 'decimal', precision: 10, scale: 2, name: 'prix_total_produit')]
+	#[Assert\NotBlank(message: "Le prix total du produit est obligatoire.")]
+	#[Assert\GreaterThanOrEqual(value: 0, message: "Le prix total du produit ne peut pas être négatif.")]
+	private string $prix_total_produit = '0.00';
 
 	// Getters et Setters
 
@@ -102,6 +108,18 @@ class CommandeProduit
 	public function setQuantite(int $quantite): self
 	{
 		$this->quantite = $quantite;
+		return $this;
+	}
+
+	public function getPrixTotalProduit(): string
+	{
+		return $this->prix_total_produit;
+	}
+
+	public function setPrixTotalProduit(string $prix_total_produit): self
+	{
+		$this->prix_total_produit = $prix_total_produit;
+
 		return $this;
 	}
 }

@@ -14,6 +14,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 use App\State\PanierProcessor;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
+use App\Enum\EtatPanier;
 
 #[ApiResource(
 	normalizationContext: ['groups' => ['panier:read']],
@@ -31,7 +32,11 @@ use Doctrine\Common\Collections\Collection;
 		// Création d'un panier (accessible aux utilisateurs connectés et aux administrateurs)
 		new Post(
 			security: "is_granted('ROLE_USER') or is_granted('ROLE_ADMIN')",
-			processor: PanierProcessor::class
+			processor: PanierProcessor::class,
+			openapiContext: [
+				'summary' => 'Ajouter un produit au panier',
+				'description' => 'Ajoute un produit au panier de l\'utilisateur connecté.',
+			]
 		)
 	]
 )]
@@ -57,9 +62,23 @@ class Panier
 	#[ORM\OneToMany(mappedBy: 'panier', targetEntity: PanierProduit::class, cascade: ['persist', 'remove'])]
 	private Collection $panierProduits;
 
+	// État du panier (ouvert ou fermé)
+	#[ORM\Column(type: 'string', length: 20)]
+	#[Assert\Choice(callback: [EtatPanier::class, 'getValues'], message: 'Valeur non valide pour le champ etat.')]
+	private EtatPanier $etat = EtatPanier::OUVERT;
+
+	// Prix total des produits dans le panier
+	#[ORM\Column(type: 'decimal', precision: 10, scale: 2, name: 'prix_total_panier')]
+	#[Assert\NotBlank(message: "Le prix total du panier est obligatoire.")]
+	#[Assert\PositiveOrZero(message: "Le prix total du panier doit être un nombre positif ou nul.")]
+	#[Groups(['panier:read'])]
+	private string $prix_total_panier = '0.00';
+
 	public function __construct()
 	{
 		$this->panierProduits = new ArrayCollection();
+		// Initialisation explicite de l'état du panier à "ouvert" => nouveau panier sera ouvert par défaut
+		$this->etat = EtatPanier::OUVERT;
 	}
 
 	// Getters et Setters
@@ -104,5 +123,41 @@ class Panier
 		}
 
 		return $this;
+	}
+
+	#[Groups(['panier:read'])]
+	public function getEtat(): EtatPanier
+	{
+		return $this->etat;
+	}
+
+	public function setEtat(EtatPanier $etat): self
+	{
+		$this->etat = $etat;
+		return $this;
+	}
+
+	// Getters et Setters pour le prix total du panier
+
+	public function getPrixTotalPanier(): string
+	{
+		return $this->prix_total_panier;
+	}
+
+	/**
+	 * Vérifie la cohérence du total des produits calculé par rapport aux données actuelles du panier.
+	 *
+	 * @param string $totalProduitCalculé Le total calculé à vérifier.
+	 * @return bool True si le total est correct, False sinon.
+	 */
+	public function verifierTotalProduits(string $totalProduitCalculé): bool
+	{
+		$totalActuel = '0.00';
+
+		foreach ($this->getPanierProduits() as $panierProduit) {
+			$totalActuel = bcadd($totalActuel, $panierProduit->getPrixTotalProduit(), 2);
+		}
+
+		return bccomp($totalActuel, $totalProduitCalculé, 2) === 0;
 	}
 }

@@ -7,27 +7,6 @@ use App\Tests\Authentificator\TestAuthentificator;
 
 class CategorieTest extends TestAuthentificator
 {
-	/**
-	 * Crée une catégorie avec un nom unique.
-	 *
-	 * @param \ApiPlatform\Symfony\Bundle\Test\Client $client Le client authentifié.
-	 * @return string L'Iri de la catégorie créée.
-	 */
-	private function createCategorie($client): string
-	{
-		$nomUnique = 'Test Categorie ' . uniqid();
-
-		$response = $client->request('POST', '/api/categories', [
-			'json' => [
-				'nom' => $nomUnique,
-			],
-		]);
-
-		// Vérifie que la catégorie a été créée avec succès
-		$this->assertResponseStatusCodeSame(Response::HTTP_CREATED, 'La catégorie n\'a pas été créée correctement.');
-		$data = $response->toArray();
-		return $data['@id'];
-	}
 
 	/**
 	 * Teste la création d'une catégorie en tant qu'administrateur.

@@ -23,65 +23,6 @@ class ProduitTest extends TestAuthentificator
 		return $this->createAuthenticatedClient();
 	}
 
-	// Méthode pour créer un produit
-	public function createProduit()
-	{
-		// Créer un client authentifié en tant qu'administrateur
-		$client = $this->createAdminClient();
-
-		// Créer une catégorie
-		$categorieNom = 'Catégorie Test' . uniqid();
-		// Effectuer une requête POST pour créer une nouvelle catégorie
-		$responseCategorie = $client->request('POST', '/api/categories', [
-			'json' => [
-				'nom' => $categorieNom
-			]
-		]);
-		// Vérifier que la catégorie a été créée avec succès
-		$this->assertSame(Response::HTTP_CREATED, $responseCategorie->getStatusCode());
-		// Récupérer les données de la catégorie créée sous forme de tableau
-		$responseCategorieArray = $responseCategorie->toArray();
-		// Récupérer l'IRI de la catégorie créée
-		$categorieIri = $responseCategorieArray['@id'];
-
-		// Créer une TVA
-		$responseTva = $client->request('POST', '/api/tvas', [
-			'json' => [
-				'taux' => '20.00'
-			]
-		]);
-		// Vérifier que la TVA a été créée avec succès
-		$this->assertSame(Response::HTTP_CREATED, $responseTva->getStatusCode());
-		// Récupérer les données de la TVA créée sous forme de tableau
-		$responseTvaArray = $responseTva->toArray();
-		// Récupérer l'IRI de la TVA créée
-		$tvaIri = $responseTvaArray['@id'];
-
-		// Créer un produit
-		$produitNom = 'Produit Test' . uniqid();
-		// Description du produit à créer
-		$produitDescription = 'Description du produit test' . uniqid();
-		// Reference du produit à créer
-		$produit = new Produit();
-		$produitReference = $produit->generateProductReference();
-		// Effectuer une requête POST pour créer un nouveau produit
-		$responseProduit = $client->request('POST', '/api/produits', [
-			'json' => [
-				'reference' => $produitReference,
-				'nom' => $produitNom,
-				'description' => $produitDescription,
-				'prix_ht' => '99.99',
-				'tva' => $tvaIri,
-				'categories' => [$categorieIri]
-			]
-		]);
-		// Vérifier que le produit a été créé avec succès
-		$this->assertSame(Response::HTTP_CREATED, $responseProduit->getStatusCode());
-
-		// Retourner l'IRI du produit créé
-		return $responseProduit->toArray()['@id'];
-	}
-
 	// Teste la récupération de la collection de produits en tant qu'utilisateur
 	public function testGetCollectionAsUser()
 	{
@@ -109,23 +50,37 @@ class ProduitTest extends TestAuthentificator
 	// Teste la récupération d'un produit spécifique en tant qu'utilisateur
 	public function testGetAsUser()
 	{
+		echo "\n1. Création d'un client authentifié en tant qu'utilisateur...\n";
 		// Créer un client authentifié en tant qu'utilisateur
 		$client = $this->createUserClient();
+
+		echo "2. Création d'un produit pour le test...\n";
 		// Créer un produit pour avoir un produit à récupérer
 		$produitIri = $this->createProduit();
+		echo "Produit créé avec succès. IRI du produit : $produitIri\n";
+
+		echo "3. Requête GET pour récupérer les données du produit créé...\n";
 		// Effectuer une requête GET pour récupérer les données du produit créé
 		$response = $client->request('GET', $produitIri);
 
+		echo "4. Vérification du statut HTTP de la réponse...\n";
 		// Vérifier que la réponse a un code de statut HTTP 200 (OK)
 		$this->assertSame(Response::HTTP_OK, $response->getStatusCode(), 'Le statut HTTP de la réponse n\'est pas 200 OK.');
 
+		echo "5. Conversion de la réponse en tableau...\n";
 		// Réponse de la requête sous forme de tableau
 		$data = $response->toArray();
+
+		echo "6. Vérification que le nom du produit est présent dans la réponse...\n";
 		// Vérifier que le nom du produit est présent dans la réponse
 		$this->assertArrayHasKey('nom', $data, 'Le nom du produit est absent de la réponse.');
+
+		echo "7. Vérification que le nom du produit n'est pas vide...\n";
 		// Vérifier que le nom du produit n'est pas vide
 		$this->assertNotEmpty($data['nom'], 'Le nom du produit est vide.');
+		echo "Test terminé avec succès.\n";
 	}
+
 
 	// Teste la récupération de la collection de produits en tant qu'administrateur
 	public function testGetCollectionAsAdmin()

@@ -44,7 +44,7 @@ class PanierProduit
 	#[ORM\Id]
 	#[ORM\GeneratedValue]
 	#[ORM\Column(type: 'integer')]
-	#[Groups(['panierProduit:read'])]
+	#[Groups(['panierProduit:read', 'panierProduit:write'])]
 	private ?int $id_panier_produit = null;
 
 	// Relation ManyToOne avec l'entité Produit
@@ -66,7 +66,13 @@ class PanierProduit
 	#[Assert\NotBlank(message: "La quantité est obligatoire.")]
 	#[Assert\Positive(message: "La quantité doit être un nombre positif.")]
 	#[Groups(['panierProduit:read', 'panierProduit:write'])]
-	private ?int $quantite = null;
+	private int $quantite = 1;
+
+	// Prix total du produit dans le panier
+	#[ORM\Column(type: 'decimal', precision: 10, scale: 2, name: 'prix_total_produit')]
+	#[Assert\NotBlank(message: "Le prix total du produit est obligatoire.")]
+	#[Assert\GreaterThanOrEqual(value: 0, message: "Le prix total du produit ne peut pas être négatif.")]
+	private string $prix_total_produit = '0.00';
 
 	// Getters et Setters
 
@@ -83,6 +89,8 @@ class PanierProduit
 	public function setProduit(?Produit $produit): self
 	{
 		$this->produit = $produit;
+		$this->recalculatePrixTotalProduit(); // Recalculer automatiquement le prix total du produit
+
 		return $this;
 	}
 
@@ -105,6 +113,32 @@ class PanierProduit
 	public function setQuantite(int $quantite): self
 	{
 		$this->quantite = $quantite;
+		$this->recalculatePrixTotalProduit(); // Recalculer automatiquement le prix total du produit
+
 		return $this;
+	}
+
+	public function getPrixTotalProduit(): string
+	{
+		return $this->prix_total_produit;
+	}
+
+	public function setPrixTotalProduit(string $prix_total_produit): self
+	{
+		$this->prix_total_produit = $prix_total_produit;
+
+		return $this;
+	}
+
+	/**
+	 * Recalcule le prix total du produit en fonction de la quantité et du prix TTC.
+	 */
+	public function recalculatePrixTotalProduit(): void
+	{
+		if ($this->produit && $this->quantite > 0 && $this->produit->getPrixTtc() > 0) {
+			$this->prix_total_produit = bcmul((string) $this->quantite, $this->produit->getPrixTtc(), 2);
+		} else {
+			$this->prix_total_produit = '0.00';
+		}
 	}
 }

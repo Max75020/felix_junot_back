@@ -17,6 +17,7 @@ use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\Common\Collections\ArrayCollection;
 use DateTime;
+use App\State\PanierProduitProcessor;
 
 #[ApiResource(
 	normalizationContext: ['groups' => ['produit:read']],
@@ -36,7 +37,18 @@ use DateTime;
 		new Delete(security: "is_granted('ROLE_ADMIN')"),
 
 		// Création d'un produit (accessible uniquement aux administrateurs)
-		new Post(security: "is_granted('ROLE_ADMIN')")
+		new Post(security: "is_granted('ROLE_ADMIN')"),
+
+		// Ajout d'un produit au panier (accessible aux utilisateurs connectés et aux administrateurs)
+		new Post(
+            uriTemplate: '/produits/{id}/add-to-panier',
+            processor: PanierProduitProcessor::class,
+            openapiContext: [
+                'summary' => 'Ajoute un produit au panier',
+                'description' => 'Ajoute le produit spécifié au panier de l\'utilisateur connecté.',
+            ],
+            security: "is_granted('ROLE_USER') or is_granted('ROLE_ADMIN')"
+        )
 	]
 )]
 #[ORM\Entity(repositoryClass: ProduitRepository::class)]
@@ -79,7 +91,7 @@ class Produit
 	#[Assert\NotBlank(message: "Le prix est obligatoire.")]
 	#[Assert\Positive(message: "Le prix doit être un nombre positif.")]
 	#[Groups(['produit:read', 'produit:write'])]
-	private ?float $prix_ht = null;
+	private ?string $prix_ht = null;
 
 	// Relation ManyToMany avec l'entité Categorie
 	#[ORM\ManyToMany(targetEntity: Categorie::class, inversedBy: 'produits')]
@@ -127,7 +139,10 @@ class Produit
 	#[Assert\NotBlank(message: "Le prix est obligatoire.")]
 	#[Assert\Positive(message: "Le prix doit être un nombre positif.")]
 	#[Groups(['produit:read', 'produit:write'])]
-	private ?float $prix_ttc = null;
+	private ?string $prix_ttc = null;
+
+	#[ORM\Column]
+	private ?int $stock = null;
 
 	public function __construct()
 	{
@@ -193,12 +208,12 @@ class Produit
 		return $this;
 	}
 
-	public function getPrixHt(): ?float
+	public function getPrixHt(): ?string
 	{
 		return $this->prix_ht;
 	}
 
-	public function setPrixHt(float $prix_ht): self
+	public function setPrixHt(string $prix_ht): self
 	{
 		$this->prix_ht = $prix_ht;
 		// Met à jour le prix TTC dès qu'on modifie le prix HT
@@ -254,13 +269,13 @@ class Produit
 		return $this->tva;
 	}
 
-    public function setTva(?Tva $tva): self
-    {
-        $this->tva = $tva;
+	public function setTva(?Tva $tva): self
+	{
+		$this->tva = $tva;
 		// Met à jour le prix TTC dès qu'on modifie la TVA
-        $this->updatePrixTtc();
-        return $this;
-    }
+		$this->updatePrixTtc();
+		return $this;
+	}
 
 	public function getFavoris(): Collection
 	{
@@ -366,12 +381,12 @@ class Produit
 		return $this;
 	}
 
-	public function getPrixTtc(): ?float
+	public function getPrixTtc(): ?string
 	{
 		return $this->prix_ttc;
 	}
 
-	public function setPrixTtc(float $prix_ttc): static
+	public function setPrixTtc(string $prix_ttc): static
 	{
 		$this->prix_ttc = $prix_ttc;
 
@@ -383,9 +398,22 @@ class Produit
 	 */
 	private function updatePrixTtc(): void
 	{
-		if ($this->prix_ht !== null && $this->tva !== null
+		if (
+			$this->prix_ht !== null && $this->tva !== null
 		) {
 			$this->prix_ttc = $this->prix_ht * (1 + $this->tva->getTaux() / 100);
 		}
+	}
+
+	public function getStock(): ?int
+	{
+		return $this->stock;
+	}
+
+	public function setStock(int $stock): static
+	{
+		$this->stock = $stock;
+
+		return $this;
 	}
 }

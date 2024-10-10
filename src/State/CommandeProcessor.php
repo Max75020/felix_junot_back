@@ -3,21 +3,30 @@
 namespace App\State;
 
 use App\Entity\Commande;
+use App\Entity\CommandeProduit;
 use App\Entity\EtatCommande;
 use App\Entity\HistoriqueEtatCommande;
+use App\Entity\Panier;
+use App\Entity\Adresse;
 use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProcessorInterface;
 use Symfony\Bundle\SecurityBundle\Security;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 
+/**
+ * Processor pour gérer les opérations sur l'entité Commande.
+ * Il gère l'attribution de l'utilisateur, la génération de la référence de commande,
+ * la gestion de l'état de la commande, l'historique des changements d'état,
+ * et le transfert des données du panier vers la commande.
+ */
 class CommandeProcessor implements ProcessorInterface
 {
 	private Security $security;
 	private EntityManagerInterface $entityManager;
 	private LoggerInterface $logger;
 
-	// Constructeur pour injecter la sécurité, l'EntityManager et le Logger
 	public function __construct(Security $security, EntityManagerInterface $entityManager, LoggerInterface $logger)
 	{
 		$this->security = $security;
@@ -25,121 +34,155 @@ class CommandeProcessor implements ProcessorInterface
 		$this->logger = $logger;
 	}
 
-	/**
-	 * Processus de traitement de la commande.
-	 * 
-	 * @param mixed $data L'objet Commande à traiter
-	 * @param Operation $operation L'opération en cours
-	 * @param array $uriVariables Les variables d'URI
-	 * @param array $context Le contexte de l'opération
-	 * 
-	 * @return mixed L'objet Commande traité
-	 */
 	public function process($data, Operation $operation, array $uriVariables = [], array $context = []): mixed
 	{
 		if (!$data instanceof Commande) {
 			return $data;
 		}
 
+		// Vérification immédiate du paiement avant de continuer
+		if (!$this->isPaymentConfirmed($data)) {
+			throw new BadRequestHttpException('Le paiement n\'est pas confirmé, la commande ne peut pas être traitée.');
+		}
+
 		// Log de démarrage du processus
 		$this->logger->info("Process method called for Commande ID: {$data->getIdCommande()}");
-
-		// Récupérer l'utilisateur connecté
 		$currentUser = $this->security->getUser();
-
-		// Vérifier si c'est une nouvelle commande
 		$isNewCommande = $data->getIdCommande() === null;
 
-		// Si l'utilisateur lié à la commande est null, assigner l'utilisateur connecté ou spécifié
-		if ($data->getUtilisateur() === null) {
-			if (!$this->security->isGranted('ROLE_ADMIN')) {
-				$data->setUtilisateur($currentUser);
-			} else {
-				$specifiedUser = $data->getUtilisateur();
-				$data->setUtilisateur($specifiedUser ?? $currentUser);
-			}
+		// Gérer les adresses similaires
+		$this->handleAdressesSimilaires($data);
+
+		// Associer l'utilisateur à la commande si nécessaire
+		$this->assignerUtilisateur($data, $currentUser);
+
+		// Générer la référence de la commande si elle n'est pas encore définie
+		$this->genererReferenceCommande($data);
+
+		// Assigner l'état par défaut de la commande si aucun n'est défini
+		$this->assignerEtatCommandeDefaut($data);
+
+		// Transférer les informations du panier vers la commande
+		if ($data->getPanier()) {
+			$this->transfertPanierVersCommande($data->getPanier(), $data);
 		}
 
-		// Si la référence de la commande n'existe pas encore, la générer
-		if ($data->getReference() === null) {
-			$data->generateReference();
-		}
+		// Vérifier que le prix total de la commande est correct
+		$this->verifierPrixTotalCommande($data);
 
-		// Si l'état de la commande n'est pas défini, associer un état par défaut
-		if ($data->getEtatCommande() === null) {
-			// Chercher l'état "En attente de paiement" dans la base de données
-			$etatCommande = $this->entityManager->getRepository(EtatCommande::class)
-				->findOneBy(['libelle' => 'En attente de paiement']);
+		// Gérer l'historique des changements d'état de la commande
+		$this->gererHistoriqueEtatCommande($data, $isNewCommande);
 
-			// Si l'état existe, l'associer à la commande
-			if ($etatCommande) {
-				$data->setEtatCommande($etatCommande);
-			} else {
-				// Si l'état n'existe pas, le créer et l'associer à la commande
-				$etatCommande = new EtatCommande();
-				$etatCommande->setLibelle('En attente de paiement');
-				$this->entityManager->persist($etatCommande);
-				$data->setEtatCommande($etatCommande);
-			}
-		}
-
-		// Récupérer les données originales avant modification
-		$unitOfWork = $this->entityManager->getUnitOfWork();
-		$originalData = $unitOfWork->getOriginalEntityData($data);
-
-		// Récupérer l'état original
-		$originalEtatCommande = $originalData['etat_commande'] ?? null;
-
-		// Récupérer le nouvel état
-		$nouvelEtatCommande = $data->getEtatCommande();
-
-		// Log des données originales et nouvelles
-		$originalEtatId = $originalEtatCommande ? $originalEtatCommande->getIdEtatCommande() : 'null';
-		$nouvelEtatId = $nouvelEtatCommande ? $nouvelEtatCommande->getIdEtatCommande() : 'null';
-		$this->logger->info("Original EtatCommande ID: {$originalEtatId}");
-		$this->logger->info("Nouvel EtatCommande ID: {$nouvelEtatId}");
-
-		// Log pour débogage
-		$this->logger->info("Traitement de la commande ID {$data->getIdCommande()}");
-
-		// Si ce n'est pas une nouvelle commande et que l'état a changé, créer un historique
-		if (!$isNewCommande && $originalEtatCommande) {
-			$originalEtatCommandeId = $originalEtatCommande->getIdEtatCommande();
-			$nouvelEtatCommandeId = $nouvelEtatCommande->getIdEtatCommande();
-
-			$this->logger->info("État original ID: {$originalEtatCommandeId}, Nouvel état ID: {$nouvelEtatCommandeId}");
-
-			if ($originalEtatCommandeId !== $nouvelEtatCommandeId) {
-				// Créer une nouvelle entrée dans l'historique
-				$historiqueEtatCommande = new HistoriqueEtatCommande();
-				$historiqueEtatCommande->setCommande($data);
-				$historiqueEtatCommande->setDateEtat(new \DateTime());
-				$historiqueEtatCommande->setEtatCommande($nouvelEtatCommande);
-				$this->entityManager->persist($historiqueEtatCommande);
-
-				$this->logger->info("Changement d'état détecté pour la commande ID {$data->getIdCommande()} : de ID {$originalEtatCommandeId} à ID {$nouvelEtatCommandeId}.");
-			} else {
-				$this->logger->info("Aucun changement d'état détecté pour la commande ID {$data->getIdCommande()}.");
-			}
-		}
-
-		// Si c'est une nouvelle commande, créer une nouvelle entrée dans l'historique
-		if ($isNewCommande) {
-			// Créer l'historique avec l'état initial et la date actuelle
-			$historiqueEtatCommande = new HistoriqueEtatCommande();
-			$historiqueEtatCommande->setCommande($data);
-			$historiqueEtatCommande->setDateEtat(new \DateTime());
-			$historiqueEtatCommande->setEtatCommande($data->getEtatCommande());
-			$this->entityManager->persist($historiqueEtatCommande);
-
-			$this->logger->info("Historique créé pour la nouvelle commande ID {$data->getIdCommande()} avec l'état ID {$data->getEtatCommande()->getIdEtatCommande()}.");
-		}
-
-		// Persister la commande dans la base de données
 		$this->entityManager->persist($data);
 		$this->entityManager->flush();
 
-		// Retourner l'objet Commande traité
 		return $data;
+	}
+
+	/**
+	 * Gère la duplication des adresses si elles sont similaires.
+	 */
+	private function handleAdressesSimilaires(Commande $commande): void
+	{
+		$adresseLivraison = $commande->getAdresseLivraison();
+
+		if ($adresseLivraison && $adresseLivraison->isSimilaire()) {
+			// Dupliquer l'adresse de livraison pour créer une adresse de facturation
+			$adresseFacturation = clone $adresseLivraison;
+			$adresseFacturation->setType('Facturation');
+
+			// Persister la nouvelle adresse de facturation
+			$this->entityManager->persist($adresseFacturation);
+			$this->entityManager->flush();
+
+			// Associer l'adresse de facturation à la commande
+			$commande->setAdresseFacturation($adresseFacturation);
+
+			$this->logger->info("Adresse similaire dupliquée pour la commande : " . $commande->getReference());
+		}
+	}
+
+	private function assignerUtilisateur(Commande $commande, $currentUser): void
+	{
+		if (!$this->security->isGranted('ROLE_ADMIN')) {
+			$commande->setUtilisateur($currentUser);
+		} else {
+			$specifiedUser = $commande->getUtilisateur();
+			$commande->setUtilisateur($specifiedUser ?? $currentUser);
+		}
+	}
+
+	private function genererReferenceCommande(Commande $commande): void
+	{
+		if ($commande->getReference() === null) {
+			$commande->generateReference();
+		}
+	}
+
+	private function assignerEtatCommandeDefaut(Commande $commande): void
+	{
+		$etatCommande = $this->entityManager->getRepository(EtatCommande::class)
+			->findOneBy(['libelle' => 'En attente de paiement']) ?? new EtatCommande('En attente de paiement');
+
+		$this->entityManager->persist($etatCommande);
+		$commande->setEtatCommande($etatCommande);
+	}
+
+	private function isPaymentConfirmed(Commande $commande): bool
+	{
+		// Cette méthode doit vérifier le statut du paiement
+		return $commande->getEtatCommande()->getLibelle() === 'Paiement confirmé';
+	}
+
+	/**
+	 * Transfère les informations du panier et des produits du panier vers la commande et les commande-produits.
+	 */
+	private function transfertPanierVersCommande(Panier $panier, Commande $commande): void
+	{
+		foreach ($panier->getPanierProduits() as $panierProduit) {
+			$commandeProduit = new CommandeProduit();
+			$commandeProduit->setCommande($commande);
+			$commandeProduit->setProduit($panierProduit->getProduit());
+			$commandeProduit->setQuantite($panierProduit->getQuantite());
+			$commandeProduit->setPrixTotalProduit($panierProduit->getPrixTotalProduit());
+
+			$this->entityManager->persist($commandeProduit);
+			$commande->addCommandeProduit($commandeProduit);
+		}
+
+		$commande->setTotalProduitsCommande($panier->getPrixTotalPanier());
+	}
+
+	private function verifierPrixTotalCommande(Commande $commande): void
+	{
+		$totalProduits = $commande->getTotalProduitsCommande();
+		$fraisLivraison = $commande->getFraisLivraison();
+		$prixTotalAttendu = bcadd($totalProduits, $fraisLivraison, 2);
+
+		if ($commande->getPrixTotalCommande() !== $prixTotalAttendu) {
+			throw new BadRequestHttpException('Le prix total de la commande ne correspond pas à la somme des produits et des frais de livraison.');
+		}
+	}
+
+	private function gererHistoriqueEtatCommande(Commande $commande, bool $isNewCommande): void
+	{
+		$unitOfWork = $this->entityManager->getUnitOfWork();
+		$originalData = $unitOfWork->getOriginalEntityData($commande);
+		$originalEtatCommande = $originalData['etat_commande'] ?? null;
+		$nouvelEtatCommande = $commande->getEtatCommande();
+
+		if ($isNewCommande) {
+			$historiqueEtatCommande = new HistoriqueEtatCommande();
+			$historiqueEtatCommande->setCommande($commande);
+			$historiqueEtatCommande->setDateEtat(new \DateTime());
+			$historiqueEtatCommande->setEtatCommande($nouvelEtatCommande);
+			$this->entityManager->persist($historiqueEtatCommande);
+		} elseif ($originalEtatCommande && $originalEtatCommande->getIdEtatCommande() !== $nouvelEtatCommande->getIdEtatCommande()) {
+			$historiqueEtatCommande = new HistoriqueEtatCommande();
+			$historiqueEtatCommande->setCommande($commande);
+			$historiqueEtatCommande->setDateEtat(new \DateTime());
+			$historiqueEtatCommande->setEtatCommande($nouvelEtatCommande);
+			$this->entityManager->persist($historiqueEtatCommande);
+		}
 	}
 }

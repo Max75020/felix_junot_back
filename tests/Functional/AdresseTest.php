@@ -8,34 +8,6 @@ use App\Tests\Authentificator\TestAuthentificator;
 class AdresseTest extends TestAuthentificator
 {
 	/**
-	 * Méthode pour créer une adresse
-	 *
-	 * @param \ApiPlatform\Symfony\Bundle\Test\Client $client Le client authentifié
-	 * @param string $utilisateurIri L'Iri de l'utilisateur
-	 * @return string L'Iri de l'adresse créée
-	 */
-	private function createAdresse($client, string $utilisateurIri): string
-	{
-		$response = $client->request('POST', '/api/adresses', [
-			'json' => [
-				'type' => 'Facturation',
-				'prenom' => 'John',
-				'nom' => 'Doe',
-				'rue' => '123 Main St',
-				'code_postal' => '75001',
-				'ville' => 'Paris',
-				'pays' => 'France',
-				'utilisateur' => $utilisateurIri,
-			],
-		]);
-
-		// Vérifier que l'adresse a été créée avec succès
-		$this->assertResponseStatusCodeSame(Response::HTTP_CREATED, 'L\'adresse n\'a pas été créée correctement.');
-		$data = $response->toArray();
-		return $data['@id'];
-	}
-
-	/**
 	 * Teste la récupération de la collection d'adresses
 	 */
 	public function testGetCollection(): void
