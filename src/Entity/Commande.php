@@ -23,28 +23,150 @@ use Symfony\Component\Serializer\Normalizer\DateTimeNormalizer;
 	normalizationContext: ['groups' => ['commande:read']],
 	denormalizationContext: ['groups' => ['commande:write']],
 	operations: [
-
 		// Récupération de toutes les commandes (accessible uniquement à l'utilisateur propriétaire ou à l'administrateur)
-		new GetCollection(security: "is_granted('ROLE_USER') or is_granted('ROLE_ADMIN')"),
-
+		new GetCollection(
+			security: "is_granted('ROLE_USER') or is_granted('ROLE_ADMIN')",
+			openapiContext: [
+				'summary' => 'Récupère la collection des commandes',
+				'description' => 'Retourne la liste de toutes les commandes associées à l\'utilisateur connecté ou à tous les utilisateurs pour les administrateurs.',
+				'responses' => [
+					'200' => [
+						'description' => 'Collection des commandes récupérée avec succès',
+					],
+					'403' => [
+						'description' => 'Accès refusé si l\'utilisateur n\'est pas connecté ou administrateur',
+					],
+				],
+			]
+		),
 		// Récupération d'une commande (accessible uniquement à l'utilisateur propriétaire ou à l'administrateur)
-		new Get(security: "is_granted('ROLE_USER') and object.getUtilisateur() == user or is_granted('ROLE_ADMIN')"),
-
+		new Get(
+			security: "is_granted('ROLE_USER') and object.getUtilisateur() == user or is_granted('ROLE_ADMIN')",
+			openapiContext: [
+				'summary' => 'Récupère une commande spécifique',
+				'description' => 'Retourne les détails d\'une commande spécifique pour l\'utilisateur connecté ou pour les administrateurs.',
+				'responses' => [
+					'200' => [
+						'description' => 'Commande récupérée avec succès',
+					],
+					'403' => [
+						'description' => 'Accès refusé si l\'utilisateur n\'est pas le propriétaire ou administrateur',
+					],
+					'404' => [
+						'description' => 'Commande non trouvée',
+					],
+				],
+			]
+		),
 		// Modification partielle d'une commande (accessible uniquement à l'administrateur)
 		new Patch(
 			security: "is_granted('ROLE_ADMIN')",
 			processor: CommandeProcessor::class,
+			openapiContext: [
+				'summary' => 'Modifie partiellement une commande',
+				'description' => 'Permet de modifier partiellement une commande existante. Accessible uniquement aux administrateurs.',
+				'requestBody' => [
+					'content' => [
+						'application/merge-patch+json' => [
+							'schema' => [
+								'type' => 'object',
+								'properties' => [
+									'etat_commande' => [
+										'type' => 'string',
+										'format' => 'iri',
+										'description' => 'IRI de l\'état de la commande',
+										'example' => '/api/etat_commandes/1',
+									],
+									'prix_total_commande' => [
+										'type' => 'string',
+										'description' => 'Prix total de la commande',
+										'example' => '29.99',
+									],
+									'frais_livraison' => [
+										'type' => 'string',
+										'description' => 'Frais de livraison',
+										'example' => '5.00',
+									],
+									'numero_suivi' => [
+										'type' => 'string',
+										'description' => 'Numéro de suivi du colis',
+										'example' => '9876543210',
+									],
+									'reference' => [
+										'type' => 'string',
+										'description' => 'Référence unique de la commande',
+										'example' => 'CMD-1-01012023123000',
+									],
+									'panier_id' => [
+										'type' => 'string',
+										'format' => 'iri',
+										'description' => 'IRI du panier associé à la commande',
+										'example' => '/api/paniers/1',
+									],
+									'id_adresse_facturation' => [
+										'type' => 'string',
+										'format' => 'iri',
+										'description' => 'IRI de l\'adresse de facturation',
+										'example' => '/api/adresses/1',
+									],
+									'id_adresse_livraison' => [
+										'type' => 'string',
+										'format' => 'iri',
+										'description' => 'IRI de l\'adresse de livraison',
+										'example' => '/api/adresses/2',
+									],
+									'total_produits_commande' => [
+										'type' => 'string',
+										'description' => 'Total des produits dans la commande',
+										'example' => '100.00',
+									],
+								],
+							],
+						],
+					],
+				],
+				'responses' => [
+					'200' => [
+						'description' => 'Commande modifiée avec succès',
+					],
+					'400' => [
+						'description' => 'Erreur de validation ou données incorrectes',
+					],
+					'403' => [
+						'description' => 'Accès refusé si l\'utilisateur n\'est pas administrateur',
+					],
+					'404' => [
+						'description' => 'Commande non trouvée',
+					],
+				],
+			]
 		),
-
 		// Suppression d'une commande (accessible uniquement aux administrateurs)
-		new Delete(security: "is_granted('ROLE_ADMIN')"),
-
+		new Delete(
+			security: "is_granted('ROLE_ADMIN')",
+			openapiContext: [
+				'summary' => 'Supprime une commande',
+				'description' => 'Permet de supprimer une commande existante. Accessible uniquement aux administrateurs.',
+				'responses' => [
+					'204' => [
+						'description' => 'Commande supprimée avec succès',
+					],
+					'403' => [
+						'description' => 'Accès refusé si l\'utilisateur n\'est pas administrateur',
+					],
+					'404' => [
+						'description' => 'Commande non trouvée',
+					],
+				],
+			]
+		),
 		// Création d'une nouvelle commande (accessible aux utilisateurs connectés et aux administrateurs)
 		new Post(
 			security: "is_granted('ROLE_USER') or is_granted('ROLE_ADMIN')",
 			processor: CommandeProcessor::class,
 			openapiContext: [
-				'summary' => 'Crée une nouvelle commande.',
+				'summary' => 'Crée une nouvelle commande',
+				'description' => 'Permet de créer une nouvelle commande pour un utilisateur connecté ou administrateur.',
 				'requestBody' => [
 					'content' => [
 						'application/json' => [
@@ -54,52 +176,86 @@ use Symfony\Component\Serializer\Normalizer\DateTimeNormalizer;
 									'utilisateur' => [
 										'type' => 'string',
 										'format' => 'iri',
-										'description' => 'IRI de l\'utilisateur',
-										'example' => '/api/utilisateurs/1'
+										'description' => 'IRI de l\'utilisateur associé à la commande',
+										'example' => '/api/utilisateurs/1',
 									],
 									'etat_commande' => [
 										'type' => 'string',
 										'format' => 'iri',
 										'description' => 'IRI de l\'état de la commande',
-										'example' => '/api/etat_commandes/1'
+										'example' => '/api/etat_commandes/1',
 									],
 									'prix_total_commande' => [
 										'type' => 'string',
 										'description' => 'Prix total de la commande',
-										'example' => '19.99'
+										'example' => '45.50',
 									],
-									'id_transporteur' => [
+									'transporteur' => [
 										'type' => 'string',
 										'format' => 'iri',
 										'description' => 'IRI du transporteur',
-										'example' => '/api/transporteurs/1'
+										'example' => '/api/transporteurs/1',
 									],
 									'poids' => [
 										'type' => 'string',
-										'description' => 'Poids de la commande en kg',
-										'example' => '1.2'
+										'description' => 'Poids de la commande',
+										'example' => '3.5',
 									],
 									'frais_livraison' => [
 										'type' => 'string',
-										'description' => 'Frais de livraison',
-										'example' => '4.95'
+										'description' => 'Frais de livraison de la commande',
+										'example' => '6.99',
 									],
 									'numero_suivi' => [
 										'type' => 'string',
-										'description' => 'Numéro de suivi du colis',
-										'example' => '1234567890'
+										'description' => 'Numéro de suivi de la commande',
+										'example' => 'ABC12345678',
 									],
 									'reference' => [
 										'type' => 'string',
 										'description' => 'Référence unique de la commande',
-										'example' => 'CMD-1-01012021120000'
-									]
+										'example' => 'CMD-2-01012023123000',
+									],
+									'panier_id' => [
+										'type' => 'string',
+										'format' => 'iri',
+										'description' => 'IRI du panier associé à la commande',
+										'example' => '/api/paniers/1',
+									],
+									'id_adresse_facturation' => [
+										'type' => 'string',
+										'format' => 'iri',
+										'description' => 'IRI de l\'adresse de facturation',
+										'example' => '/api/adresses/1',
+									],
+									'id_adresse_livraison' => [
+										'type' => 'string',
+										'format' => 'iri',
+										'description' => 'IRI de l\'adresse de livraison',
+										'example' => '/api/adresses/2',
+									],
+									'total_produits_commande' => [
+										'type' => 'string',
+										'description' => 'Total des produits dans la commande',
+										'example' => '100.00',
+									],
 								],
-								'required' => ['utilisateur', 'prix_total_commande', 'etat_commande', 'transporteur', 'poids', 'frais_livraison', 'numero_suivi', 'reference']
-							]
-						]
-					]
-				]
+								'required' => ['utilisateur', 'etat_commande', 'prix_total_commande', 'transporteur', 'poids', 'frais_livraison', 'numero_suivi', 'reference', 'panier_id', 'id_adresse_facturation', 'id_adresse_livraison', 'total_produits_commande'],
+							],
+						],
+					],
+				],
+				'responses' => [
+					'201' => [
+						'description' => 'Commande créée avec succès',
+					],
+					'400' => [
+						'description' => 'Erreur de validation ou données incorrectes',
+					],
+					'403' => [
+						'description' => 'Accès refusé si l\'utilisateur n\'est pas connecté ou administrateur',
+					],
+				],
 			]
 		),
 	]

@@ -4,7 +4,6 @@ namespace App\Entity;
 
 use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\Post;
-use ApiPlatform\Metadata\Put;
 use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\Delete;
@@ -23,27 +22,126 @@ use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 	denormalizationContext: ['groups' => ['categorie:write']],
 	operations: [
 		// Récupération de toutes les catégories (accessible à tous)
-		new GetCollection(),
-
+		new GetCollection(
+			openapiContext: [
+				'summary' => 'Récupère la collection des catégories',
+				'description' => 'Retourne la liste de toutes les catégories disponibles.',
+				'responses' => [
+					'200' => [
+						'description' => 'Collection des catégories récupérée avec succès',
+					],
+				],
+			]
+		),
 		// Récupération d'une catégorie (accessible à tous)
-		new Get(),
-
-		// Modification complète d'une catégorie (accessible uniquement aux administrateurs)
-		new Put(
-			security: "is_granted('ROLE_ADMIN')"
+		new Get(
+			openapiContext: [
+				'summary' => 'Récupère une catégorie spécifique',
+				'description' => 'Retourne les détails d\'une catégorie spécifique par son identifiant.',
+				'responses' => [
+					'200' => [
+						'description' => 'Catégorie récupérée avec succès',
+					],
+					'404' => [
+						'description' => 'Catégorie non trouvée',
+					],
+				],
+			]
 		),
 		// Modification partielle d'une catégorie (PATCH, accessible uniquement aux administrateurs)
 		new Patch(
-			security: "is_granted('ROLE_ADMIN')"
+			security: "is_granted('ROLE_ADMIN')",
+			openapiContext: [
+				'summary' => 'Modifie partiellement une catégorie',
+				'description' => 'Permet de modifier partiellement une catégorie existante. Accessible uniquement aux administrateurs.',
+				'requestBody' => [
+					'content' => [
+						'application/merge-patch+json' => [
+							'schema' => [
+								'type' => 'object',
+								'properties' => [
+									'nom' => [
+										'type' => 'string',
+										'description' => 'Le nom de la catégorie',
+										'example' => 'Électronique',
+									],
+								],
+							],
+						],
+					],
+				],
+				'responses' => [
+					'200' => [
+						'description' => 'Catégorie modifiée avec succès',
+					],
+					'400' => [
+						'description' => 'Erreur de validation ou données incorrectes',
+					],
+					'403' => [
+						'description' => 'Accès refusé si l\'utilisateur n\'est pas administrateur',
+					],
+					'404' => [
+						'description' => 'Catégorie non trouvée',
+					],
+				],
+			]
 		),
 		// Suppression d'une catégorie (accessible uniquement aux administrateurs)
 		new Delete(
-			security: "is_granted('ROLE_ADMIN')"
+			security: "is_granted('ROLE_ADMIN')",
+			openapiContext: [
+				'summary' => 'Supprime une catégorie',
+				'description' => 'Permet de supprimer une catégorie existante. Accessible uniquement aux administrateurs.',
+				'responses' => [
+					'204' => [
+						'description' => 'Catégorie supprimée avec succès',
+					],
+					'403' => [
+						'description' => 'Accès refusé si l\'utilisateur n\'est pas administrateur',
+					],
+					'404' => [
+						'description' => 'Catégorie non trouvée',
+					],
+				],
+			]
 		),
+
 		// Création d'une nouvelle catégorie (accessible uniquement aux administrateurs)
 		new Post(
-			security: "is_granted('ROLE_ADMIN')"
-		)
+			security: "is_granted('ROLE_ADMIN')",
+			openapiContext: [
+				'summary' => 'Crée une nouvelle catégorie',
+				'description' => 'Permet de créer une nouvelle catégorie. Accessible uniquement aux administrateurs.',
+				'requestBody' => [
+					'content' => [
+						'application/json' => [
+							'schema' => [
+								'type' => 'object',
+								'properties' => [
+									'nom' => [
+										'type' => 'string',
+										'description' => 'Le nom de la catégorie',
+										'example' => 'Accessoires',
+									],
+								],
+								'required' => ['nom'],
+							],
+						],
+					],
+				],
+				'responses' => [
+					'201' => [
+						'description' => 'Catégorie créée avec succès',
+					],
+					'400' => [
+						'description' => 'Erreur de validation ou données incorrectes',
+					],
+					'403' => [
+						'description' => 'Accès refusé si l\'utilisateur n\'est pas administrateur',
+					],
+				],
+			]
+		),
 	]
 )]
 #[ORM\Entity(repositoryClass: CategorieRepository::class)]

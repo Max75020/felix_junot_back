@@ -5,7 +5,7 @@ namespace App\Entity;
 use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\Post;
-use ApiPlatform\Metadata\Put;
+use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Delete;
 use Symfony\Component\Serializer\Annotation\Groups;
 use App\Repository\PanierRepository;
@@ -21,23 +21,159 @@ use App\Enum\EtatPanier;
 	denormalizationContext: ['groups' => ['panier:write']],
 	operations: [
 		// Récupération du panier (accessible à l'utilisateur propriétaire ou à l'administrateur)
-		new Get(security: "is_granted('ROLE_ADMIN') or object.getUtilisateur() == user"),
-
-		// Modification du panier (accessible à l'utilisateur propriétaire ou à l'administrateur)
-		new Put(security: "is_granted('ROLE_ADMIN') or object.getUtilisateur() == user"),
-
+		new Get(
+			security: "is_granted('ROLE_ADMIN') or object.getUtilisateur() == user",
+			normalizationContext: ['groups' => ['panier:read']],
+			openapiContext: [
+				'summary' => 'Récupère les détails d\'un panier spécifique.',
+				'description' => 'Cette opération permet de récupérer les détails d\'un panier spécifique appartenant à l\'utilisateur connecté ou de l\'administrateur.',
+				'responses' => [
+					'200' => [
+						'description' => 'Détails du panier récupéré avec succès.',
+						'content' => [
+							'application/json' => [
+								'schema' => [
+									'$ref' => '#/components/schemas/Panier',
+								],
+							],
+						],
+					],
+					'403' => [
+						'description' => 'Accès refusé. Vous ne pouvez accéder qu\'à vos propres paniers ou être administrateur.',
+					],
+					'404' => [
+						'description' => 'Panier non trouvé.',
+					],
+				],
+			]
+		),
+		// Modification partielle du panier (accessible à l'utilisateur propriétaire ou à l'administrateur)
+		new Patch(
+			security: "is_granted('ROLE_ADMIN') or object.getUtilisateur() == user",
+			openapiContext: [
+				'summary' => 'Met à jour partiellement un panier existant',
+				'description' => 'Permet de modifier partiellement un panier pour ajouter, retirer ou mettre à jour des produits.',
+				'requestBody' => [
+					'content' => [
+						'application/json' => [
+							'schema' => [
+								'type' => 'object',
+								'properties' => [
+									'etat' => [
+										'type' => 'string',
+										'description' => 'L\'état actuel du panier (ouvert/fermé).',
+										'example' => 'ouvert',
+									],
+									'prix_total_panier' => [
+										'type' => 'string',
+										'description' => 'Le prix total actuel des produits dans le panier.',
+										'example' => '99.99',
+									]
+								],
+								'required' => []
+							],
+						],
+					],
+				],
+				'responses' => [
+					'200' => [
+						'description' => 'Panier mis à jour avec succès.',
+						'content' => [
+							'application/json' => [
+								'schema' => [
+									'$ref' => '#/components/schemas/Panier',
+								],
+							],
+						],
+					],
+					'400' => [
+						'description' => 'Requête invalide. Les données fournies ne sont pas conformes.',
+					],
+					'403' => [
+						'description' => 'Accès refusé. Seuls les utilisateurs connectés ou administrateurs peuvent modifier un panier.',
+					],
+					'404' => [
+						'description' => 'Panier non trouvé.',
+					],
+				],
+			]
+		),
 		// Suppression du panier (accessible à l'utilisateur propriétaire ou à l'administrateur)
-		new Delete(security: "is_granted('ROLE_ADMIN') or object.getUtilisateur() == user"),
-
+		new Delete(
+			security: "is_granted('ROLE_ADMIN') or object.getUtilisateur() == user",
+			openapiContext: [
+				'summary' => 'Supprime un panier existant.',
+				'description' => 'Cette opération permet de supprimer un panier appartenant à l\'utilisateur connecté ou administrateur.',
+				'responses' => [
+					'204' => [
+						'description' => 'Panier supprimé avec succès.',
+					],
+					'403' => [
+						'description' => 'Accès refusé. Vous ne pouvez supprimer que vos propres paniers ou être administrateur.',
+					],
+					'404' => [
+						'description' => 'Panier non trouvé.',
+					],
+				],
+			]
+		),
 		// Création d'un panier (accessible aux utilisateurs connectés et aux administrateurs)
 		new Post(
 			security: "is_granted('ROLE_USER') or is_granted('ROLE_ADMIN')",
 			processor: PanierProcessor::class,
+			denormalizationContext: ['groups' => ['panier:write']],
 			openapiContext: [
-				'summary' => 'Ajouter un produit au panier',
+				'summary' => 'Ajoute un produit au panier',
 				'description' => 'Ajoute un produit au panier de l\'utilisateur connecté.',
+				'requestBody' => [
+					'content' => [
+						'application/json' => [
+							'schema' => [
+								'type' => 'object',
+								'properties' => [
+									'utilisateur' => [
+										'type' => 'string',
+										'format' => 'iri',
+										'description' => 'L\'IRI de l\'utilisateur auquel le panier appartient.',
+										'example' => '/api/utilisateurs/1',
+									],
+									'etat' => [
+										'type' => 'string',
+										'description' => 'L\'état du panier (ouvert ou fermé).',
+										'example' => 'ouvert',
+									],
+									'prix_total_panier' => [
+										'type' => 'string',
+										'format' => 'decimal',
+										'description' => 'Le prix total des produits dans le panier.',
+										'example' => '99.99',
+									],
+								],
+								'required' => ['utilisateur', 'etat'],
+							],
+						],
+					],
+				],
+				'responses' => [
+					'201' => [
+						'description' => 'Panier créé avec succès.',
+						'content' => [
+							'application/json' => [
+								'schema' => [
+									'$ref' => '#/components/schemas/Panier',
+								],
+							],
+						],
+					],
+					'400' => [
+						'description' => 'Données invalides fournies.',
+					],
+					'403' => [
+						'description' => 'Accès refusé. Vous devez être connecté pour ajouter un produit au panier.',
+					],
+				],
 			]
-		)
+		),
 	]
 )]
 #[ORM\Entity(repositoryClass: PanierRepository::class)]

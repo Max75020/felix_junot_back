@@ -353,46 +353,71 @@ abstract class TestAuthentificator extends ApiTestCase
 	}
 
 	// Méthode pour créer un produit
+	// Méthode pour créer un produit
 	public function createProduit()
 	{
 		// Créer un client authentifié en tant qu'administrateur
+		echo "\n--- Début de la création du produit ---\n";
 		$client = $this->createAuthenticatedClient(true);
+		echo "\n1. Client administrateur créé avec succès\n";
 
 		// Créer une catégorie
 		$categorieNom = 'Catégorie Test' . uniqid();
+		echo "\n2. Création de la catégorie : $categorieNom\n";
+
 		// Effectuer une requête POST pour créer une nouvelle catégorie
 		$responseCategorie = $client->request('POST', '/api/categories', [
 			'json' => [
 				'nom' => $categorieNom
 			]
 		]);
+
 		// Vérifier que la catégorie a été créée avec succès
+		if ($responseCategorie->getStatusCode() !== Response::HTTP_CREATED) {
+			echo "\nErreur : la catégorie n'a pas été créée. Statut : " . $responseCategorie->getStatusCode() . "\n";
+		} else {
+			echo "\n3. Catégorie créée avec succès\n";
+		}
 		$this->assertSame(Response::HTTP_CREATED, $responseCategorie->getStatusCode());
+
 		// Récupérer les données de la catégorie créée sous forme de tableau
 		$responseCategorieArray = $responseCategorie->toArray();
 		// Récupérer l'IRI de la catégorie créée
 		$categorieIri = $responseCategorieArray['@id'];
+		echo "\n4. IRI de la catégorie récupéré : $categorieIri\n";
 
 		// Créer une TVA
+		echo "\n5. Création de la TVA\n";
 		$responseTva = $client->request('POST', '/api/tvas', [
 			'json' => [
 				'taux' => '20.00'
 			]
 		]);
+
 		// Vérifier que la TVA a été créée avec succès
+		if ($responseTva->getStatusCode() !== Response::HTTP_CREATED) {
+			echo "\nErreur : la TVA n'a pas été créée. Statut : " . $responseTva->getStatusCode() . "\n";
+		} else {
+			echo "\n6. TVA créée avec succès\n";
+		}
 		$this->assertSame(Response::HTTP_CREATED, $responseTva->getStatusCode());
+
 		// Récupérer les données de la TVA créée sous forme de tableau
 		$responseTvaArray = $responseTva->toArray();
 		// Récupérer l'IRI de la TVA créée
 		$tvaIri = $responseTvaArray['@id'];
+		echo "\n7. IRI de la TVA récupéré : $tvaIri\n";
 
 		// Créer un produit
 		$produitNom = 'Produit Test' . uniqid();
+		echo "\n8. Création du produit : $produitNom\n";
+
 		// Description du produit à créer
 		$produitDescription = 'Description du produit test' . uniqid();
 		// Reference du produit à créer
 		$produit = new Produit();
 		$produitReference = $produit->generateProductReference();
+
 		// Effectuer une requête POST pour créer un nouveau produit
 		$responseProduit = $client->request('POST', '/api/produits', [
 			'json' => [
@@ -405,12 +430,20 @@ abstract class TestAuthentificator extends ApiTestCase
 				'stock' => 10,
 			]
 		]);
-		echo "\n1.\n";
+		echo "\n9. Requête pour créer le produit envoyée\n";
+
 		// Vérifier que le produit a été créé avec succès
+		if ($responseProduit->getStatusCode() !== Response::HTTP_CREATED) {
+			echo "\nErreur : le produit n'a pas été créé. Statut : " . $responseProduit->getStatusCode() . "\n";
+		} else {
+			echo "\n10. Produit créé avec succès\n";
+		}
 		$this->assertSame(Response::HTTP_CREATED, $responseProduit->getStatusCode());
 
 		// Retourner l'IRI du produit créé
-		return $responseProduit->toArray()['@id'];
+		$produitIri = $responseProduit->toArray()['@id'];
+		echo "\n11. IRI du produit créé : $produitIri\n";
+		return $produitIri;
 	}
 
 	/**

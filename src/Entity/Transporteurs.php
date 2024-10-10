@@ -24,14 +24,54 @@ use Symfony\Component\Serializer\Annotation\Groups;
 		new GetCollection(
 			normalizationContext: ['groups' => ['transporteurs:read']],
 			openapiContext: [
-				'summary' => 'Récupère la liste de tous les transporteurs disponibles.'
+				'summary' => 'Récupère la liste de tous les transporteurs disponibles.',
+				'description' => 'Cette opération permet de récupérer tous les transporteurs disponibles.',
+				'responses' => [
+					'200' => [
+						'description' => 'Liste des transporteurs récupérée avec succès.',
+						'content' => [
+							'application/json' => [
+								'schema' => [
+									'type' => 'array',
+									'items' => [
+										'type' => 'object',
+										'properties' => [
+											'id_transporteur' => ['type' => 'integer', 'description' => 'Identifiant du transporteur'],
+											'nom' => ['type' => 'string', 'description' => 'Nom du transporteur'],
+										],
+									],
+								],
+							],
+						],
+					],
+				],
 			]
 		),
 		// Récupération d'un transporteur (accessible à tous)
 		new Get(
 			normalizationContext: ['groups' => ['transporteurs:read']],
 			openapiContext: [
-				'summary' => 'Récupère les détails d\'un transporteur spécifique.'
+				'summary' => 'Récupère les détails d\'un transporteur spécifique.',
+				'description' => 'Permet de récupérer les détails d\'un transporteur donné par son identifiant.',
+				'responses' => [
+					'200' => [
+						'description' => 'Détails du transporteur récupérés avec succès.',
+						'content' => [
+							'application/json' => [
+								'schema' => [
+									'type' => 'object',
+									'properties' => [
+										'id_transporteur' => ['type' => 'integer', 'description' => 'Identifiant du transporteur'],
+										'nom' => ['type' => 'string', 'description' => 'Nom du transporteur'],
+									],
+								],
+							],
+						],
+					],
+					'404' => [
+						'description' => 'Transporteur non trouvé.',
+					],
+				],
 			]
 		),
 		// Création d'un transporteur (accessible uniquement aux administrateurs)
@@ -41,6 +81,7 @@ use Symfony\Component\Serializer\Annotation\Groups;
 			normalizationContext: ['groups' => ['transporteurs:read']],
 			openapiContext: [
 				'summary' => 'Crée un nouveau transporteur.',
+				'description' => 'Cette opération permet de créer un nouveau transporteur. Accessible uniquement aux administrateurs.',
 				'requestBody' => [
 					'content' => [
 						'application/json' => [
@@ -59,11 +100,20 @@ use Symfony\Component\Serializer\Annotation\Groups;
 						'description' => 'Transporteur créé avec succès.',
 						'content' => [
 							'application/json' => [
-								'schema' => ['\$ref' => '#/components/schemas/Transporteurs']
-							]
-						]
-					]
-				]
+								'schema' => [
+									'type' => 'object',
+									'properties' => [
+										'id_transporteur' => ['type' => 'integer', 'description' => 'Identifiant du transporteur créé'],
+										'nom' => ['type' => 'string', 'description' => 'Nom du transporteur créé'],
+									],
+								],
+							],
+						],
+					],
+					'403' => [
+						'description' => 'Accès interdit. Vous devez être administrateur pour créer un transporteur.',
+					],
+				],
 			]
 		),
 		// Modification partielle d'un transporteur (accessible uniquement aux administrateurs)
@@ -71,14 +121,61 @@ use Symfony\Component\Serializer\Annotation\Groups;
 			security: "is_granted('ROLE_ADMIN')",
 			denormalizationContext: ['groups' => ['transporteurs:write']],
 			openapiContext: [
-				'summary' => 'Met à jour partiellement les informations d\'un transporteur.'
+				'summary' => 'Met à jour partiellement les informations d\'un transporteur.',
+				'description' => 'Permet de mettre à jour partiellement les informations d\'un transporteur existant. Accessible uniquement aux administrateurs.',
+				'requestBody' => [
+					'content' => [
+						'application/json' => [
+							'schema' => [
+								'type' => 'object',
+								'properties' => [
+									'nom' => ['type' => 'string', 'description' => 'Nom du transporteur', 'example' => 'Chronopost']
+								]
+							]
+						]
+					]
+				],
+				'responses' => [
+					'200' => [
+						'description' => 'Transporteur mis à jour avec succès.',
+						'content' => [
+							'application/json' => [
+								'schema' => [
+									'type' => 'object',
+									'properties' => [
+										'id_transporteur' => ['type' => 'integer', 'description' => 'Identifiant du transporteur mis à jour'],
+										'nom' => ['type' => 'string', 'description' => 'Nom du transporteur mis à jour'],
+									],
+								],
+							],
+						],
+					],
+					'403' => [
+						'description' => 'Accès interdit. Vous devez être administrateur pour mettre à jour un transporteur.',
+					],
+					'404' => [
+						'description' => 'Transporteur non trouvé.',
+					],
+				],
 			]
 		),
 		// Suppression d'un transporteur (accessible uniquement aux administrateurs)
 		new Delete(
 			security: "is_granted('ROLE_ADMIN')",
 			openapiContext: [
-				'summary' => 'Supprime un transporteur.'
+				'summary' => 'Supprime un transporteur.',
+				'description' => 'Permet de supprimer un transporteur donné. Accessible uniquement aux administrateurs.',
+				'responses' => [
+					'204' => [
+						'description' => 'Transporteur supprimé avec succès.',
+					],
+					'403' => [
+						'description' => 'Accès interdit. Vous devez être administrateur pour supprimer un transporteur.',
+					],
+					'404' => [
+						'description' => 'Transporteur non trouvé.',
+					],
+				],
 			]
 		)
 	]

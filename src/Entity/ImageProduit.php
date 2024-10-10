@@ -6,6 +6,7 @@ use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\Post;
 use ApiPlatform\Metadata\Put;
+use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Delete;
 use ApiPlatform\Metadata\GetCollection;
 use Symfony\Component\Serializer\Annotation\Groups;
@@ -18,19 +19,258 @@ use Symfony\Component\Validator\Constraints as Assert;
 	denormalizationContext: ['groups' => ['imageProduit:write']],
 	operations: [
 		// Récupération de toutes les images (accessible à tous)
-		new GetCollection(),
-
+		new GetCollection(
+			openapiContext: [
+				'summary' => 'Récupère la liste de toutes les images.',
+				'description' => 'Cette opération permet de récupérer toutes les images associées aux produits.',
+				'responses' => [
+					'200' => [
+						'description' => 'Liste des images récupérée avec succès.',
+					],
+					'403' => [
+						'description' => 'Accès refusé si l\'utilisateur n\'a pas les autorisations nécessaires.',
+					],
+				],
+			]
+		),
 		// Récupération d'une image (accessible à tous)
-		new Get(),
-
+		new Get(
+			openapiContext: [
+				'summary' => 'Récupère une image spécifique.',
+				'description' => 'Cette opération permet de récupérer les détails d\'une image spécifique associée à un produit.',
+				'responses' => [
+					'200' => [
+						'description' => 'Détails de l\'image récupérés avec succès.',
+					],
+					'403' => [
+						'description' => 'Accès refusé si l\'utilisateur n\'a pas les autorisations nécessaires.',
+					],
+					'404' => [
+						'description' => 'Image non trouvée.',
+					],
+				],
+			]
+		),
 		// Modification d'une image (accessible uniquement aux administrateurs)
-		new Put(security: "is_granted('ROLE_ADMIN')"),
-
+		new Put(
+			security: "is_granted('ROLE_ADMIN')",
+			openapiContext: [
+				'summary' => 'Modifie une image existante.',
+				'description' => 'Cette opération permet de modifier les informations d\'une image existante.',
+				'requestBody' => [
+					'content' => [
+						'application/json' => [
+							'schema' => [
+								'type' => 'object',
+								'properties' => [
+									'produit' => [
+										'type' => 'string',
+										'format' => 'iri',
+										'description' => 'IRI du produit auquel l\'image est associée.',
+										'example' => '/api/produits/1'
+									],
+									'position' => [
+										'type' => 'integer',
+										'format' => 'int32',
+										'description' => 'Position de l\'image dans la liste des images du produit.',
+										'example' => 1
+									],
+									'cover' => [
+										'type' => 'boolean',
+										'description' => 'Indique si l\'image est la couverture du produit.',
+										'example' => true
+									],
+									'legend' => [
+										'type' => 'string',
+										'description' => 'Légende de l\'image.',
+										'example' => 'Image principale du produit.'
+									]
+								],
+								'required' => ['produit', 'position', 'legend'],
+							],
+						],
+					],
+				],
+				'responses' => [
+					'200' => [
+						'description' => 'Image modifiée avec succès.',
+					],
+					'400' => [
+						'description' => 'Erreur de validation ou données incorrectes.',
+					],
+					'403' => [
+						'description' => 'Accès refusé si l\'utilisateur n\'a pas les autorisations nécessaires.',
+					],
+				],
+			]
+		),
+		// Modification partielle d'une image (accessible uniquement aux administrateurs)
+		new Patch(
+			security: "is_granted('ROLE_ADMIN')",
+			openapiContext: [
+				'summary' => 'Modifie partiellement une image de produit existante.',
+				'description' => 'Cette opération permet de mettre à jour partiellement les informations d\'une image de produit. Seuls les champs modifiés doivent être envoyés.',
+				'requestBody' => [
+					'content' => [
+						'application/json' => [
+							'schema' => [
+								'type' => 'object',
+								'properties' => [
+									'produit' => [
+										'type' => 'string',
+										'format' => 'iri',
+										'description' => 'IRI du produit associé à l\'image.',
+										'example' => '/api/produits/1'
+									],
+									'position' => [
+										'type' => 'integer',
+										'format' => 'int32',
+										'description' => 'Position de l\'image dans la liste des images du produit.',
+										'example' => 1
+									],
+									'cover' => [
+										'type' => 'boolean',
+										'description' => 'Indique si l\'image est la couverture du produit.',
+										'example' => true
+									],
+									'legend' => [
+										'type' => 'string',
+										'format' => 'string',
+										'description' => 'Légende de l\'image.',
+										'example' => 'Image principale du produit'
+									]
+								],
+								'required' => []
+							]
+						]
+					]
+				],
+				'responses' => [
+					'200' => [
+						'description' => 'Image de produit mise à jour avec succès.',
+						'content' => [
+							'application/json' => [
+								'schema' => [
+									'type' => 'object',
+									'properties' => [
+										'id_image_produit' => [
+											'type' => 'integer',
+											'format' => 'int64',
+											'description' => 'Identifiant unique de l\'image du produit.',
+											'example' => 1
+										],
+										'produit' => [
+											'type' => 'string',
+											'format' => 'iri',
+											'description' => 'IRI du produit associé à l\'image.',
+											'example' => '/api/produits/1'
+										],
+										'position' => [
+											'type' => 'integer',
+											'format' => 'int32',
+											'description' => 'Position de l\'image dans la liste des images du produit.',
+											'example' => 1
+										],
+										'cover' => [
+											'type' => 'boolean',
+											'description' => 'Indique si l\'image est la couverture du produit.',
+											'example' => true
+										],
+										'legend' => [
+											'type' => 'string',
+											'format' => 'string',
+											'description' => 'Légende de l\'image.',
+											'example' => 'Image principale du produit'
+										]
+									]
+								]
+							]
+						]
+					],
+					'400' => [
+						'description' => 'Requête invalide. Les données fournies sont incorrectes.',
+					],
+					'403' => [
+						'description' => 'Accès refusé. Vous n\'avez pas les droits pour modifier cette image.',
+					],
+					'404' => [
+						'description' => 'Image de produit non trouvée.',
+					]
+				]
+			]
+		),		
 		// Suppression d'une image (accessible uniquement aux administrateurs)
-		new Delete(security: "is_granted('ROLE_ADMIN')"),
-
+		new Delete(
+			security: "is_granted('ROLE_ADMIN')",
+			openapiContext: [
+				'summary' => 'Supprime une image existante.',
+				'description' => 'Cette opération permet de supprimer une image associée à un produit.',
+				'responses' => [
+					'204' => [
+						'description' => 'Image supprimée avec succès.',
+					],
+					'403' => [
+						'description' => 'Accès refusé si l\'utilisateur n\'a pas les autorisations nécessaires.',
+					],
+					'404' => [
+						'description' => 'Image non trouvée.',
+					],
+				],
+			]
+		),
 		// Création d'une nouvelle image (accessible uniquement aux administrateurs)
-		new Post(security: "is_granted('ROLE_ADMIN')")
+		new Post(
+			security: "is_granted('ROLE_ADMIN')",
+			openapiContext: [
+				'summary' => 'Crée une nouvelle image pour un produit.',
+				'description' => 'Cette opération permet de créer une nouvelle image associée à un produit spécifique.',
+				'requestBody' => [
+					'content' => [
+						'application/json' => [
+							'schema' => [
+								'type' => 'object',
+								'properties' => [
+									'produit' => [
+										'type' => 'string',
+										'format' => 'iri',
+										'description' => 'IRI du produit auquel l\'image est associée.',
+										'example' => '/api/produits/1'
+									],
+									'position' => [
+										'type' => 'integer',
+										'format' => 'int32',
+										'description' => 'Position de l\'image dans la liste des images du produit.',
+										'example' => 1
+									],
+									'cover' => [
+										'type' => 'boolean',
+										'description' => 'Indique si l\'image est la couverture du produit.',
+										'example' => true
+									],
+									'legend' => [
+										'type' => 'string',
+										'description' => 'Légende de l\'image.',
+										'example' => 'Image principale du produit.'
+									]
+								],
+								'required' => ['produit', 'position', 'legend'],
+							],
+						],
+					],
+				],
+				'responses' => [
+					'201' => [
+						'description' => 'Nouvelle image créée avec succès.',
+					],
+					'400' => [
+						'description' => 'Erreur de validation ou données incorrectes.',
+					],
+					'403' => [
+						'description' => 'Accès refusé si l\'utilisateur n\'a pas les autorisations nécessaires.',
+					],
+				],
+			]
+		),
 	]
 )]
 #[ORM\Entity(repositoryClass: ImageProduitRepository::class)]

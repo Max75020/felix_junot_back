@@ -5,7 +5,7 @@ namespace App\Entity;
 use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\Post;
-use ApiPlatform\Metadata\Put;
+use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Delete;
 use ApiPlatform\Metadata\GetCollection;
 use Symfony\Component\Serializer\Annotation\Groups;
@@ -18,21 +18,167 @@ use App\State\PanierProduitProcessor;
 	normalizationContext: ['groups' => ['panierProduit:read']],
 	denormalizationContext: ['groups' => ['panierProduit:write']],
 	operations: [
-
 		// Récupération de tous les paniers-produits (accessible à l'utilisateur propriétaire ou à l'administrateur)
-		new GetCollection(security: "is_granted('ROLE_ADMIN') or object.getPanier().getUtilisateur() == user"),
-
+		new GetCollection(
+			security: "is_granted('ROLE_ADMIN') or object.getPanier().getUtilisateur() == user",
+			openapiContext: [
+				'summary' => 'Récupère la liste de tous les produits dans les paniers.',
+				'description' => 'Cette opération permet de récupérer tous les produits associés aux paniers pour un utilisateur ou un administrateur.',
+				'responses' => [
+					'200' => [
+						'description' => 'Liste de tous les produits dans les paniers.',
+						'content' => [
+							'application/json' => [
+								'schema' => [
+									'type' => 'array',
+									'items' => [
+										'type' => 'object',
+										'properties' => [
+											'id_panier_produit' => ['type' => 'integer', 'example' => 1],
+											'produit' => ['type' => 'string', 'format' => 'iri', 'example' => '/api/produits/1'],
+											'panier' => ['type' => 'string', 'format' => 'iri', 'example' => '/api/paniers/1'],
+											'quantite' => ['type' => 'integer', 'example' => 2],
+											'prix_total_produit' => ['type' => 'string', 'format' => 'decimal', 'example' => '20.00']
+										]
+									]
+								]
+							]
+						]
+					],
+					'403' => ['description' => 'Accès refusé. Seuls les utilisateurs connectés et les administrateurs peuvent accéder aux produits dans les paniers.']
+				]
+			]
+		),
 		// Récupération d'un panier-produit (accessible à l'utilisateur propriétaire ou à l'administrateur)
-		new Get(security: "is_granted('ROLE_ADMIN') or object.getPanier().getUtilisateur() == user"),
-
+		new Get(
+			security: "is_granted('ROLE_ADMIN') or object.getPanier().getUtilisateur() == user",
+			openapiContext: [
+				'summary' => 'Récupère un produit spécifique dans un panier.',
+				'description' => 'Cette opération permet de récupérer les détails d\'un produit spécifique associé à un panier donné.',
+				'responses' => [
+					'200' => [
+						'description' => 'Détails du produit dans le panier.',
+						'content' => [
+							'application/json' => [
+								'schema' => [
+									'type' => 'object',
+									'properties' => [
+										'id_panier_produit' => ['type' => 'integer', 'example' => 1],
+										'produit' => ['type' => 'string', 'format' => 'iri', 'example' => '/api/produits/1'],
+										'panier' => ['type' => 'string', 'format' => 'iri', 'example' => '/api/paniers/1'],
+										'quantite' => ['type' => 'integer', 'example' => 2],
+										'prix_total_produit' => ['type' => 'string', 'format' => 'decimal', 'example' => '20.00']
+									]
+								]
+							]
+						]
+					],
+					'403' => ['description' => 'Accès refusé. Seuls les utilisateurs connectés et les administrateurs peuvent accéder aux produits dans les paniers.'],
+					'404' => ['description' => 'Produit dans le panier non trouvé.']
+				]
+			]
+		),
 		// Modification d'un panier-produit (accessible à l'utilisateur propriétaire ou à l'administrateur)
-		new Put(security: "is_granted('ROLE_ADMIN') or object.getPanier().getUtilisateur() == user"),
-
+		new Patch(
+			security: "is_granted('ROLE_ADMIN') or object.getPanier().getUtilisateur() == user",
+			denormalizationContext: ['groups' => ['panierProduit:write']],
+			openapiContext: [
+				'summary' => 'Met à jour partiellement un produit dans le panier.',
+				'description' => 'Permet de mettre à jour la quantité ou d\'autres propriétés d\'un produit dans le panier.',
+				'requestBody' => [
+					'content' => [
+						'application/json' => [
+							'schema' => [
+								'type' => 'object',
+								'properties' => [
+									'produit' => [
+										'type' => 'string',
+										'format' => 'iri',
+										'description' => 'IRI du produit associé.',
+										'example' => '/api/produits/1'
+									],
+									'quantite' => [
+										'type' => 'integer',
+										'description' => 'Quantité du produit dans le panier.',
+										'example' => 2
+									],
+									'prix_total_produit' => [
+										'type' => 'string',
+										'format' => 'decimal',
+										'description' => 'Prix total du produit dans le panier basé sur la quantité.',
+										'example' => '19.98'
+									]
+								],
+								'required' => ['quantite']
+							]
+						]
+					]
+				],
+				'responses' => [
+					'200' => [
+						'description' => 'Produit mis à jour avec succès dans le panier.',
+						'content' => [
+							'application/json' => [
+								'schema' => [
+									'$ref' => '#/components/schemas/PanierProduit',
+								],
+							],
+						],
+					],
+					'400' => [
+						'description' => 'Requête invalide. Les données fournies ne sont pas conformes.',
+					],
+					'403' => [
+						'description' => 'Accès refusé. Seul le propriétaire du panier ou un administrateur peut modifier le produit dans le panier.',
+					],
+					'404' => [
+						'description' => 'Produit dans le panier non trouvé.',
+					],
+				],
+			]
+		),
 		// Suppression d'un panier-produit (accessible à l'utilisateur propriétaire ou à l'administrateur)
-		new Delete(security: "is_granted('ROLE_ADMIN') or object.getPanier().getUtilisateur() == user"),
-
+		new Delete(
+			security: "is_granted('ROLE_ADMIN') or object.getPanier().getUtilisateur() == user",
+			openapiContext: [
+				'summary' => 'Supprime un produit du panier.',
+				'description' => 'Cette opération permet de supprimer un produit du panier pour les utilisateurs ou les administrateurs.',
+				'responses' => [
+					'204' => ['description' => 'Produit supprimé du panier avec succès.'],
+					'403' => ['description' => 'Accès refusé. Seuls les utilisateurs connectés et les administrateurs peuvent supprimer les produits du panier.'],
+					'404' => ['description' => 'Produit dans le panier non trouvé.']
+				]
+			]
+		),
 		// Création d'un panier-produit (accessible aux utilisateurs connectés pour leur propre panier et aux administrateurs)
-		new Post(security: "is_granted('ROLE_USER') or is_granted('ROLE_ADMIN')", processor: PanierProduitProcessor::class)
+		new Post(
+			security: "is_granted('ROLE_USER') or is_granted('ROLE_ADMIN')",
+			processor: PanierProduitProcessor::class,
+			openapiContext: [
+				'summary' => 'Ajoute un produit au panier.',
+				'description' => 'Cette opération permet aux utilisateurs connectés et aux administrateurs d\'ajouter un produit dans le panier.',
+				'requestBody' => [
+					'content' => [
+						'application/json' => [
+							'schema' => [
+								'type' => 'object',
+								'properties' => [
+									'produit' => ['type' => 'string', 'format' => 'iri', 'description' => 'IRI du produit à ajouter.', 'example' => '/api/produits/1'],
+									'panier' => ['type' => 'string', 'format' => 'iri', 'description' => 'IRI du panier associé.', 'example' => '/api/paniers/1'],
+									'quantite' => ['type' => 'integer', 'description' => 'Quantité du produit à ajouter.', 'example' => 3]
+								],
+								'required' => ['produit', 'panier', 'quantite']
+							]
+						]
+					]
+				],
+				'responses' => [
+					'201' => ['description' => 'Produit ajouté au panier avec succès.'],
+					'400' => ['description' => 'Requête invalide. Les données fournies ne sont pas conformes.'],
+					'403' => ['description' => 'Accès refusé. Seuls les utilisateurs connectés et les administrateurs peuvent ajouter des produits au panier.']
+				]
+			]
+		),
 	]
 )]
 #[ORM\Entity(repositoryClass: PanierProduitRepository::class)]

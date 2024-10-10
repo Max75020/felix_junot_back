@@ -14,6 +14,7 @@ use Symfony\Bundle\SecurityBundle\Security;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
+use App\Service\StripeService;
 
 /**
  * Processor pour gérer les opérations sur l'entité Commande.
@@ -26,12 +27,14 @@ class CommandeProcessor implements ProcessorInterface
 	private Security $security;
 	private EntityManagerInterface $entityManager;
 	private LoggerInterface $logger;
+	private StripeService $stripeService;
 
-	public function __construct(Security $security, EntityManagerInterface $entityManager, LoggerInterface $logger)
+	public function __construct(Security $security, EntityManagerInterface $entityManager, LoggerInterface $logger, StripeService $stripeService)
 	{
 		$this->security = $security;
 		$this->entityManager = $entityManager;
 		$this->logger = $logger;
+		$this->stripeService = $stripeService;
 	}
 
 	public function process($data, Operation $operation, array $uriVariables = [], array $context = []): mixed
@@ -128,10 +131,19 @@ class CommandeProcessor implements ProcessorInterface
 		$commande->setEtatCommande($etatCommande);
 	}
 
+	/**
+	 * Vérifie si le paiement est confirmé en utilisant le StripeService.
+	 */
 	private function isPaymentConfirmed(Commande $commande): bool
 	{
-		// Cette méthode doit vérifier le statut du paiement
-		return $commande->getEtatCommande()->getLibelle() === 'Paiement confirmé';
+		try {
+			$paymentIntent = $this->stripeService->createPaymentIntent($commande->getPrixTotalCommande());
+			// Vérifie si le paiement est confirmé
+			return $paymentIntent->status === 'succeeded';
+		} catch (\Exception $e) {
+			$this->logger->error('Erreur lors de la création du PaymentIntent : ' . $e->getMessage());
+			return false;
+		}
 	}
 
 	/**

@@ -5,7 +5,6 @@ namespace App\Entity;
 use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\Post;
-use ApiPlatform\Metadata\Put;
 use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Delete;
 use ApiPlatform\Metadata\GetCollection;
@@ -23,32 +22,202 @@ use App\State\PanierProduitProcessor;
 	normalizationContext: ['groups' => ['produit:read']],
 	denormalizationContext: ['groups' => ['produit:write', 'categorie:write']],
 	operations: [
-
 		// Récupération de tous les produits (accessible à tous)
-		new GetCollection(),
-
+		new GetCollection(
+			openapiContext: [
+				'summary' => 'Liste tous les produits disponibles',
+				'description' => 'Récupère la collection complète de produits accessibles par tous les utilisateurs.',
+				'responses' => [
+					'200' => [
+						'description' => 'Collection de produits récupérée avec succès.',
+					],
+				],
+			]
+		),
 		// Récupération d'un produit (accessible à tous)
-		new Get(),
-
+		new Get(
+			openapiContext: [
+				'summary' => 'Récupère un produit spécifique',
+				'description' => 'Permet de récupérer les détails d\'un produit donné par son identifiant. Accessible à tous les utilisateurs.',
+				'responses' => [
+					'200' => [
+						'description' => 'Détails du produit récupérés avec succès.',
+					],
+					'404' => [
+						'description' => 'Produit non trouvé.',
+					],
+				],
+			]
+		),
 		// Modification partielle d'un produit (accessible uniquement aux administrateurs)
-		new Patch(security: "is_granted('ROLE_ADMIN')"),
-
+		new Patch(
+			security: "is_granted('ROLE_ADMIN')",
+			openapiContext: [
+				'summary' => 'Modification partielle d\'un produit',
+				'description' => 'Permet de modifier partiellement les informations d\'un produit. Accessible uniquement aux administrateurs.',
+				'requestBody' => [
+					'content' => [
+						'application/merge-patch+json' => [
+							'schema' => [
+								'type' => 'object',
+								'properties' => [
+									'nom' => ['type' => 'string'],
+									'description' => ['type' => 'string'],
+									'prix_ht' => ['type' => 'string'],
+								],
+							],
+						],
+					],
+				],
+				'responses' => [
+					'200' => [
+						'description' => 'Produit mis à jour avec succès.',
+					],
+					'403' => [
+						'description' => 'Accès interdit. Vous devez être administrateur pour modifier un produit.',
+					],
+				],
+			]
+		),
 		// Suppression d'un produit (accessible uniquement aux administrateurs)
-		new Delete(security: "is_granted('ROLE_ADMIN')"),
-
+		new Delete(
+			security: "is_granted('ROLE_ADMIN')",
+			openapiContext: [
+				'summary' => 'Supprime un produit',
+				'description' => 'Permet de supprimer un produit donné. Accessible uniquement aux administrateurs.',
+				'responses' => [
+					'204' => [
+						'description' => 'Produit supprimé avec succès.',
+					],
+					'403' => [
+						'description' => 'Accès interdit. Vous devez être administrateur pour supprimer un produit.',
+					],
+					'404' => [
+						'description' => 'Produit non trouvé.',
+					],
+				],
+			]
+		),
 		// Création d'un produit (accessible uniquement aux administrateurs)
-		new Post(security: "is_granted('ROLE_ADMIN')"),
-
+		new Post(
+			security: "is_granted('ROLE_ADMIN')",
+			openapiContext: [
+				'summary' => 'Crée un nouveau produit',
+				'description' => 'Permet de créer un nouveau produit. Accessible uniquement aux administrateurs.',
+				'requestBody' => [
+					'content' => [
+						'application/json' => [
+							'schema' => [
+								'type' => 'object',
+								'properties' => [
+									'reference' => [
+										'type' => 'string',
+										'format' => 'alphanumeric',
+										'description' => 'Référence unique du produit.',
+										'example' => 'REF202410100001',
+									],
+									'nom' => [
+										'type' => 'string',
+										'format' => 'string',
+										'description' => 'Nom du produit.',
+										'example' => 'Produit Test',
+									],
+									'description' => [
+										'type' => 'string',
+										'format' => 'text',
+										'description' => 'Description détaillée du produit.',
+										'example' => 'Ce produit est un excellent choix pour vos besoins quotidiens.',
+									],
+									'prix_ht' => [
+										'type' => 'string',
+										'format' => 'decimal',
+										'description' => 'Prix hors taxes du produit.',
+										'example' => '99.99',
+									],
+									'tva' => [
+										'type' => 'string',
+										'format' => 'iri',
+										'description' => 'IRI de la ressource TVA associée.',
+										'example' => '/api/tvas/1',
+									],
+									'categories' => [
+										'type' => 'array',
+										'items' => [
+											'type' => 'string',
+											'format' => 'iri',
+											'description' => 'IRI de la ressource catégorie associée.',
+											'example' => '/api/categories/1',
+										],
+										'description' => 'Liste des catégories associées au produit.',
+									],
+									'images' => [
+										'type' => 'array',
+										'items' => [
+											'type' => 'string',
+											'format' => 'iri',
+											'description' => 'IRI de l\'image associée au produit.',
+											'example' => '/api/images/1',
+										],
+										'description' => 'Liste des images associées au produit.',
+									],
+								],
+								'required' => ['reference', 'nom', 'description', 'prix_ht', 'tva', 'categories'],
+							],
+						],
+					],
+				],
+				'responses' => [
+					'201' => [
+						'description' => 'Produit créé avec succès.',
+					],
+					'403' => [
+						'description' => 'Accès interdit. Vous devez être administrateur pour créer un produit.',
+					],
+				],
+			]
+		),
 		// Ajout d'un produit au panier (accessible aux utilisateurs connectés et aux administrateurs)
 		new Post(
-            uriTemplate: '/produits/{id}/add-to-panier',
-            processor: PanierProduitProcessor::class,
-            openapiContext: [
-                'summary' => 'Ajoute un produit au panier',
-                'description' => 'Ajoute le produit spécifié au panier de l\'utilisateur connecté.',
-            ],
-            security: "is_granted('ROLE_USER') or is_granted('ROLE_ADMIN')"
-        )
+			uriTemplate: '/produits/{id}/add-to-panier',
+			processor: PanierProduitProcessor::class,
+			openapiContext: [
+				'summary' => 'Ajoute un produit au panier',
+				'description' => 'Ajoute le produit spécifié au panier de l\'utilisateur connecté.',
+				'requestBody' => [
+					'content' => [
+						'application/json' => [
+							'schema' => [
+								'type' => 'object',
+								'properties' => [
+									'produit' => [
+										'type' => 'string',
+										'format' => 'iri',
+										'description' => 'IRI du produit à ajouter au panier.',
+										'example' => '/api/produits/1',
+									],
+									'quantite' => [
+										'type' => 'integer',
+										'format' => 'int32',
+										'description' => 'Quantité de produit à ajouter au panier.',
+										'example' => 2,
+									],
+								],
+								'required' => ['produit', 'quantite'],
+							],
+						],
+					],
+				],
+				'responses' => [
+					'201' => [
+						'description' => 'Produit ajouté au panier avec succès.',
+					],
+					'403' => [
+						'description' => 'Accès interdit. Vous devez être connecté pour ajouter un produit au panier.',
+					],
+				],
+			],
+			security: "is_granted('ROLE_USER') or is_granted('ROLE_ADMIN')"
+		),
 	]
 )]
 #[ORM\Entity(repositoryClass: ProduitRepository::class)]

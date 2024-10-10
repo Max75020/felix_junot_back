@@ -4,7 +4,6 @@ namespace App\Entity;
 
 use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\Post;
-use ApiPlatform\Metadata\Put;
 use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\Delete;
@@ -21,29 +20,373 @@ use App\State\AdresseProcessor;
 	operations: [
 
 		// Récupération de toutes les adresses (accessible à tous)
-		new GetCollection(),
+		new GetCollection(
+			openapiContext: [
+				'summary' => 'Récupère la liste des adresses',
+				'description' => 'Retourne une collection d\'adresses disponibles.',
+				'responses' => [
+					'200' => [
+						'description' => 'Liste des adresses récupérées avec succès',
+						'content' => [
+							'application/json' => [
+								'schema' => [
+									'type' => 'array',
+									'items' => [
+										'type' => 'object',
+										'properties' => [
+											'id_adresse' => [
+												'type' => 'integer',
+												'description' => 'Identifiant unique de l\'adresse',
+												'example' => 1,
+											],
+											'utilisateur' => [
+												'type' => 'string',
+												'format' => 'iri',
+												'description' => 'L\'IRI de l\'utilisateur associé à cette adresse',
+												'example' => '/api/utilisateurs/1',
+											],
+											'type' => [
+												'type' => 'string',
+												'description' => 'Le type de l\'adresse (Facturation ou Livraison)',
+												'example' => 'Facturation',
+											],
+											'prenom' => [
+												'type' => 'string',
+												'description' => 'Le prénom associé à l\'adresse',
+												'example' => 'Jean',
+											],
+											'nom' => [
+												'type' => 'string',
+												'description' => 'Le nom associé à l\'adresse',
+												'example' => 'Dupont',
+											],
+											'rue' => [
+												'type' => 'string',
+												'description' => 'La rue ou l\'adresse complète',
+												'example' => '123 Rue Principale',
+											],
+											'code_postal' => [
+												'type' => 'string',
+												'description' => 'Le code postal de l\'adresse',
+												'example' => '75001',
+											],
+											'ville' => [
+												'type' => 'string',
+												'description' => 'La ville associée à l\'adresse',
+												'example' => 'Paris',
+											],
+											'pays' => [
+												'type' => 'string',
+												'description' => 'Le pays de l\'adresse',
+												'example' => 'France',
+											],
+											'telephone' => [
+												'type' => 'string',
+												'description' => 'Le numéro de téléphone associé',
+												'example' => '+33123456789',
+											],
+											'similaire' => [
+												'type' => 'boolean',
+												'description' => 'Indique si cette adresse est similaire à une autre adresse déjà existante',
+												'example' => false,
+											],
+										],
+										'required' => ['id_adresse', 'utilisateur', 'type', 'prenom', 'nom', 'rue', 'code_postal', 'ville', 'pays'],
+									],
+								],
+							],
+						],
+					],
+				],
+			]
+		),
 
 		// Récupération d'une adresse (accessible à l'utilisateur propriétaire ou à l'administrateur)
 		new Get(
-			security: "is_granted('ROLE_ADMIN') or (is_granted('ROLE_USER') and object.getUtilisateur() == user)"
+			security: "is_granted('ROLE_ADMIN') or (is_granted('ROLE_USER') and object.getUtilisateur() == user)",
+			openapiContext: [
+				'summary' => 'Récupère une adresse spécifique',
+				'description' => 'Permet de récupérer les détails d\'une adresse particulière. Accessible uniquement à l\'administrateur ou à l\'utilisateur propriétaire.',
+				'responses' => [
+					'200' => [
+						'description' => 'Adresse récupérée avec succès',
+						'content' => [
+							'application/json' => [
+								'schema' => [
+									'type' => 'object',
+									'properties' => [
+										'id_adresse' => [
+											'type' => 'integer',
+											'description' => 'Identifiant unique de l\'adresse',
+											'example' => 1,
+										],
+										'utilisateur' => [
+											'type' => 'string',
+											'format' => 'iri',
+											'description' => 'L\'IRI de l\'utilisateur associé à cette adresse',
+											'example' => '/api/utilisateurs/1',
+										],
+										'type' => [
+											'type' => 'string',
+											'description' => 'Le type d\'adresse (Facturation ou Livraison)',
+											'example' => 'Facturation',
+										],
+										'prenom' => [
+											'type' => 'string',
+											'description' => 'Le prénom associé à l\'adresse',
+											'example' => 'Jean',
+										],
+										'nom' => [
+											'type' => 'string',
+											'description' => 'Le nom associé à l\'adresse',
+											'example' => 'Dupont',
+										],
+										'rue' => [
+											'type' => 'string',
+											'description' => 'La rue ou l\'adresse complète',
+											'example' => '123 Rue Principale',
+										],
+										'code_postal' => [
+											'type' => 'string',
+											'description' => 'Le code postal de l\'adresse',
+											'example' => '75001',
+										],
+										'ville' => [
+											'type' => 'string',
+											'description' => 'La ville associée à l\'adresse',
+											'example' => 'Paris',
+										],
+										'pays' => [
+											'type' => 'string',
+											'description' => 'Le pays de l\'adresse',
+											'example' => 'France',
+										],
+										'telephone' => [
+											'type' => 'string',
+											'description' => 'Le numéro de téléphone associé',
+											'example' => '+33123456789',
+										],
+										'similaire' => [
+											'type' => 'boolean',
+											'description' => 'Indique si cette adresse est similaire à une autre adresse déjà existante',
+											'example' => false,
+										],
+									],
+									'required' => ['id_adresse', 'utilisateur', 'type', 'prenom', 'nom', 'rue', 'code_postal', 'ville', 'pays'],
+								],
+							],
+						],
+					],
+					'403' => [
+						'description' => 'Accès refusé si l\'utilisateur n\'est ni propriétaire de l\'adresse ni administrateur',
+					],
+					'404' => [
+						'description' => 'Adresse non trouvée',
+					],
+				],
+			]
 		),
-		// Modification complète d'une adresse (accessible à l'utilisateur propriétaire ou à l'administrateur)
-		new Put(
-			security: "is_granted('ROLE_ADMIN') or (is_granted('ROLE_USER') and object.getUtilisateur() == user)"
-		),
+
 		// Modification partielle d'une adresse (accessible à l'utilisateur propriétaire ou à l'administrateur)
 		new Patch(
-			security: "is_granted('ROLE_ADMIN') or (is_granted('ROLE_USER') and object.getUtilisateur() == user)"
+			security: "is_granted('ROLE_ADMIN') or (is_granted('ROLE_USER') and object.getUtilisateur() == user)",
+			openapiContext: [
+				'summary' => 'Modifie partiellement une adresse existante',
+				'description' => 'Permet de modifier partiellement une adresse. Accessible uniquement à l\'administrateur ou à l\'utilisateur propriétaire.',
+				'requestBody' => [
+					'content' => [
+						'application/merge-patch+json' => [
+							'schema' => [
+								'type' => 'object',
+								'properties' => [
+									'utilisateur' => [
+										'type' => 'string',
+										'format' => 'iri',
+										'description' => 'L\'IRI de l\'utilisateur associé',
+										'example' => '/api/utilisateurs/1',
+									],
+									'type' => [
+										'type' => 'string',
+										'description' => 'Le type d\'adresse (Facturation ou Livraison)',
+										'example' => 'Livraison',
+									],
+									'prenom' => [
+										'type' => 'string',
+										'description' => 'Le prénom associé à l\'adresse',
+										'example' => 'Marie',
+									],
+									'nom' => [
+										'type' => 'string',
+										'description' => 'Le nom associé à l\'adresse',
+										'example' => 'Durand',
+									],
+									'rue' => [
+										'type' => 'string',
+										'description' => 'La rue ou l\'adresse complète',
+										'example' => '45 Boulevard Haussmann',
+									],
+									'batiment' => [
+										'type' => 'string',
+										'description' => 'Informations supplémentaires sur le bâtiment',
+										'example' => 'Bâtiment A',
+									],
+									'appartement' => [
+										'type' => 'string',
+										'description' => 'Numéro ou informations sur l\'appartement',
+										'example' => 'Appartement 12',
+									],
+									'code_postal' => [
+										'type' => 'string',
+										'description' => 'Le code postal de l\'adresse',
+										'example' => '75009',
+									],
+									'ville' => [
+										'type' => 'string',
+										'description' => 'La ville associée à l\'adresse',
+										'example' => 'Paris',
+									],
+									'pays' => [
+										'type' => 'string',
+										'description' => 'Le pays de l\'adresse',
+										'example' => 'France',
+									],
+									'telephone' => [
+										'type' => 'string',
+										'description' => 'Le numéro de téléphone associé',
+										'example' => '+33123456789',
+									],
+									'similaire' => [
+										'type' => 'boolean',
+										'description' => 'Indique si cette adresse est similaire à une autre adresse déjà existante',
+										'example' => false,
+									],
+								],
+							],
+						],
+					],
+				],
+				'responses' => [
+					'200' => [
+						'description' => 'Adresse modifiée avec succès',
+					],
+					'403' => [
+						'description' => 'Accès refusé si l\'utilisateur n\'est ni propriétaire de l\'adresse ni administrateur',
+					],
+					'404' => [
+						'description' => 'Adresse non trouvée',
+					],
+				],
+			]
 		),
 		// Suppression d'une adresse (accessible à l'utilisateur propriétaire ou à l'administrateur)
 		new Delete(
-			security: "is_granted('ROLE_ADMIN') or (is_granted('ROLE_USER') and object.getUtilisateur() == user)"
+			security: "is_granted('ROLE_ADMIN') or (is_granted('ROLE_USER') and object.getUtilisateur() == user)",
+			openapiContext: [
+				'summary' => 'Supprime une adresse existante',
+				'description' => 'Permet de supprimer une adresse existante. Accessible uniquement à l\'administrateur ou à l\'utilisateur propriétaire.',
+				'responses' => [
+					'204' => [
+						'description' => 'Adresse supprimée avec succès',
+					],
+					'403' => [
+						'description' => 'Accès refusé si l\'utilisateur n\'est ni propriétaire de l\'adresse ni administrateur',
+					],
+					'404' => [
+						'description' => 'Adresse non trouvée',
+					],
+				],
+			]
 		),
 		// Création d'une nouvelle adresse (accessible aux utilisateurs connectés et aux administrateurs)
 		new Post(
 			security: "is_granted('ROLE_USER') or is_granted('ROLE_ADMIN')",
-			processor: AdresseProcessor::class
-		)
+			processor: AdresseProcessor::class,
+			openapiContext: [
+				'summary' => 'Crée une nouvelle adresse',
+				'description' => 'Permet de créer une nouvelle adresse associée à un utilisateur.',
+				'requestBody' => [
+					'content' => [
+						'application/json' => [
+							'schema' => [
+								'type' => 'object',
+								'properties' => [
+									'utilisateur' => [
+										'type' => 'string',
+										'format' => 'iri',
+										'description' => 'L\'IRI de l\'utilisateur associé',
+										'example' => '/api/utilisateurs/1',
+									],
+									'type' => [
+										'type' => 'string',
+										'description' => 'Le type d\'adresse (Facturation ou Livraison)',
+										'example' => 'Facturation',
+									],
+									'prenom' => [
+										'type' => 'string',
+										'description' => 'Le prénom associé à l\'adresse',
+										'example' => 'Jean',
+									],
+									'nom' => [
+										'type' => 'string',
+										'description' => 'Le nom associé à l\'adresse',
+										'example' => 'Dupont',
+									],
+									'rue' => [
+										'type' => 'string',
+										'description' => 'La rue ou l\'adresse complète',
+										'example' => '123 Rue Principale',
+									],
+									'batiment' => [
+										'type' => 'string',
+										'description' => 'Informations supplémentaires sur le bâtiment',
+										'example' => 'Bâtiment B',
+									],
+									'appartement' => [
+										'type' => 'string',
+										'description' => 'Numéro ou informations sur l\'appartement',
+										'example' => 'Appartement 3',
+									],
+									'code_postal' => [
+										'type' => 'string',
+										'description' => 'Le code postal de l\'adresse',
+										'example' => '75001',
+									],
+									'ville' => [
+										'type' => 'string',
+										'description' => 'La ville associée à l\'adresse',
+										'example' => 'Paris',
+									],
+									'pays' => [
+										'type' => 'string',
+										'description' => 'Le pays de l\'adresse',
+										'example' => 'France',
+									],
+									'telephone' => [
+										'type' => 'string',
+										'description' => 'Le numéro de téléphone associé',
+										'example' => '+33123456789',
+									],
+									'similaire' => [
+										'type' => 'boolean',
+										'description' => 'Indique si cette adresse est similaire à une autre adresse déjà existante',
+										'example' => false,
+									],
+								],
+								'required' => ['utilisateur', 'type', 'prenom', 'nom', 'rue', 'code_postal', 'ville', 'pays'],
+							],
+						],
+					],
+				],
+				'responses' => [
+					'201' => [
+						'description' => 'Adresse créée avec succès',
+					],
+					'400' => [
+						'description' => 'Erreur de validation',
+					],
+				],
+			]
+		),
 	]
 )]
 #[ORM\Entity(repositoryClass: AdresseRepository::class)]

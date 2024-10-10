@@ -22,22 +22,170 @@ use Doctrine\Common\Collections\ArrayCollection;
 	denormalizationContext: ['groups' => ['etatCommande:write']],
 	operations: [
 		// Récupération de tous les états de commande (accessible à tous)
-		new GetCollection(),
-
+		new GetCollection(
+			openapiContext: [
+				'summary' => 'Récupère la collection des états de commande.',
+				'description' => 'Permet de récupérer une liste de tous les états de commande disponibles.',
+				'responses' => [
+					'200' => [
+						'description' => 'Liste des états de commande récupérée avec succès.',
+					],
+					'403' => [
+						'description' => 'Accès refusé si l\'utilisateur n\'a pas les autorisations nécessaires.',
+					],
+				],
+			]
+		),
 		// Récupération d'un état de commande (accessible à tous)
-		new Get(),
-
-		// Modification d'un état de commande (accessible uniquement aux administrateurs)
-		new Put(security: "is_granted('ROLE_ADMIN')"),
-
+		new Get(
+			openapiContext: [
+				'summary' => 'Récupère un état de commande.',
+				'description' => 'Permet de récupérer les détails d\'un état de commande spécifique.',
+				'responses' => [
+					'200' => [
+						'description' => 'État de commande récupéré avec succès.',
+					],
+					'403' => [
+						'description' => 'Accès refusé si l\'utilisateur n\'a pas les autorisations nécessaires.',
+					],
+					'404' => [
+						'description' => 'État de commande non trouvé.',
+					],
+				],
+			]
+		),
+		// Modification complète d'un état de commande (accessible uniquement aux administrateurs)
+		new Put(
+			security: "is_granted('ROLE_ADMIN')",
+			openapiContext: [
+				'summary' => 'Remplace complètement un état de commande.',
+				'description' => 'Permet de remplacer complètement un état de commande existant. Accessible uniquement aux administrateurs.',
+				'requestBody' => [
+					'content' => [
+						'application/json' => [
+							'schema' => [
+								'type' => 'object',
+								'properties' => [
+									'libelle' => [
+										'type' => 'string',
+										'description' => 'Libellé de l\'état de commande, qui doit être unique.',
+										'example' => 'Expédié',
+									],
+								],
+								'required' => ['libelle'],
+							],
+						],
+					],
+				],
+				'responses' => [
+					'200' => [
+						'description' => 'État de commande mis à jour avec succès.',
+					],
+					'400' => [
+						'description' => 'Erreur de validation ou données incorrectes.',
+					],
+					'403' => [
+						'description' => 'Accès refusé si l\'utilisateur n\'a pas les autorisations nécessaires.',
+					],
+					'404' => [
+						'description' => 'État de commande non trouvé.',
+					],
+				],
+			]
+		),
 		// Modification partielle d'un état de commande (accessible uniquement aux administrateurs)
-		new Patch(security: "is_granted('ROLE_ADMIN')"),
-
+		new Patch(
+			security: "is_granted('ROLE_ADMIN')",
+			openapiContext: [
+				'summary' => 'Modifie partiellement un état de commande.',
+				'description' => 'Permet de modifier partiellement un état de commande existant. Accessible uniquement aux administrateurs.',
+				'requestBody' => [
+					'content' => [
+						'application/merge-patch+json' => [
+							'schema' => [
+								'type' => 'object',
+								'properties' => [
+									'libelle' => [
+										'type' => 'string',
+										'description' => 'Libellé de l\'état de commande.',
+										'example' => 'Livré',
+									],
+								],
+							],
+						],
+					],
+				],
+				'responses' => [
+					'200' => [
+						'description' => 'État de commande modifié avec succès.',
+					],
+					'400' => [
+						'description' => 'Erreur de validation ou données incorrectes.',
+					],
+					'403' => [
+						'description' => 'Accès refusé si l\'utilisateur n\'a pas les autorisations nécessaires.',
+					],
+					'404' => [
+						'description' => 'État de commande non trouvé.',
+					],
+				],
+			]
+		),
 		// Suppression d'un état de commande (accessible uniquement aux administrateurs)
-		new Delete(security: "is_granted('ROLE_ADMIN')"),
-
+		new Delete(
+			security: "is_granted('ROLE_ADMIN')",
+			openapiContext: [
+				'summary' => 'Supprime un état de commande.',
+				'description' => 'Permet de supprimer un état de commande existant. Accessible uniquement aux administrateurs.',
+				'responses' => [
+					'204' => [
+						'description' => 'État de commande supprimé avec succès.',
+					],
+					'403' => [
+						'description' => 'Accès refusé si l\'utilisateur n\'a pas les autorisations nécessaires.',
+					],
+					'404' => [
+						'description' => 'État de commande non trouvé.',
+					],
+				],
+			]
+		),
 		// Création d'un nouvel état de commande (accessible uniquement aux administrateurs)
-		new Post(security: "is_granted('ROLE_ADMIN')")
+		new Post(
+			security: "is_granted('ROLE_ADMIN')",
+			openapiContext: [
+				'summary' => 'Crée un nouvel état de commande.',
+				'description' => 'Permet de créer un nouvel état de commande. Accessible uniquement aux administrateurs.',
+				'requestBody' => [
+					'content' => [
+						'application/json' => [
+							'schema' => [
+								'type' => 'object',
+								'properties' => [
+									'libelle' => [
+										'type' => 'string',
+										'description' => 'Libellé de l\'état de commande, qui doit être unique.',
+										'example' => 'En cours de traitement',
+									],
+								],
+								'required' => ['libelle'],
+							],
+						],
+					],
+				],
+				'responses' => [
+					'201' => [
+						'description' => 'État de commande créé avec succès.',
+					],
+					'400' => [
+						'description' => 'Erreur de validation ou données incorrectes.',
+					],
+					'403' => [
+						'description' => 'Accès refusé si l\'utilisateur n\'a pas les autorisations nécessaires.',
+					],
+				],
+			]
+		),
 	]
 )]
 #[ORM\Entity(repositoryClass: EtatCommandeRepository::class)]

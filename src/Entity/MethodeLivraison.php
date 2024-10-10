@@ -34,9 +34,19 @@ use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 						'content' => [
 							'application/json' => [
 								'schema' => [
-									'type' => 'array',
-									'items' => [
-										'$ref' => '#/components/schemas/MethodeLivraison',
+									'type' => 'object',
+									'properties' => [
+										'hydra:member' => [
+											'type' => 'array',
+											'items' => [
+												'$ref' => '#/components/schemas/MethodeLivraison',
+											],
+										],
+										'hydra:totalItems' => [
+											'type' => 'integer',
+											'example' => 15,
+											'description' => 'Le nombre total d\'éléments dans la collection.'
+										]
 									],
 								],
 							],
@@ -68,73 +78,75 @@ use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 				],
 			]
 		),
-    // Mise à jour partielle d'une méthode de livraison existante (accessible uniquement aux administrateurs)
-        new Patch(
-            security: "is_granted('ROLE_ADMIN')",
-            denormalizationContext: ['groups' => ['methodeLivraison:write']],
-            openapiContext: [
-                'summary' => 'Met à jour partiellement une méthode de livraison existante.',
-                'description' => 'Cette opération permet aux administrateurs de mettre à jour partiellement les informations d\'une méthode de livraison spécifique sans modifier tous les champs.',
-                'requestBody' => [
-                    'content' => [
-                        'application/json' => [
-                            'schema' => [
-                                'type' => 'object',
-                                'properties' => [
-                                    'nom' => [
-                                        'type' => 'string',
-                                        'description' => 'Le nom de la méthode de livraison.',
-                                        'example' => 'Livraison Standard',
-                                    ],
-                                    'description' => [
-                                        'type' => 'string',
-                                        'description' => 'Une description mise à jour de la méthode de livraison.',
-                                        'example' => 'Livraison en 48-72 heures pour toutes les commandes.',
-                                    ],
-                                    'prix' => [
-                                        'type' => 'string',
-                                        'description' => 'Le coût de la méthode de livraison.',
-                                        'example' => '7.99',
-                                    ],
-                                    'delaiEstime' => [
-                                        'type' => 'string',
-                                        'description' => 'Le délai estimé de livraison mis à jour.',
-                                        'example' => '48-72 heures',
-                                    ],
-                                    'transporteur' => [
-                                        'type' => 'string',
-                                        'format' => 'iri',
-                                        'description' => 'L\'IRI du transporteur associé à cette méthode de livraison.',
-                                        'example' => '/api/transporteurs/1',
-                                    ],
-                                ],
-                            ],
-                        ],
-                    ],
-                ],
-                'responses' => [
-                    '200' => [
-                        'description' => 'Méthode de livraison mise à jour avec succès.',
-                        'content' => [
-                            'application/json' => [
-                                'schema' => [
-                                    '$ref' => '#/components/schemas/MethodeLivraison',
-                                ],
-                            ],
-                        ],
-                    ],
-                    '400' => [
-                        'description' => 'Requête invalide. Les données fournies ne sont pas conformes.',
-                    ],
-                    '403' => [
-                        'description' => 'Accès refusé. Seuls les administrateurs peuvent mettre à jour une méthode de livraison.',
-                    ],
-                    '404' => [
-                        'description' => 'Méthode de livraison non trouvée.',
-                    ],
-                ],
-            ]
-        ),
+		// Mise à jour partielle d'une méthode de livraison existante (accessible uniquement aux administrateurs)
+		new Patch(
+			security: "is_granted('ROLE_ADMIN')",
+			denormalizationContext: ['groups' => ['methodeLivraison:write']],
+			openapiContext: [
+				'summary' => 'Met à jour partiellement une méthode de livraison existante.',
+				'description' => 'Cette opération permet aux administrateurs de mettre à jour partiellement les informations d\'une méthode de livraison spécifique sans modifier tous les champs.',
+				'requestBody' => [
+					'content' => [
+						'application/json' => [
+							'schema' => [
+								'type' => 'object',
+								'properties' => [
+									'nom' => [
+										'type' => 'string',
+										'description' => 'Le nom de la méthode de livraison.',
+										'example' => 'Livraison Standard',
+									],
+									'description' => [
+										'type' => 'string',
+										'description' => 'Une description mise à jour de la méthode de livraison.',
+										'example' => 'Livraison en 48-72 heures pour toutes les commandes.',
+									],
+									'prix' => [
+										'type' => 'string',
+										'format' => 'decimal',
+										'description' => 'Le coût de la méthode de livraison.',
+										'example' => '7.99',
+									],
+									'delaiEstime' => [
+										'type' => 'string',
+										'description' => 'Le délai estimé de livraison mis à jour.',
+										'example' => '48-72 heures',
+									],
+									'transporteur' => [
+										'type' => 'string',
+										'format' => 'iri',
+										'description' => 'L\'IRI du transporteur associé à cette méthode de livraison.',
+										'example' => '/api/transporteurs/1',
+									],
+								],
+								'required' => []
+							]
+						]
+					]
+				],
+				'responses' => [
+					'200' => [
+						'description' => 'Méthode de livraison mise à jour avec succès.',
+						'content' => [
+							'application/json' => [
+								'schema' => [
+									'$ref' => '#/components/schemas/MethodeLivraison',
+								],
+							],
+						],
+					],
+					'400' => [
+						'description' => 'Requête invalide. Les données fournies ne sont pas conformes.',
+					],
+					'403' => [
+						'description' => 'Accès refusé. Seuls les administrateurs peuvent mettre à jour une méthode de livraison.',
+					],
+					'404' => [
+						'description' => 'Méthode de livraison non trouvée.',
+					],
+				],
+			]
+		),
 		// Création d'une nouvelle méthode de livraison (accessible uniquement aux utilisateurs connectés et aux administrateurs)
 		new Post(
 			security: "is_granted('ROLE_USER') or is_granted('ROLE_ADMIN')",
@@ -160,6 +172,7 @@ use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 									],
 									'prix' => [
 										'type' => 'string',
+										'format' => 'decimal',
 										'description' => 'Le coût de la méthode de livraison.',
 										'example' => '5.99',
 									],
@@ -199,7 +212,7 @@ use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 					],
 				],
 			]
-		),
+		),		
 	]
 )]
 class MethodeLivraison

@@ -32,7 +32,6 @@ use App\Controller\CurrentUserController;
 	denormalizationContext: ['groups' => ['user:write']],
 	operations: [
 		// Opérations Standards
-
 		// Récupération d'un utilisateur spécifique (accessible uniquement à l'utilisateur lui-même ou à l'administrateur)
 		new Get(
 			uriTemplate: '/utilisateurs/{id_utilisateur}',
@@ -41,6 +40,7 @@ use App\Controller\CurrentUserController;
 			normalizationContext: ['groups' => ['user:read:item']],
 			openapiContext: [
 				'summary' => 'Récupère un utilisateur spécifique.',
+				'description' => 'Retourne les détails d\'un utilisateur donné par son identifiant. Accessible uniquement à l\'utilisateur lui-même ou à un administrateur.',
 				'requestBody' => [
 					'content' => [
 						'application/json' => [
@@ -67,17 +67,17 @@ use App\Controller\CurrentUserController;
 				],
 			]
 		),
-
 		// Opération Personnalisée pour récupérer l'utilisateur connecté
 		new Get(
 			name: 'get_current_user',
-			uriTemplate: '/utilisateurs/me', // Chemin absolu
+			uriTemplate: '/utilisateurs/me',
 			controller: CurrentUserController::class,
 			security: "is_granted('ROLE_USER')",
 			read: false, // Indique que cette opération ne lit pas l'entité directement
 			normalizationContext: ['groups' => ['user:read:item']],
 			openapiContext: [
 				'summary' => 'Récupère les informations de l\'utilisateur connecté.',
+				'description' => 'Retourne les détails de l\'utilisateur actuellement connecté. Nécessite d\'être connecté.',
 				'responses' => [
 					'200' => [
 						'description' => 'Utilisateur connecté récupéré avec succès.',
@@ -88,13 +88,13 @@ use App\Controller\CurrentUserController;
 				],
 			]
 		),
-
 		// Récupération de la collection d'utilisateurs (accessible uniquement à l'administrateur)
 		new GetCollection(
 			security: "is_granted('ROLE_ADMIN')",
 			normalizationContext: ['groups' => ['user:read:collection']],
 			openapiContext: [
-				'summary' => 'Récupère la liste des utilisateurs si connecté en administrateur.',
+				'summary' => 'Récupère la liste des utilisateurs.',
+				'description' => 'Retourne la liste des utilisateurs disponibles. Accessible uniquement aux administrateurs.',
 				'requestBody' => [
 					'content' => [
 						'application/json' => [
@@ -117,7 +117,6 @@ use App\Controller\CurrentUserController;
 				],
 			]
 		),
-
 		// Création d'un nouvel utilisateur
 		new Post(
 			security: "user == null or is_granted('ROLE_ADMIN')",
@@ -126,48 +125,21 @@ use App\Controller\CurrentUserController;
 			denormalizationContext: ['groups' => ['user:write']],
 			openapiContext: [
 				'summary' => 'Crée un nouvel utilisateur.',
+				'description' => 'Crée un nouvel utilisateur avec les informations fournies. Accessible à tous les utilisateurs ou aux administrateurs.',
 				'requestBody' => [
 					'content' => [
 						'application/json' => [
 							'schema' => [
 								'type' => 'object',
 								'properties' => [
-									'prenom' => [
-										'type' => 'string',
-										'example' => 'Maxime'
-									],
-									'nom' => [
-										'type' => 'string',
-										'example' => 'Duplaissy'
-									],
-									'email' => [
-										'type' => 'string',
-										'example' => 'maxime.duplaissy@boss.fr'
-										],
-										'password' => [
-											'type' => 'string',
-											'example' => 'UserPassword+123'
-										],
-										'roles' => [
-											'type' => 'array',
-											'items' => [
-												'type' => 'string',
-												'enum' => ['ROLE_USER', 'ROLE_ADMIN']
-											],
-											'example' => ['ROLE_USER']
-										],
-										'email_valide' => [
-											'type' => 'boolean',
-											'example' => false
-										],
-									'telephone' => [
-										'type' => 'string',
-										'example' => '+33612345678'
-									],
-									'token_reinitialisation' => [
-										'type' => 'string',
-										'example' => 'R8fAJgEUwxMkBlW7KfkwQUtZISxzYLEZWEDZMO9lbjw02EKIHHtqSGMC0rcciki8'
-									],
+									'prenom' => ['type' => 'string', 'example' => 'Maxime'],
+									'nom' => ['type' => 'string', 'example' => 'Duplaissy'],
+									'email' => ['type' => 'string', 'example' => 'maxime.duplaissy@boss.fr'],
+									'password' => ['type' => 'string', 'example' => 'UserPassword+123'],
+									'roles' => ['type' => 'array', 'items' => ['type' => 'string', 'enum' => ['ROLE_USER', 'ROLE_ADMIN']], 'example' => ['ROLE_USER']],
+									'email_valide' => ['type' => 'boolean', 'example' => false],
+									'telephone' => ['type' => 'string', 'example' => '+33612345678'],
+									'token_reinitialisation' => ['type' => 'string', 'example' => 'R8fAJgEUwxMkBlW7KfkwQUtZISxzYLEZWEDZMO9lbjw02EKIHHtqSGMC0rcciki8'],
 								],
 								'required' => ['prenom', 'nom', 'email', 'password', 'roles', 'email_valide'],
 							],
@@ -177,48 +149,10 @@ use App\Controller\CurrentUserController;
 				'responses' => [
 					'201' => [
 						'description' => 'Utilisateur créé avec succès.',
-						'content' => [
-							'application/json' => [
-								'schema' => [
-									'type' => 'object',
-									'properties' => [
-										'id_utilisateur' => [
-											'type' => 'integer',
-											'example' => 1
-										],
-										'prenom' => [
-											'type' => 'string',
-											'example' => 'Maxime'
-										],
-										'nom' => [
-											'type' => 'string',
-											'example' => 'Duplaissy'
-										],
-										'email' => [
-											'type' => 'string',
-											'example' => 'maxime.duplaissy@boss.fr'
-										],
-										'telephone' => [
-											'type' => 'string',
-											'example' => '+33612345678'
-										],
-										'roles' => [
-											'type' => 'array',
-											'items' => [
-												'type' => 'string',
-												'enum' => ['ROLE_USER', 'ROLE_ADMIN']
-											],
-											'example' => ['ROLE_USER']
-										],
-									],
-								],
-							],
-						],
 					],
 				],
-			],
+			]
 		),
-
 		// Modification complète d'un utilisateur
 		new Put(
 			security: "is_granted('ROLE_USER') and object == user or is_granted('ROLE_ADMIN')",
@@ -228,40 +162,19 @@ use App\Controller\CurrentUserController;
 			denormalizationContext: ['groups' => ['user:write']],
 			openapiContext: [
 				'summary' => 'Met à jour les informations d\'un utilisateur.',
+				'description' => 'Permet de mettre à jour complètement les informations d\'un utilisateur. Accessible uniquement à l\'utilisateur lui-même ou à un administrateur.',
 				'requestBody' => [
 					'content' => [
 						'application/json' => [
 							'schema' => [
 								'type' => 'object',
 								'properties' => [
-									'prenom' => [
-										'type' => 'string',
-										'example' => 'Maxime'
-									],
-									'nom' => [
-										'type' => 'string',
-										'example' => 'Duplaissy'
-									],
-									'email' => [
-										'type' => 'string',
-										'example' => ' ',
-									],
-									'telephone' => [
-										'type' => 'string',
-										'example' => '+33612345678'
-									],
-									'password' => [
-										'type' => 'string',
-										'example' => 'UserPassword+123'
-									],
-									'roles' => [
-										'type' => 'array',
-										'items' => [
-											'type' => 'string',
-											'enum' => ['ROLE_USER', 'ROLE_ADMIN']
-										],
-										'example' => ['ROLE_USER']
-									],
+									'prenom' => ['type' => 'string', 'example' => 'Maxime'],
+									'nom' => ['type' => 'string', 'example' => 'Duplaissy'],
+									'email' => ['type' => 'string', 'example' => ' '],
+									'telephone' => ['type' => 'string', 'example' => '+33612345678'],
+									'password' => ['type' => 'string', 'example' => 'UserPassword+123'],
+									'roles' => ['type' => 'array', 'items' => ['type' => 'string', 'enum' => ['ROLE_USER', 'ROLE_ADMIN']], 'example' => ['ROLE_USER']],
 								],
 								'required' => ['prenom', 'nom', 'email', 'password', 'roles'],
 							],
@@ -271,48 +184,10 @@ use App\Controller\CurrentUserController;
 				'responses' => [
 					'200' => [
 						'description' => 'Utilisateur mis à jour avec succès.',
-						'content' => [
-							'application/json' => [
-								'schema' => [
-									'type' => 'object',
-									'properties' => [
-										'id_utilisateur' => [
-											'type' => 'integer',
-											'example' => 1
-										],
-										'prenom' => [
-											'type' => 'string',
-											'example' => 'Maxime'
-										],
-										'nom' => [
-											'type' => 'string',
-											'example' => 'Duplaissy'
-										],
-										'email' => [
-											'type' => 'string',
-											'example' => 'maxime.duplaissy@boss.fr'
-										],
-										'telephone' => [
-											'type' => 'string',
-											'example' => '+33612345678'
-										],
-										"roles" => [
-											'type' => 'array',
-											'items' => [
-												'type' => 'string',
-												'enum' => ['ROLE_USER', 'ROLE_ADMIN']
-											],
-											'example' => ['ROLE_USER']
-										],
-									],
-								],
-							],
-						],
 					],
 				],
-			],
+			]
 		),
-
 		// Modification partielle d'un utilisateur (PATCH)
 		new Patch(
 			security: "is_granted('ROLE_USER') and object == user or is_granted('ROLE_ADMIN')",
@@ -322,24 +197,16 @@ use App\Controller\CurrentUserController;
 			denormalizationContext: ['groups' => ['user:write']],
 			openapiContext: [
 				'summary' => 'Met à jour partiellement les informations d\'un utilisateur.',
+				'description' => 'Permet de mettre à jour partiellement les informations d\'un utilisateur. Accessible uniquement à l\'utilisateur lui-même ou à un administrateur.',
 				'requestBody' => [
 					'content' => [
 						'application/merge-patch+json' => [
 							'schema' => [
 								'type' => 'object',
 								'properties' => [
-									'prenom' => [
-										'type' => 'string',
-										'example' => 'Félix'
-									],
-									'nom' => [
-										'type' => 'string',
-										'example' => 'Junot'
-									],
-									'email' => [
-										'type' => 'string',
-										'example' => 'felix.junot@boss.fr'
-									],
+									'prenom' => ['type' => 'string', 'example' => 'Félix'],
+									'nom' => ['type' => 'string', 'example' => 'Junot'],
+									'email' => ['type' => 'string', 'example' => 'felix.junot@boss.fr'],
 								],
 							],
 						],
@@ -348,50 +215,24 @@ use App\Controller\CurrentUserController;
 				'responses' => [
 					'200' => [
 						'description' => 'Utilisateur mis à jour avec succès.',
-						'content' => [
-							'application/json' => [
-								'schema' => [
-									'type' => 'object',
-									'properties' => [
-										'id_utilisateur' => [
-											'type' => 'integer',
-											'example' => 1
-										],
-										'prenom' => [
-											'type' => 'string',
-											'example' => 'Félix'
-										],
-										'nom' => [
-											'type' => 'string',
-											'example' => 'Junot'
-										],
-										'email' => [
-											'type' => 'string',
-											'example' => 'felix.junot@boss.fr'
-										],
-									],
-								],
-							],
-						],
 					],
 				],
-			],
+			]
 		),
-
 		// Suppression d'un utilisateur
 		new Delete(
 			security: "is_granted('ROLE_USER') and object == user or is_granted('ROLE_ADMIN')",
-			securityMessage: "Vous ne pouvez supprimer que votre propre compte.",			
+			securityMessage: "Vous ne pouvez supprimer que votre propre compte.",
 			openapiContext: [
 				'summary' => 'Supprime un utilisateur.',
+				'description' => 'Permet de supprimer un utilisateur spécifique. Accessible uniquement à l\'utilisateur lui-même ou à un administrateur.',
 				'responses' => [
 					'204' => [
 						'description' => 'Utilisateur supprimé avec succès.',
 					],
 				],
-			],
+			]
 		),
-
 		// Opération pour demander une réinitialisation de mot de passe
 		new Post(
 			name: 'password_reset_request',
@@ -402,16 +243,14 @@ use App\Controller\CurrentUserController;
 			write: false,
 			openapiContext: [
 				'summary' => 'Demande une réinitialisation de mot de passe.',
+				'description' => 'Envoie un email pour la réinitialisation du mot de passe si l\'utilisateur existe.',
 				'requestBody' => [
 					'content' => [
 						'application/json' => [
 							'schema' => [
 								'type' => 'object',
 								'properties' => [
-									'email' => [
-										'type' => 'string',
-										'example' => 'maxime.duplaissy@mail.com'
-									],
+									'email' => ['type' => 'string', 'example' => 'maxime.duplaissy@mail.com'],
 								],
 								'required' => ['email'],
 							],
@@ -421,24 +260,10 @@ use App\Controller\CurrentUserController;
 				'responses' => [
 					'200' => [
 						'description' => 'Email de réinitialisation envoyé si l\'utilisateur existe.',
-						'content' => [
-							'application/json' => [
-								'schema' => [
-									'type' => 'object',
-									'properties' => [
-										'message' => [
-											'type' => 'string',
-											'example' => 'Si l\'email existe, un lien de réinitialisation a été envoyé.'
-										],
-									],
-								],
-							],
-						],
 					],
 				],
-			],
+			]
 		),
-
 		// Opération pour réinitialiser le mot de passe
 		new Post(
 			name: 'password_reset',
@@ -449,24 +274,16 @@ use App\Controller\CurrentUserController;
 			write: false,
 			openapiContext: [
 				'summary' => 'Réinitialise le mot de passe en utilisant le token.',
+				'description' => 'Permet de réinitialiser le mot de passe d\'un utilisateur en utilisant un token de réinitialisation valide.',
 				'requestBody' => [
 					'content' => [
 						'application/json' => [
 							'schema' => [
 								'type' => 'object',
 								'properties' => [
-									'email' => [
-										'type' => 'string',
-										'example' => 'maxime.duplaissy@mail.com'
-									],
-									'token' => [
-										'type' => 'string',
-										'example' => 'R8fAJgEUwxMkBlW7KfkwQUtZISxzYLEZWEDZMO9lbjw02EKIHHtqSGMC0rcciki8'
-									],
-									'new_password' => [
-										'type' => 'string',
-										'example' => 'NewUserPassword+123'
-									],
+									'email' => ['type' => 'string', 'example' => 'maxime.duplaissy@mail.com'],
+									'token' => ['type' => 'string', 'example' => 'R8fAJgEUwxMkBlW7KfkwQUtZISxzYLEZWEDZMO9lbjw02EKIHHtqSGMC0rcciki8'],
+									'new_password' => ['type' => 'string', 'example' => 'NewUserPassword+123'],
 								],
 								'required' => ['email', 'token', 'new_password'],
 							],
@@ -476,19 +293,6 @@ use App\Controller\CurrentUserController;
 				'responses' => [
 					'200' => [
 						'description' => 'Mot de passe réinitialisé avec succès.',
-						'content' => [
-							'application/json' => [
-								'schema' => [
-									'type' => 'object',
-									'properties' => [
-										'message' => [
-											'type' => 'string',
-											'example' => 'Mot de passe réinitialisé avec succès.'
-										],
-									],
-								],
-							],
-						],
 					],
 					'400' => [
 						'description' => 'Token invalide ou expiré.',
@@ -497,7 +301,7 @@ use App\Controller\CurrentUserController;
 						'description' => 'Utilisateur non trouvé.',
 					],
 				],
-			],
+			]
 		),
 	]
 )]

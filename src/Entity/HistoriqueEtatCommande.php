@@ -29,7 +29,18 @@ use Symfony\Component\Serializer\Normalizer\DateTimeNormalizer;
 			security: "is_granted('ROLE_USER') or is_granted('ROLE_ADMIN')",
 			openapiContext: [
 				'summary' => 'Récupère la liste des historiques d\'état de commande pour une commande spécifique.',
-				'description' => 'Cette opération permet de récupérer tous les historiques d\'état d\'une commande donnée.'
+				'description' => 'Cette opération permet de récupérer tous les historiques d\'état d\'une commande donnée.',
+				'responses' => [
+					'200' => [
+						'description' => 'Liste des historiques d\'état de commande récupérée avec succès.',
+					],
+					'403' => [
+						'description' => 'Accès refusé si l\'utilisateur n\'a pas les autorisations nécessaires.',
+					],
+					'404' => [
+						'description' => 'Commande non trouvée.',
+					],
+				],
 			]
 		),
 		// Récupération d'un historique d'état de commande spécifique pour une commande spécifique
@@ -45,7 +56,18 @@ use Symfony\Component\Serializer\Normalizer\DateTimeNormalizer;
 			security: "is_granted('ROLE_ADMIN') or object.getCommande().getUtilisateur() == user",
 			openapiContext: [
 				'summary' => 'Récupère un historique d\'état de commande spécifique pour une commande donnée.',
-				'description' => 'Cette opération permet de récupérer les détails d\'un historique d\'état de commande spécifique pour une commande donnée.'
+				'description' => 'Cette opération permet de récupérer les détails d\'un historique d\'état de commande spécifique pour une commande donnée.',
+				'responses' => [
+					'200' => [
+						'description' => 'Détails de l\'historique d\'état de commande récupérés avec succès.',
+					],
+					'403' => [
+						'description' => 'Accès refusé si l\'utilisateur n\'a pas les autorisations nécessaires.',
+					],
+					'404' => [
+						'description' => 'Historique d\'état de commande ou commande non trouvée.',
+					],
+				],
 			]
 		),
 		// Création d'un nouvel historique d'état de commande pour une commande spécifique
@@ -80,12 +102,23 @@ use Symfony\Component\Serializer\Normalizer\DateTimeNormalizer;
 										'example' => '2024-04-27T12:00:00+00:00'
 									]
 								],
-								'required' => ['etat_commande']
-							]
-						]
-					]
-				]
-			],
+								'required' => ['etat_commande'],
+							],
+						],
+					],
+				],
+				'responses' => [
+					'201' => [
+						'description' => 'Nouvel historique d\'état de commande créé avec succès.',
+					],
+					'400' => [
+						'description' => 'Erreur de validation ou données incorrectes.',
+					],
+					'403' => [
+						'description' => 'Accès refusé si l\'utilisateur n\'a pas les autorisations nécessaires.',
+					],
+				],
+			]
 		),
 	]
 )]

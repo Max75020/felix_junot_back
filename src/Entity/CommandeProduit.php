@@ -5,7 +5,7 @@ namespace App\Entity;
 use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\Post;
-use ApiPlatform\Metadata\Put;
+use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Delete;
 use ApiPlatform\Metadata\GetCollection;
 use Symfony\Component\Serializer\Annotation\Groups;
@@ -18,19 +18,167 @@ use Symfony\Component\Validator\Constraints as Assert;
 	denormalizationContext: ['groups' => ['commandeProduit:write']],
 	operations: [
 		// Récupération de toutes les commandes-produits (accessible à tous)
-		new GetCollection(),
-
+		new GetCollection(
+			openapiContext: [
+				'summary' => 'Récupère la collection de commandes-produits.',
+				'description' => 'Permet de récupérer une liste de toutes les commandes-produits.',
+				'responses' => [
+					'200' => [
+						'description' => 'Liste des commandes-produits récupérée avec succès.',
+					],
+					'403' => [
+						'description' => 'Accès refusé si l\'utilisateur n\'a pas les autorisations nécessaires.',
+					],
+				],
+			]
+		),
 		// Récupération d'une commande-produit (accessible à l'administrateur ou au propriétaire de la commande)
-		new Get(security: "is_granted('ROLE_ADMIN') or object.getCommande().getUtilisateur() == user"),
+		new Get(
+			security: "is_granted('ROLE_ADMIN') or object.getCommande().getUtilisateur() == user",
+			openapiContext: [
+				'summary' => 'Récupère une commande-produit.',
+				'description' => 'Permet de récupérer les détails d\'une commande-produit spécifique pour un utilisateur ou un administrateur.',
+				'responses' => [
+					'200' => [
+						'description' => 'Commande-produit récupérée avec succès.',
+					],
+					'403' => [
+						'description' => 'Accès refusé si l\'utilisateur n\'a pas les autorisations nécessaires.',
+					],
+					'404' => [
+						'description' => 'Commande-produit non trouvée.',
+					],
+				],
+			]
+		),
 
-		// Modification complète d'une commande-produit (accessible uniquement aux administrateurs)
-		new Put(security: "is_granted('ROLE_ADMIN')"),
-
+		// Modification partielle d'une commande-produit (accessible uniquement aux administrateurs)
+		new Patch(
+			security: "is_granted('ROLE_ADMIN')",
+			openapiContext: [
+				'summary' => 'Modifie partiellement une commande-produit.',
+				'description' => 'Permet de modifier partiellement une commande-produit existante. Accessible uniquement aux administrateurs.',
+				'requestBody' => [
+					'content' => [
+						'application/merge-patch+json' => [
+							'schema' => [
+								'type' => 'object',
+								'properties' => [
+									'commande' => [
+										'type' => 'string',
+										'format' => 'iri',
+										'description' => 'IRI de la commande associée',
+										'example' => '/api/commandes/1',
+									],
+									'produit' => [
+										'type' => 'string',
+										'format' => 'iri',
+										'description' => 'IRI du produit associé',
+										'example' => '/api/produits/1',
+									],
+									'quantite' => [
+										'type' => 'integer',
+										'description' => 'Quantité du produit dans la commande',
+										'example' => 3,
+									],
+									'prix_total_produit' => [
+										'type' => 'string',
+										'description' => 'Prix total du produit dans la commande',
+										'example' => '59.99',
+									],
+								],
+							],
+						],
+					],
+				],
+				'responses' => [
+					'200' => [
+						'description' => 'Commande-produit modifiée avec succès.',
+					],
+					'400' => [
+						'description' => 'Erreur de validation ou données incorrectes.',
+					],
+					'403' => [
+						'description' => 'Accès refusé si l\'utilisateur n\'a pas les autorisations nécessaires.',
+					],
+					'404' => [
+						'description' => 'Commande-produit non trouvée.',
+					],
+				],
+			]
+		),
 		// Suppression d'une commande-produit (accessible uniquement aux administrateurs)
-		new Delete(security: "is_granted('ROLE_ADMIN')"),
-
+		new Delete(
+			security: "is_granted('ROLE_ADMIN')",
+			openapiContext: [
+				'summary' => 'Supprime une commande-produit.',
+				'description' => 'Permet de supprimer une commande-produit existante. Accessible uniquement aux administrateurs.',
+				'responses' => [
+					'204' => [
+						'description' => 'Commande-produit supprimée avec succès.',
+					],
+					'403' => [
+						'description' => 'Accès refusé si l\'utilisateur n\'a pas les autorisations nécessaires.',
+					],
+					'404' => [
+						'description' => 'Commande-produit non trouvée.',
+					],
+				],
+			]
+		),
 		// Création d'une nouvelle commande-produit (accessible aux utilisateurs connectés pour leurs propres commandes ou aux administrateurs)
-		new Post(security: "is_granted('ROLE_ADMIN') or object.getCommande().getUtilisateur() == user")
+		new Post(
+			security: "is_granted('ROLE_ADMIN') or object.getCommande().getUtilisateur() == user",
+			openapiContext: [
+				'summary' => 'Crée une nouvelle commande-produit.',
+				'description' => 'Permet de créer une nouvelle commande-produit associée à une commande et un produit.',
+				'requestBody' => [
+					'content' => [
+						'application/json' => [
+							'schema' => [
+								'type' => 'object',
+								'properties' => [
+									'commande' => [
+										'type' => 'string',
+										'format' => 'iri',
+										'description' => 'IRI de la commande associée',
+										'example' => '/api/commandes/1',
+									],
+									'produit' => [
+										'type' => 'string',
+										'format' => 'iri',
+										'description' => 'IRI du produit associé',
+										'example' => '/api/produits/1',
+									],
+									'quantite' => [
+										'type' => 'integer',
+										'description' => 'Quantité du produit dans la commande',
+										'example' => 2,
+									],
+									'prix_total_produit' => [
+										'type' => 'string',
+										'description' => 'Prix total du produit dans la commande',
+										'example' => '29.99',
+									],
+								],
+								'required' => ['commande', 'produit', 'quantite', 'prix_total_produit'],
+							],
+						],
+					],
+				],
+				'responses' => [
+					'201' => [
+						'description' => 'Commande-produit créée avec succès.',
+					],
+					'400' => [
+						'description' => 'Erreur de validation ou données incorrectes.',
+					],
+					'403' => [
+						'description' => 'Accès refusé si l\'utilisateur n\'a pas les autorisations nécessaires.',
+					],
+				],
+			]
+		),
 	]
 )]
 #[ORM\Entity(repositoryClass: CommandeProduitRepository::class)]
