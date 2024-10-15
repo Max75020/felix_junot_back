@@ -132,7 +132,7 @@ class HistoriqueEtatCommande
 	#[ORM\Id]
 	#[ORM\GeneratedValue]
 	#[ORM\Column(type: 'integer')]
-	#[Groups(['historiqueEtatCommande:read'])]
+	#[Groups(['historiqueEtatCommande:read','commande:read', 'commande:write'])]
 	private ?int $id_historique_etat_commande = null;
 
 	// Relation ManyToOne avec l'entité Commande
@@ -147,14 +147,14 @@ class HistoriqueEtatCommande
 	#[DateTimeNormalizer(format: 'd-m-Y H:i:s')]
 	#[Assert\NotBlank(message: "La date de changement d'état est obligatoire.")]
 	#[Assert\Type(\DateTimeInterface::class, message: "La date de changement d'état doit être une date valide.")]
-	#[Groups(['historiqueEtatCommande:read', 'historiqueEtatCommande:write'])]
+	#[Groups(['historiqueEtatCommande:read', 'historiqueEtatCommande:write','commande:read', 'commande:write'])]
 	private ?\DateTimeInterface $date_etat = null;
 
 	// Relation ManyToOne avec l'entité EtatCommande
 	#[ORM\ManyToOne(targetEntity: EtatCommande::class, inversedBy: 'historiqueEtats')]
 	#[ORM\JoinColumn(name: 'etat_commande_id', referencedColumnName: 'id_etat_commande', nullable: false)]
 	#[Assert\NotBlank(message: "L'état de la commande est obligatoire.")]
-	#[Groups(['historiqueEtatCommande:read', 'historiqueEtatCommande:write'])]
+	#[Groups(['historiqueEtatCommande:read', 'historiqueEtatCommande:write','commande:read', 'commande:write'])]
 	private ?EtatCommande $etat_commande = null;
 
 	// Constructeur pour initialiser automatiquement la date

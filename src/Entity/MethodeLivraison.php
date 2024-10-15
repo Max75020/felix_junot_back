@@ -8,6 +8,8 @@ use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Post;
 use ApiPlatform\Metadata\Patch;
 use Doctrine\ORM\Mapping as ORM;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use ApiPlatform\Metadata\ApiResource;
 use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
@@ -27,7 +29,7 @@ use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 			normalizationContext: ['groups' => ['methodeLivraison:read']],
 			openapiContext: [
 				'summary' => 'Récupère la liste de toutes les méthodes de livraison disponibles.',
-				'description' => 'Cette opération permet de récupérer toutes les méthodes de livraison disponibles, incluant les transporteurs associés et les détails de livraison.',
+				'description' => 'Cette opération permet de récupérer toutes les méthodes de livraison disponibles, incluant les transporteur associés et les détails de livraison.',
 				'responses' => [
 					'200' => [
 						'description' => 'Liste de toutes les méthodes de livraison.',
@@ -116,7 +118,7 @@ use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 										'type' => 'string',
 										'format' => 'iri',
 										'description' => 'L\'IRI du transporteur associé à cette méthode de livraison.',
-										'example' => '/api/transporteurs/1',
+										'example' => '/api/transporteur/1',
 									],
 								],
 								'required' => []
@@ -185,7 +187,7 @@ use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 										'type' => 'string',
 										'format' => 'iri',
 										'description' => 'L\'IRI du transporteur associé à cette méthode de livraison.',
-										'example' => '/api/transporteurs/1',
+										'example' => '/api/transporteur/1',
 									],
 								],
 								'required' => ['nom', 'prix', 'transporteur', 'delaiEstime'],
@@ -212,7 +214,7 @@ use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 					],
 				],
 			]
-		),		
+		),
 	]
 )]
 class MethodeLivraison
@@ -220,31 +222,35 @@ class MethodeLivraison
 	#[ORM\Id]
 	#[ORM\GeneratedValue]
 	#[ORM\Column(name: 'id_methode_livraison', type: 'integer')]
-	#[Groups(['methodeLivraison:read'])]
+	#[Groups(['methodeLivraison:read','commande:read', 'commande:write'])]
 	private ?int $id_methode_livraison = null;
 
 	#[ORM\Column(type: 'string', length: 100)]
 	#[Assert\NotBlank]
-	#[Groups(['methodeLivraison:read', 'methodeLivraison:write'])]
+	#[Groups(['methodeLivraison:read', 'methodeLivraison:write', 'transporteur:read', 'commande:read'])]
 	private ?string $nom = null;
 
 	#[ORM\Column(type: 'text', nullable: true)]
-	#[Groups(['methodeLivraison:read', 'methodeLivraison:write'])]
+	#[Groups(['methodeLivraison:read', 'methodeLivraison:write', 'transporteur:read', 'commande:read'])]
 	private ?string $description = null;
 
 	#[ORM\Column(type: 'decimal', precision: 10, scale: 2)]
 	#[Assert\NotBlank]
-	#[Groups(['methodeLivraison:read', 'methodeLivraison:write'])]
+	#[Groups(['methodeLivraison:read', 'methodeLivraison:write', 'transporteur:read','commande:read', 'commande:write'])]
 	private string $prix;
 
 	#[ORM\Column(type: 'string', length: 50, nullable: true)]
-	#[Groups(['methodeLivraison:read', 'methodeLivraison:write'])]
+	#[Groups(['methodeLivraison:read', 'methodeLivraison:write', 'transporteur:read', 'commande:read'])]
 	private ?string $delaiEstime = null;
 
-	#[ORM\ManyToOne(targetEntity: Transporteurs::class, inversedBy: 'methodesLivraison')]
+	#[ORM\ManyToOne(targetEntity: Transporteur::class, inversedBy: 'methodeLivraison')]
 	#[ORM\JoinColumn(nullable: false, referencedColumnName: 'id_transporteur')]
-	#[Groups(['methodeLivraison:read', 'methodeLivraison:write'])]
-	private ?Transporteurs $transporteur = null;
+	#[Groups(['methodeLivraison:read', 'methodeLivraison:write','transporteur:read','commande:read', 'commande:write'])]
+	private ?Transporteur $transporteur = null;
+
+	// Relation OneToMany avec l'entité Commande
+	#[ORM\OneToMany(mappedBy: 'methodeLivraison', targetEntity: Commande::class)]
+	private Collection $commandes;
 
 	public function getIdMethodeLivraison(): ?int
 	{
@@ -299,14 +305,43 @@ class MethodeLivraison
 		return $this;
 	}
 
-	public function getTransporteur(): ?Transporteurs
+	public function getTransporteur(): ?Transporteur
 	{
 		return $this->transporteur;
 	}
 
-	public function setTransporteur(?Transporteurs $transporteur): static
+	public function setTransporteur(?Transporteur $transporteur): static
 	{
 		$this->transporteur = $transporteur;
+
+		return $this;
+	}
+
+	/**
+	 * @return Collection|Commande[]
+	 */
+	public function getCommandes(): Collection
+	{
+		return $this->commandes;
+	}
+
+	public function addCommande(Commande $commande): self
+	{
+		if (!$this->commandes->contains($commande)) {
+			$this->commandes[] = $commande;
+			$commande->setMethodeLivraison($this);
+		}
+
+		return $this;
+	}
+
+	public function removeCommande(Commande $commande): self
+	{
+		if ($this->commandes->removeElement($commande)) {
+			if ($commande->getMethodeLivraison() === $this) {
+				$commande->setMethodeLivraison(null);
+			}
+		}
 
 		return $this;
 	}

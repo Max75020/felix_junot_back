@@ -15,8 +15,6 @@ use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\Common\Collections\ArrayCollection;
-use DateTime;
-use App\State\PanierProduitProcessor;
 
 #[ApiResource(
 	normalizationContext: ['groups' => ['produit:read']],
@@ -61,9 +59,52 @@ use App\State\PanierProduitProcessor;
 							'schema' => [
 								'type' => 'object',
 								'properties' => [
-									'nom' => ['type' => 'string'],
-									'description' => ['type' => 'string'],
-									'prix_ht' => ['type' => 'string'],
+									'nom' => [
+										'type' => 'string',
+										'example' => 'Produit Modifié',
+										'description' => 'Nom mis à jour du produit.'
+									],
+									'description' => [
+										'type' => 'string',
+										'example' => 'Description modifiée pour le produit.',
+										'description' => 'Description mise à jour du produit.'
+									],
+									'prix_ht' => [
+										'type' => 'string',
+										'example' => '79.99',
+										'description' => 'Prix hors taxes mis à jour du produit.'
+									],
+									'tva' => [
+										'type' => 'string',
+										'format' => 'iri',
+										'example' => '/api/tvas/2',
+										'description' => 'IRI de la ressource TVA associée mise à jour.'
+									],
+									'categories' => [
+										'type' => 'array',
+										'items' => [
+											'type' => 'string',
+											'format' => 'iri',
+											'example' => '/api/categories/2',
+											'description' => 'IRI des nouvelles ressources catégories associées.'
+										],
+										'description' => 'Liste des catégories mises à jour associées au produit.'
+									],
+									'images' => [
+										'type' => 'array',
+										'items' => [
+											'type' => 'string',
+											'format' => 'iri',
+											'example' => '/api/images/2',
+											'description' => 'IRI de la nouvelle image associée au produit.'
+										],
+										'description' => 'Liste des images mises à jour associées au produit.'
+									],
+									'stock' => [
+										'type' => 'integer',
+										'example' => 150,
+										'description' => 'Quantité en stock mise à jour du produit.'
+									],
 								],
 							],
 						],
@@ -79,6 +120,7 @@ use App\State\PanierProduitProcessor;
 				],
 			]
 		),
+
 		// Suppression d'un produit (accessible uniquement aux administrateurs)
 		new Delete(
 			security: "is_granted('ROLE_ADMIN')",
@@ -160,8 +202,13 @@ use App\State\PanierProduitProcessor;
 										],
 										'description' => 'Liste des images associées au produit.',
 									],
+									'stock' => [
+										'type' => 'integer',
+										'description' => 'Quantité en stock du produit.',
+										'example' => 100,
+									],
 								],
-								'required' => ['reference', 'nom', 'description', 'prix_ht', 'tva', 'categories'],
+								'required' => ['reference', 'nom', 'description', 'prix_ht', 'tva', 'categories', 'stock'],
 							],
 						],
 					],
@@ -175,48 +222,6 @@ use App\State\PanierProduitProcessor;
 					],
 				],
 			]
-		),
-		// Ajout d'un produit au panier (accessible aux utilisateurs connectés et aux administrateurs)
-		new Post(
-			uriTemplate: '/produits/{id}/add-to-panier',
-			processor: PanierProduitProcessor::class,
-			openapiContext: [
-				'summary' => 'Ajoute un produit au panier',
-				'description' => 'Ajoute le produit spécifié au panier de l\'utilisateur connecté.',
-				'requestBody' => [
-					'content' => [
-						'application/json' => [
-							'schema' => [
-								'type' => 'object',
-								'properties' => [
-									'produit' => [
-										'type' => 'string',
-										'format' => 'iri',
-										'description' => 'IRI du produit à ajouter au panier.',
-										'example' => '/api/produits/1',
-									],
-									'quantite' => [
-										'type' => 'integer',
-										'format' => 'int32',
-										'description' => 'Quantité de produit à ajouter au panier.',
-										'example' => 2,
-									],
-								],
-								'required' => ['produit', 'quantite'],
-							],
-						],
-					],
-				],
-				'responses' => [
-					'201' => [
-						'description' => 'Produit ajouté au panier avec succès.',
-					],
-					'403' => [
-						'description' => 'Accès interdit. Vous devez être connecté pour ajouter un produit au panier.',
-					],
-				],
-			],
-			security: "is_granted('ROLE_USER') or is_granted('ROLE_ADMIN')"
 		),
 	]
 )]
@@ -246,20 +251,20 @@ class Produit
 	// Nom du produit
 	#[ORM\Column(type: 'string', length: 100)]
 	#[Assert\NotBlank(message: "Le nom est obligatoire.")]
-	#[Groups(['produit:read', 'produit:write'])]
+	#[Groups(['produit:read', 'produit:write', 'panier:read', 'panier:write', 'categorie:read', 'commande:read'])]
 	private ?string $nom = null;
 
 	// Description du produit
 	#[ORM\Column(type: 'text')]
 	#[Assert\NotBlank(message: "La description est obligatoire.")]
-	#[Groups(['produit:read', 'produit:write'])]
+	#[Groups(['produit:read', 'produit:write', 'panier:read', 'panier:write'])]
 	private ?string $description = null;
 
 	// Prix du produit
 	#[ORM\Column(type: 'decimal', precision: 10, scale: 2)]
 	#[Assert\NotBlank(message: "Le prix est obligatoire.")]
 	#[Assert\Positive(message: "Le prix doit être un nombre positif.")]
-	#[Groups(['produit:read', 'produit:write'])]
+	#[Groups(['produit:read', 'produit:write', 'panier:read', 'panier:write'])]
 	private ?string $prix_ht = null;
 
 	// Relation ManyToMany avec l'entité Categorie
@@ -274,14 +279,14 @@ class Produit
 		]
 	)]
 	#[Assert\NotBlank(message: "La catégorie est obligatoire.")]
-	#[Groups(['produit:read', 'produit:write', 'categorie:write'])]
+	#[Groups(['produit:read', 'produit:write', 'categorie:write', 'panier:read', 'panier:write'])]
 	private Collection $categories;
 
 	// Relation ManyToOne avec l'entité Tva
 	#[ORM\ManyToOne(targetEntity: Tva::class, inversedBy: 'produits')]
 	#[ORM\JoinColumn(name: 'tva_id', referencedColumnName: 'id_tva', nullable: false)]
 	#[Assert\NotBlank(message: "La TVA est obligatoire.")]
-	#[Groups(['produit:read', 'produit:write'])]
+	#[Groups(['produit:read', 'produit:write', 'panier:read', 'panier:write'])]
 	private ?Tva $tva = null;
 
 	// Relation OneToMany avec l'entité Favoris
@@ -296,7 +301,7 @@ class Produit
 
 	// Relation OneToMany avec l'entité ImageProduit
 	#[ORM\OneToMany(mappedBy: 'produit', targetEntity: ImageProduit::class, cascade: ['persist', 'remove'])]
-	#[Groups(['produit:read', 'produit:write'])]
+	#[Groups(['produit:read', 'produit:write', 'panier:read', 'panier:write'])]
 	private Collection $images;
 
 	// Relation OneToMany avec l'entité CommandeProduit
@@ -307,10 +312,12 @@ class Produit
 	#[ORM\Column(type: 'decimal', precision: 10, scale: 2)]
 	#[Assert\NotBlank(message: "Le prix est obligatoire.")]
 	#[Assert\Positive(message: "Le prix doit être un nombre positif.")]
-	#[Groups(['produit:read', 'produit:write'])]
+	#[Groups(['produit:read', 'produit:write', 'panier:read', 'panier:write'])]
 	private ?string $prix_ttc = null;
 
-	#[ORM\Column]
+	#[ORM\Column(type: 'integer', nullable: false)]
+	#[Assert\NotNull(message: "Le stock est obligatoire.")]
+	#[Groups(['produit:read', 'produit:write', 'panier:read', 'panier:write'])]
 	private ?int $stock = null;
 
 	public function __construct()

@@ -63,6 +63,23 @@ services:
             - { name: 'api_platform.doctrine.orm.query_extension.collection' }
             - { name: 'api_platform.doctrine.orm.query_extension.item' }
 
+    App\Extension\AdresseExtension:
+        arguments:
+            $security: '@security.helper'
+            $logger: '@logger'
+        tags:
+            - { name: 'api_platform.doctrine.orm.query_extension.collection' }
+            - { name: 'api_platform.doctrine.orm.query_extension.item' }
+
     App\Service\StripeService:
         arguments:
             $stripeSecretKey: '%env(STRIPE_SECRET_KEY)%'
+
+    App\State\PanierProcessor:
+        arguments:
+            $security: '@security.helper'
+            $entityManager: '@doctrine.orm.entity_manager'
+            $requestStack: '@request_stack'
+            $logger: '@logger'
+        tags:
+            - { name: 'api_platform.state_processor' }

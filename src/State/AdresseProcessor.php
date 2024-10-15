@@ -27,9 +27,11 @@ class AdresseProcessor implements ProcessorInterface
 		if ($data instanceof Adresse) {
 			$currentUser = $this->security->getUser();
 
+			$this->logger->info('AdresseProcessor called.');
+
 			// Gérer la logique d'adresses similaires
 			if ($data->isSimilaire()) {
-				$this->dupliquerAdressePourFacturation($data, $currentUser);
+				$this->creerAdresseSimilaire($data, $currentUser);
 			}
 
 			// Cas pour un utilisateur standard (non administrateur)
@@ -46,28 +48,37 @@ class AdresseProcessor implements ProcessorInterface
 				}
 			}
 		}
-
 		// Persister les données dans la base
 		$this->entityManager->persist($data);
 		$this->entityManager->flush();
-
+		$this->logger->info('AdresseProcessor finished.');
+		
 		return $data;
 	}
 
 	/**
-	 * Duplique l'adresse de livraison pour créer une adresse de facturation si nécessaire.
+	 * Créer une adresse similaire selon le type d'adresse initiale (facturation ou livraison).
 	 */
-	private function dupliquerAdressePourFacturation(Adresse $adresseLivraison, $currentUser): void
+	private function creerAdresseSimilaire(Adresse $adresse, $currentUser): void
 	{
-		// Créer une nouvelle adresse en tant qu'adresse de facturation
-		$adresseFacturation = clone $adresseLivraison;
-		$adresseFacturation->setType('Facturation');
-		$adresseFacturation->setUtilisateur($currentUser);
+		// Dupliquer l'adresse en fonction de son type
+		$nouvelleAdresse = clone $adresse;
 
-		// Persister la nouvelle adresse de facturation
-		$this->entityManager->persist($adresseFacturation);
+		if ($adresse->getType() === 'Facturation') {
+			// Si c'est une adresse de facturation, créer une adresse de livraison similaire
+			$nouvelleAdresse->setType('Livraison');
+		} elseif ($adresse->getType() === 'Livraison') {
+			// Si c'est une adresse de livraison, créer une adresse de facturation similaire
+			$nouvelleAdresse->setType('Facturation');
+		}
+
+		// Associer l'adresse similaire à l'utilisateur actuel
+		$nouvelleAdresse->setUtilisateur($currentUser);
+
+		// Persister la nouvelle adresse similaire
+		$this->entityManager->persist($nouvelleAdresse);
 		$this->entityManager->flush();
 
-		$this->logger->info("Adresse similaire dupliquée pour l'utilisateur : " . $currentUser->getUserIdentifier());
+		$this->logger->info("Adresse similaire dupliquée pour l'utilisateur : " . $currentUser->getUserIdentifier() . ", type de la nouvelle adresse : " . $nouvelleAdresse->getType());
 	}
 }

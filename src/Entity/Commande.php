@@ -97,7 +97,7 @@ use Symfony\Component\Serializer\Normalizer\DateTimeNormalizer;
 										'description' => 'Référence unique de la commande',
 										'example' => 'CMD-1-01012023123000',
 									],
-									'panier_id' => [
+									'panier' => [
 										'type' => 'string',
 										'format' => 'iri',
 										'description' => 'IRI du panier associé à la commande',
@@ -194,7 +194,7 @@ use Symfony\Component\Serializer\Normalizer\DateTimeNormalizer;
 										'type' => 'string',
 										'format' => 'iri',
 										'description' => 'IRI du transporteur',
-										'example' => '/api/transporteurs/1',
+										'example' => '/api/transporteur/1',
 									],
 									'poids' => [
 										'type' => 'string',
@@ -216,7 +216,7 @@ use Symfony\Component\Serializer\Normalizer\DateTimeNormalizer;
 										'description' => 'Référence unique de la commande',
 										'example' => 'CMD-2-01012023123000',
 									],
-									'panier_id' => [
+									'panier' => [
 										'type' => 'string',
 										'format' => 'iri',
 										'description' => 'IRI du panier associé à la commande',
@@ -240,7 +240,7 @@ use Symfony\Component\Serializer\Normalizer\DateTimeNormalizer;
 										'example' => '100.00',
 									],
 								],
-								'required' => ['utilisateur', 'etat_commande', 'prix_total_commande', 'transporteur', 'poids', 'frais_livraison', 'numero_suivi', 'reference', 'panier_id', 'id_adresse_facturation', 'id_adresse_livraison', 'total_produits_commande'],
+								'required' => ['utilisateur', 'etat_commande', 'prix_total_commande', 'transporteur', 'frais_livraison', 'numero_suivi', 'reference', 'panier', 'id_adresse_facturation', 'id_adresse_livraison', 'total_produits_commande'],
 							],
 						],
 					],
@@ -265,10 +265,10 @@ use Symfony\Component\Serializer\Normalizer\DateTimeNormalizer;
 #[ORM\Index(name: 'idx_utilisateur_id', columns: ['utilisateur_id'])]
 #[ORM\Index(name: 'idx_etat_commande_id', columns: ['etat_commande_id'])]
 #[ORM\Index(name: 'idx_date_commande', columns: ['date_commande'])]
-#[ORM\Index(name: 'idx_transporteurs_id', columns: ['transporteur_id'])]
+#[ORM\Index(name: 'idx_transporteur_id', columns: ['transporteur_id'])]
 #[ORM\Index(name: 'idx_panier_id', columns: ['panier_id'])]
-#[ORM\Index(name: 'idx_adresse_facturation_id', columns: ['id_adresse_facturation'])]
-#[ORM\Index(name: 'idx_adresse_livraison_id', columns: ['id_adresse_livraison'])]
+#[ORM\Index(name: 'idx_adresse_facturation_id', columns: ['adresse_facturation_id'])]
+#[ORM\Index(name: 'idx_adresse_livraison_id', columns: ['adresse_livraison_id'])]
 class Commande
 {
 	// Clé primaire avec auto-incrémentation
@@ -284,6 +284,35 @@ class Commande
 	#[Groups(['commande:read', 'commande:write'])]
 	private ?Utilisateur $utilisateur = null;
 
+	// Relation ManyToOne avec l'entité EtatCommande
+	#[ORM\ManyToOne(targetEntity: EtatCommande::class, inversedBy: 'commandes')]
+	#[ORM\JoinColumn(name: 'etat_commande_id', referencedColumnName: 'id_etat_commande', nullable: false)]
+	#[Groups(['commande:read', 'commande:write'])]
+	private ?EtatCommande $etat_commande = null;
+
+	#[ORM\ManyToOne(targetEntity: Adresse::class)]
+	#[ORM\JoinColumn(name: 'adresse_facturation_id', referencedColumnName: 'id_adresse', nullable: false)]
+	#[Groups(['commande:read', 'commande:write', 'historiqueEtatCommande:read', 'historiqueEtatCommande:write', ])]
+	private ?Adresse $adresseFacturation = null;
+
+	#[ORM\ManyToOne(targetEntity: Adresse::class)]
+	#[ORM\JoinColumn(name: 'adresse_livraison_id', referencedColumnName: 'id_adresse', nullable: false)]
+	#[Groups(['commande:read', 'commande:write'])]
+	private ?Adresse $adresseLivraison = null;
+
+	// Relation ManyToOne avec l'entité Transporteur
+	#[ORM\ManyToOne(targetEntity: Transporteur::class, inversedBy: 'commandes', cascade: ['persist'])]
+	#[ORM\JoinColumn(name: 'transporteur_id', referencedColumnName: 'id_transporteur', nullable: false)]
+	#[Assert\NotBlank(message: "Le transporteur est obligatoire.")]
+	#[Groups(['commande:read', 'commande:write'])]
+	private ?Transporteur $transporteur = null;
+
+	// Relation ManyToOne avec l'entité Panier
+	#[ORM\ManyToOne(targetEntity: Panier::class)]
+	#[ORM\JoinColumn(name: 'panier_id', referencedColumnName: 'id_panier', nullable: false)]
+	#[Groups(['commande:read', 'commande:write'])]
+	private ?Panier $panier = null;
+
 	// Date de la commande
 	#[ORM\Column(type: 'datetime')]
 	#[DateTimeNormalizer(format: 'd-m-Y H:i:s')]
@@ -292,6 +321,12 @@ class Commande
 	#[Groups(['commande:read'])]
 	private ?\DateTimeInterface $date_commande = null;
 
+	// Relation ManyToOne avec l'entité MethodeLivraison
+	#[ORM\ManyToOne(targetEntity: MethodeLivraison::class)]
+	#[ORM\JoinColumn(name: 'methode_livraison_id', referencedColumnName: 'id_methode_livraison', nullable: false)]
+	#[Groups(['commande:read', 'commande:write'])]
+	private ?MethodeLivraison $methodeLivraison = null;
+
 	// Total des produits dans la commande
 	#[ORM\Column(type: 'decimal', precision: 10, scale: 2, name: 'total_produits_commande')]
 	#[Assert\NotBlank(message: "Le total des produits dans la commande ne peut pas être vide.")]
@@ -299,21 +334,8 @@ class Commande
 	#[Groups(['commande:read', 'commande:write'])]
 	private string $total_produits_commande = '10.00';
 
-	// Relation ManyToOne avec l'entité EtatCommande
-	#[ORM\ManyToOne(targetEntity: EtatCommande::class, inversedBy: 'commandes')]
-	#[ORM\JoinColumn(name: 'etat_commande_id', referencedColumnName: 'id_etat_commande', nullable: false)]
-	#[Groups(['commande:read', 'commande:write'])]
-	private ?EtatCommande $etat_commande = null;
-
-	// Relation ManyToOne avec l'entité Transporteurs
-	#[ORM\ManyToOne(targetEntity: Transporteurs::class, inversedBy: 'commandes', cascade: ['persist'])]
-	#[ORM\JoinColumn(name: 'transporteur_id', referencedColumnName: 'id_transporteur', nullable: false)]
-	#[Assert\NotBlank(message: "Le transporteur est obligatoire.")]
-	#[Groups(['commande:read', 'commande:write'])]
-	private ?Transporteurs $transporteur = null;
-
 	// Poids de la commande
-	#[ORM\Column(type: 'decimal', precision: 10, scale: 2)]
+	#[ORM\Column(type: 'decimal', precision: 10, scale: 2, nullable: true)]
 	#[Assert\PositiveOrZero(message: "Le poids ne peut pas être négatif.")]
 	#[Groups(['commande:read', 'commande:write'])]
 	private ?string $poids = null;
@@ -342,21 +364,17 @@ class Commande
 	#[ORM\Column(type: 'decimal', precision: 10, scale: 2, name: 'prix_total_commande')]
 	#[Assert\NotBlank(message: "Le prix total de la commande est obligatoire.")]
 	#[Assert\GreaterThanOrEqual(value: 0, message: "Le prix total de la commande ne peut pas être négatif.")]
-	// Le prix total de la commande est bien la somme du total produits et des frais de livraison
+/* 	// Le prix total de la commande est bien la somme du total produits et des frais de livraison
 	#[Assert\Expression(
 		"this.getPrixTotalCommande() === (this.getTotalProduitsCommande() + this.getFraisLivraison())",
 		message: "Le prix total de la commande doit correspondre à la somme du total des produits et des frais de livraison."
-	)]
+	)] */
 	private string $prix_total_commande = '0.00';
-
-	// Relation ManyToOne avec l'entité Panier
-	#[ORM\ManyToOne(targetEntity: Panier::class)]
-	#[ORM\JoinColumn(name: 'panier_id', referencedColumnName: 'id_panier', nullable: false)]
-	private ?Panier $panier = null;
 
 	// Relation OneToMany avec l'entité CommandeProduit
 	// Cascade persist et remove pour enregistrer et supprimer automatiquement les commandes produits associées
 	#[ORM\OneToMany(mappedBy: 'commande', targetEntity: CommandeProduit::class, cascade: ['persist', 'remove'])]
+	#[Groups(['commande:read'])]
 	private Collection $commandeProduits;
 
 	// Relation OneToMany avec l'entité HistoriqueEtatCommande
@@ -365,16 +383,6 @@ class Commande
 	#[Groups(['commande:read'])]
 	private Collection $historiqueEtats;
 
-	#[ORM\ManyToOne(targetEntity: Adresse::class)]
-	#[ORM\JoinColumn(name: 'id_adresse_facturation', referencedColumnName: 'id_adresse', nullable: false)]
-	#[Groups(['commande:read', 'commande:write'])]
-	private ?Adresse $adresseFacturation = null;
-
-	#[ORM\ManyToOne(targetEntity: Adresse::class)]
-	#[ORM\JoinColumn(name: 'id_adresse_livraison', referencedColumnName: 'id_adresse', nullable: false)]
-	#[Groups(['commande:read', 'commande:write'])]
-	private ?Adresse $adresseLivraison = null;
-
 	// Constructeur pour initialiser automatiquement la date de commande et générer une référence unique
 	public function __construct()
 	{
@@ -382,9 +390,6 @@ class Commande
 		$this->historiqueEtats = new ArrayCollection();
 		// Initialise la date avec la date actuelle
 		$this->date_commande = new \DateTime();
-
-		// Génère une référence unique après avoir configuré l'utilisateur et la date de commande
-		$this->generateReference();
 	}
 
 	// Getters et Setters...
@@ -427,12 +432,12 @@ class Commande
 		return $this;
 	}
 
-	public function getTransporteur(): ?Transporteurs
+	public function getTransporteur(): ?Transporteur
 	{
 		return $this->transporteur;
 	}
 
-	public function setTransporteur(?Transporteurs $transporteur): self
+	public function setTransporteur(?Transporteur $transporteur): self
 	{
 		$this->transporteur = $transporteur;
 		return $this;
@@ -566,6 +571,19 @@ class Commande
 	}
 
 	/**
+	 * Définit le panier associé à cette commande.
+	 *
+	 * @param Panier|null $panier Le panier à associer, ou null pour dissocier le panier actuel.
+	 * @return self
+	 */
+	public function setPanier(?Panier $panier): self
+	{
+		$this->panier = $panier;
+
+		return $this;
+	}
+
+	/**
 	 * Définit le prix total de la commande.
 	 *
 	 * @param string|null $prixTotalCommande Le prix total de la commande au format string (ex: "100.00") ou null.
@@ -630,6 +648,17 @@ class Commande
 	public function setAdresseLivraison(?Adresse $adresseLivraison): self
 	{
 		$this->adresseLivraison = $adresseLivraison;
+		return $this;
+	}
+
+	public function getMethodeLivraison(): ?MethodeLivraison
+	{
+		return $this->methodeLivraison;
+	}
+
+	public function setMethodeLivraison(?MethodeLivraison $methodeLivraison): self
+	{
+		$this->methodeLivraison = $methodeLivraison;
 		return $this;
 	}
 }

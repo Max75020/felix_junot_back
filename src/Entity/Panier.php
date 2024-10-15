@@ -14,12 +14,98 @@ use Symfony\Component\Validator\Constraints as Assert;
 use App\State\PanierProcessor;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
-use App\Enum\EtatPanier;
 
 #[ApiResource(
 	normalizationContext: ['groups' => ['panier:read']],
 	denormalizationContext: ['groups' => ['panier:write']],
 	operations: [
+		// Ajout d'un produit au panier (accessible aux utilisateurs connectés et aux administrateurs)
+		new Post(
+			uriTemplate: '/paniers/add-product',
+			normalizationContext: ['groups' => ['panier:read']],
+			denormalizationContext: ['groups' => ['panier:write']],
+			processor: PanierProcessor::class,
+			security: "is_granted('ROLE_USER') or is_granted('ROLE_ADMIN')",
+			openapiContext: [
+				'summary' => 'Ajoute un produit au panier',
+				'description' => 'Ajoute un produit au panier de l\'utilisateur connecté, ou crée un panier s\'il n\'existe pas.',
+				'requestBody' => [
+					'content' => [
+						'application/json' => [
+							'schema' => [
+								'type' => 'object',
+								'properties' => [
+									'produit' => ['type' => 'string', 'format' => 'iri', 'description' => 'IRI du produit à ajouter.', 'example' => '/api/produits/1'],
+									'quantite' => ['type' => 'integer', 'description' => 'Quantité du produit à ajouter.', 'example' => 3]
+								],
+								'required' => ['produit', 'quantite']
+							]
+						]
+					]
+				],
+				'responses' => [
+					'201' => ['description' => 'Produit ajouté au panier avec succès.'],
+					'400' => ['description' => 'Requête invalide.'],
+					'403' => ['description' => 'Accès refusé. Vous devez être connecté.']
+				]
+			],
+		),
+		// Incrémentation de la quantité d'un produit dans le panier (accessible aux utilisateurs connectés et aux administrateurs)
+		new Patch(
+			uriTemplate: '/paniers/{id_panier}/increment-product',
+			processor: PanierProcessor::class,
+			openapiContext: [
+				'summary' => 'Incrémente la quantité d\'un produit dans le panier.',
+				'description' => 'Incrémente la quantité d\'un produit déjà présent dans le panier de l\'utilisateur connecté.',
+				'requestBody' => [
+					'content' => [
+						'application/json' => [
+							'schema' => [
+								'type' => 'object',
+								'properties' => [
+									'produit' => ['type' => 'string', 'format' => 'iri', 'description' => 'IRI du produit à incrémenter.', 'example' => '/api/produits/1']
+								],
+								'required' => ['produit']
+							]
+						]
+					]
+				],
+				'responses' => [
+					'200' => ['description' => 'Quantité incrémentée avec succès.'],
+					'400' => ['description' => 'Requête invalide.'],
+					'403' => ['description' => 'Accès refusé. Vous devez être connecté.']
+				]
+			],
+			security: "is_granted('ROLE_USER') or is_granted('ROLE_ADMIN')",
+		),
+		// Décrémentation de la quantité d'un produit dans le panier (accessible aux utilisateurs connectés et aux administrateurs)
+		new Patch(
+			uriTemplate: '/paniers/{id_panier}/decrement-product',
+			processor: PanierProcessor::class,
+			openapiContext: [
+				'summary' => 'Décrémente la quantité d\'un produit dans le panier.',
+				'description' => 'Décrémente la quantité d\'un produit déjà présent dans le panier de l\'utilisateur connecté.',
+				'requestBody' => [
+					'content' => [
+						'application/json' => [
+							'schema' => [
+								'type' => 'object',
+								'properties' => [
+									'produit' => ['type' => 'string', 'format' => 'iri', 'description' => 'IRI du produit à décrémenter.', 'example' => '/api/produits/1']
+								],
+								'required' => ['produit']
+							]
+						]
+					]
+				],
+				'responses' => [
+					'200' => ['description' => 'Quantité décrémentée avec succès.'],
+					'400' => ['description' => 'Requête invalide.'],
+					'403' => ['description' => 'Accès refusé. Vous devez être connecté.']
+				]
+			],
+			security: "is_granted('ROLE_USER') or is_granted('ROLE_ADMIN')",
+		),
 		// Récupération du panier (accessible à l'utilisateur propriétaire ou à l'administrateur)
 		new Get(
 			security: "is_granted('ROLE_ADMIN') or object.getUtilisateur() == user",
@@ -123,8 +209,8 @@ use App\Enum\EtatPanier;
 			processor: PanierProcessor::class,
 			denormalizationContext: ['groups' => ['panier:write']],
 			openapiContext: [
-				'summary' => 'Ajoute un produit au panier',
-				'description' => 'Ajoute un produit au panier de l\'utilisateur connecté.',
+				'summary' => 'Crée un nouveau panier',
+				'description' => 'Crée un nouveau panier pour l\'utilisateur connecté ou un utilisateur spécifié.',
 				'requestBody' => [
 					'content' => [
 						'application/json' => [
@@ -134,7 +220,7 @@ use App\Enum\EtatPanier;
 									'utilisateur' => [
 										'type' => 'string',
 										'format' => 'iri',
-										'description' => 'L\'IRI de l\'utilisateur auquel le panier appartient.',
+										'description' => 'L\'IRI de l\'utilisateur auquel le panier appartient. Si non fourni, le panier sera créé pour l\'utilisateur connecté.',
 										'example' => '/api/utilisateurs/1',
 									],
 									'etat' => [
@@ -145,11 +231,11 @@ use App\Enum\EtatPanier;
 									'prix_total_panier' => [
 										'type' => 'string',
 										'format' => 'decimal',
-										'description' => 'Le prix total des produits dans le panier.',
+										'description' => 'Le prix total des produits dans le panier (optionnel, calculé automatiquement).',
 										'example' => '99.99',
 									],
 								],
-								'required' => ['utilisateur', 'etat'],
+								'required' => ['etat'],
 							],
 						],
 					],
@@ -169,7 +255,7 @@ use App\Enum\EtatPanier;
 						'description' => 'Données invalides fournies.',
 					],
 					'403' => [
-						'description' => 'Accès refusé. Vous devez être connecté pour ajouter un produit au panier.',
+						'description' => 'Accès refusé. Vous devez être connecté pour créer un panier.',
 					],
 				],
 			]
@@ -184,37 +270,38 @@ class Panier
 	#[ORM\Id]
 	#[ORM\GeneratedValue]
 	#[ORM\Column(type: 'integer')]
-	#[Groups(['panier:read'])]
+	#[Groups(['panier:read','commande:read', 'commande:write'])]
 	private ?int $id_panier = null;
 
 	// Relation ManyToOne avec l'entité Utilisateur
 	#[ORM\ManyToOne(targetEntity: Utilisateur::class, inversedBy: 'paniers')]
 	#[ORM\JoinColumn(name: 'utilisateur_id', referencedColumnName: 'id_utilisateur', nullable: false)]
-	#[Assert\NotBlank(message: "L'utilisateur est obligatoire.")]
-	#[Groups(['panier:read', 'panier:write'])]
+	#[Groups(['panier:read'])]
 	private ?Utilisateur $utilisateur = null;
 
 	// Relation OneToMany avec l'entité PanierProduit
 	#[ORM\OneToMany(mappedBy: 'panier', targetEntity: PanierProduit::class, cascade: ['persist', 'remove'])]
+	#[Groups(['panier:read', 'panier:write'])]
 	private Collection $panierProduits;
 
 	// État du panier (ouvert ou fermé)
 	#[ORM\Column(type: 'string', length: 20)]
-	#[Assert\Choice(callback: [EtatPanier::class, 'getValues'], message: 'Valeur non valide pour le champ etat.')]
-	private EtatPanier $etat = EtatPanier::OUVERT;
+	#[Assert\Choice(choices: ['ouvert', 'ferme'], message: 'Valeur non valide pour le champ etat.')]
+	#[Groups(['panier:read','commande:read', 'commande:write'])]
+	private string $etat = 'ouvert';
 
 	// Prix total des produits dans le panier
 	#[ORM\Column(type: 'decimal', precision: 10, scale: 2, name: 'prix_total_panier')]
 	#[Assert\NotBlank(message: "Le prix total du panier est obligatoire.")]
 	#[Assert\PositiveOrZero(message: "Le prix total du panier doit être un nombre positif ou nul.")]
-	#[Groups(['panier:read'])]
+	#[Groups(['panier:read', 'panier:write', 'panierProduit:read', 'panierProduit:write','commande:read', 'commande:write'])]
 	private string $prix_total_panier = '0.00';
 
 	public function __construct()
 	{
 		$this->panierProduits = new ArrayCollection();
 		// Initialisation explicite de l'état du panier à "ouvert" => nouveau panier sera ouvert par défaut
-		$this->etat = EtatPanier::OUVERT;
+		$this->etat = "ouvert";
 	}
 
 	// Getters et Setters
@@ -262,12 +349,12 @@ class Panier
 	}
 
 	#[Groups(['panier:read'])]
-	public function getEtat(): EtatPanier
+	public function getEtat(): string
 	{
 		return $this->etat;
 	}
 
-	public function setEtat(EtatPanier $etat): self
+	public function setEtat($etat)
 	{
 		$this->etat = $etat;
 		return $this;
@@ -278,6 +365,12 @@ class Panier
 	public function getPrixTotalPanier(): string
 	{
 		return $this->prix_total_panier;
+	}
+
+	public function setPrixTotalPanier(string $prix_total_panier): self
+	{
+		$this->prix_total_panier = $prix_total_panier;
+		return $this;
 	}
 
 	/**

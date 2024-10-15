@@ -200,7 +200,7 @@ class EtatCommande
 	#[ORM\Id]
 	#[ORM\GeneratedValue]
 	#[ORM\Column(type: 'integer')]
-	#[Groups(['etatCommande:read'])]
+	#[Groups(['etatCommande:read', 'commande:read', 'commande:write'])]
 	private ?int $id_etat_commande = null;
 
 	// Libellé de l'état de la commande (doit être unique)
@@ -210,7 +210,7 @@ class EtatCommande
 		max: 50,
 		maxMessage: "Le libellé ne peut pas dépasser {{ limit }} caractères."
 	)]
-	#[Groups(['etatCommande:read', 'etatCommande:write'])]
+	#[Groups(['etatCommande:read', 'etatCommande:write','commande:read', 'commande:write'])]
 	private ?string $libelle = null;
 
 	// Relation OneToMany avec l'entité Commande

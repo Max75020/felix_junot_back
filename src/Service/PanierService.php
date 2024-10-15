@@ -6,7 +6,6 @@ use App\Entity\Panier;
 use App\Entity\Produit;
 use App\Entity\Utilisateur;
 use App\Entity\PanierProduit;
-use App\Enum\EtatPanier;
 use Doctrine\ORM\EntityManagerInterface;
 
 class PanierService
@@ -18,27 +17,29 @@ class PanierService
 		$this->entityManager = $entityManager;
 	}
 
+	// Crée un nouveau panier pour l'utilisateur
 	public function creerPanier(Utilisateur $utilisateur): Panier
 	{
 		$panier = new Panier();
 		$panier->setUtilisateur($utilisateur);
-		$panier->setEtat(EtatPanier::OUVERT);
+		$panier->setEtat("ouvert");
 		$this->entityManager->persist($panier);
 		$this->entityManager->flush();
 
 		return $panier;
 	}
 
+	// Ajoute un produit dans le panier
 	public function ajouterProduitAuPanier(Panier $panier, Produit $produit, int $quantite): void
 	{
-		// Logique pour ajouter le produit au panier
-		$panierProduit = $panier->getPanierProduits()->filter(function ($item) use ($produit) {
-			return $item->getProduit() === $produit;
-		})->first();
+		$panierProduit = $this->entityManager->getRepository(PanierProduit::class)
+			->findOneBy(['panier' => $panier, 'produit' => $produit]);
 
 		if ($panierProduit) {
+			// Mise à jour de la quantité si le produit est déjà dans le panier
 			$panierProduit->setQuantite($panierProduit->getQuantite() + $quantite);
 		} else {
+			// Ajouter un nouveau produit au panier
 			$panierProduit = new PanierProduit();
 			$panierProduit->setPanier($panier);
 			$panierProduit->setProduit($produit);
@@ -50,10 +51,33 @@ class PanierService
 		$this->entityManager->flush();
 	}
 
-	public function fermerPanier(Panier $panier): void
+	// Incrémente la quantité d'un produit dans le panier
+	public function incrementerQuantite(Panier $panier, Produit $produit): void
 	{
-		$panier->setEtat(EtatPanier::FERME);
-		$this->entityManager->persist($panier);
-		$this->entityManager->flush();
+		$panierProduit = $this->entityManager->getRepository(PanierProduit::class)
+			->findOneBy(['panier' => $panier, 'produit' => $produit]);
+
+		if ($panierProduit) {
+			$panierProduit->setQuantite($panierProduit->getQuantite() + 1);
+			$this->entityManager->flush();
+		}
+	}
+
+	// Décrémente la quantité d'un produit dans le panier
+	public function decrementerQuantite(Panier $panier, Produit $produit): void
+	{
+		$panierProduit = $this->entityManager->getRepository(PanierProduit::class)
+			->findOneBy(['panier' => $panier, 'produit' => $produit]);
+
+		if ($panierProduit) {
+			$nouvelleQuantite = $panierProduit->getQuantite() - 1;
+			if ($nouvelleQuantite <= 0) {
+				// Supprimer le produit si la quantité devient nulle
+				$this->entityManager->remove($panierProduit);
+			} else {
+				$panierProduit->setQuantite($nouvelleQuantite);
+			}
+			$this->entityManager->flush();
+		}
 	}
 }

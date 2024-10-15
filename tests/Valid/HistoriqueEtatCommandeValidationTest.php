@@ -11,7 +11,7 @@ use App\Entity\CommandeProduit;
 use App\Entity\Produit;
 use App\Entity\Categorie;
 use App\Entity\Tva;
-use App\Entity\Transporteurs;
+use App\Entity\Transporteur;
 
 class HistoriqueEtatCommandeValidationTest extends KernelTestCase
 {
@@ -83,7 +83,7 @@ class HistoriqueEtatCommandeValidationTest extends KernelTestCase
 		$produit->addCategorie($categorie);
 
 		// Création d'un nouveau transporteur
-		$transporteur = new Transporteurs();
+		$transporteur = new Transporteur();
 		$transporteur->setNom('Colissimo');
 
         // Création de la Commande

@@ -8,27 +8,27 @@ use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\Delete;
 use ApiPlatform\Metadata\GetCollection;
-use App\Repository\TransporteursRepository;
+use App\Repository\TransporteurRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Component\Serializer\Annotation\Groups;
 
-#[ORM\Entity(repositoryClass: TransporteursRepository::class)]
+#[ORM\Entity(repositoryClass: TransporteurRepository::class)]
 #[ApiResource(
-	normalizationContext: ['groups' => ['transporteurs:read']],
-	denormalizationContext: ['groups' => ['transporteurs:write']],
+	normalizationContext: ['groups' => ['transporteur:read']],
+	denormalizationContext: ['groups' => ['transporteur:write']],
 	operations: [
-		// Récupération de tous les transporteurs (accessible à tous)
+		// Récupération de tous les transporteur (accessible à tous)
 		new GetCollection(
-			normalizationContext: ['groups' => ['transporteurs:read']],
+			normalizationContext: ['groups' => ['transporteur:read']],
 			openapiContext: [
-				'summary' => 'Récupère la liste de tous les transporteurs disponibles.',
-				'description' => 'Cette opération permet de récupérer tous les transporteurs disponibles.',
+				'summary' => 'Récupère la liste de tous les transporteur disponibles.',
+				'description' => 'Cette opération permet de récupérer tous les transporteur disponibles.',
 				'responses' => [
 					'200' => [
-						'description' => 'Liste des transporteurs récupérée avec succès.',
+						'description' => 'Liste des transporteur récupérée avec succès.',
 						'content' => [
 							'application/json' => [
 								'schema' => [
@@ -49,7 +49,7 @@ use Symfony\Component\Serializer\Annotation\Groups;
 		),
 		// Récupération d'un transporteur (accessible à tous)
 		new Get(
-			normalizationContext: ['groups' => ['transporteurs:read']],
+			normalizationContext: ['groups' => ['transporteur:read']],
 			openapiContext: [
 				'summary' => 'Récupère les détails d\'un transporteur spécifique.',
 				'description' => 'Permet de récupérer les détails d\'un transporteur donné par son identifiant.',
@@ -77,8 +77,8 @@ use Symfony\Component\Serializer\Annotation\Groups;
 		// Création d'un transporteur (accessible uniquement aux administrateurs)
 		new Post(
 			security: "is_granted('ROLE_ADMIN')",
-			denormalizationContext: ['groups' => ['transporteurs:write']],
-			normalizationContext: ['groups' => ['transporteurs:read']],
+			denormalizationContext: ['groups' => ['transporteur:write']],
+			normalizationContext: ['groups' => ['transporteur:read']],
 			openapiContext: [
 				'summary' => 'Crée un nouveau transporteur.',
 				'description' => 'Cette opération permet de créer un nouveau transporteur. Accessible uniquement aux administrateurs.',
@@ -119,7 +119,7 @@ use Symfony\Component\Serializer\Annotation\Groups;
 		// Modification partielle d'un transporteur (accessible uniquement aux administrateurs)
 		new Patch(
 			security: "is_granted('ROLE_ADMIN')",
-			denormalizationContext: ['groups' => ['transporteurs:write']],
+			denormalizationContext: ['groups' => ['transporteur:write']],
 			openapiContext: [
 				'summary' => 'Met à jour partiellement les informations d\'un transporteur.',
 				'description' => 'Permet de mettre à jour partiellement les informations d\'un transporteur existant. Accessible uniquement aux administrateurs.',
@@ -181,32 +181,32 @@ use Symfony\Component\Serializer\Annotation\Groups;
 	]
 )]
 
-class Transporteurs
+class Transporteur
 {
 	#[ORM\Id]
 	#[ORM\GeneratedValue]
 	#[ORM\Column(type: 'integer')]
-	#[Groups(['transporteurs:read, commande:read', 'historiqueEtatCommande:read'])]
+	#[Groups(['transporteur:read, commande:read', 'historiqueEtatCommande:read','commande:read', 'commande:write'])]
 	private ?int $id_transporteur = null;
 
 	#[ORM\Column(type: 'string', length: 100)]
 	#[Assert\NotBlank(message: "Le nom du transporteur est obligatoire.")]
 	#[Assert\Length(max: 100, maxMessage: "Le nom du transporteur ne peut pas dépasser {{ limit }} caractères.")]
-	#[Groups(['transporteurs:read', 'transporteurs:write'])]
+	#[Groups(['transporteur:read', 'transporteur:write','commande:read', 'commande:write'])]
 	private ?string $nom = null;
 
 	// Relation OneToMany avec l'entité Commande
 	#[ORM\OneToMany(mappedBy: 'transporteur', targetEntity: Commande::class, cascade: ['persist'])]
 	private Collection $commandes;
 
+	// Relation OneToMany avec l'entité MethodeLivraison (cascade persist et remove), si un transporteur est supprimé, ses méthodes de livraison associées le sont également
 	#[ORM\OneToMany(mappedBy: 'transporteur', targetEntity: MethodeLivraison::class, cascade: ['persist', 'remove'])]
-	#[ORM\JoinColumn(referencedColumnName: 'id_methode_livraison')]
-	private Collection $methodeLivraisons;
+	private Collection $methodeLivraison;
 
 	public function __construct()
 	{
 		$this->commandes = new ArrayCollection();
-		$this->methodeLivraisons = new ArrayCollection();
+		$this->methodeLivraison = new ArrayCollection();
 	}
 
 	public function getIdTransporteur(): ?int
@@ -255,15 +255,15 @@ class Transporteurs
 	/**
 	 * @return Collection<int, MethodeLivraison>
 	 */
-	public function getMethodeLivraisons(): Collection
+	public function getmethodeLivraison(): Collection
 	{
-		return $this->methodeLivraisons;
+		return $this->methodeLivraison;
 	}
 
 	public function addMethodeLivraison(MethodeLivraison $methodeLivraison): static
 	{
-		if (!$this->methodeLivraisons->contains($methodeLivraison)) {
-			$this->methodeLivraisons->add($methodeLivraison);
+		if (!$this->methodeLivraison->contains($methodeLivraison)) {
+			$this->methodeLivraison->add($methodeLivraison);
 			$methodeLivraison->setTransporteur($this);
 		}
 
@@ -272,7 +272,7 @@ class Transporteurs
 
 	public function removeMethodeLivraison(MethodeLivraison $methodeLivraison): static
 	{
-		if ($this->methodeLivraisons->removeElement($methodeLivraison)) {
+		if ($this->methodeLivraison->removeElement($methodeLivraison)) {
 			// set the owning side to null (unless already changed)
 			if ($methodeLivraison->getTransporteur() === $this) {
 				$methodeLivraison->setTransporteur(null);

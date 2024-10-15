@@ -10,6 +10,8 @@ use App\Entity\Produit;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use App\Tests\Functional\UtilisateurTest;
+use Stripe\StripeClient;
+use Stripe\Exception\ApiErrorException;
 
 abstract class TestAuthentificator extends ApiTestCase
 {
@@ -25,7 +27,7 @@ abstract class TestAuthentificator extends ApiTestCase
 	/**
 	 * Vérifie et crée un administrateur de test si nécessaire.
 	 */
-	protected function ensureAdminExists(): void
+	public function ensureAdminExists(): void
 	{
 		/** @var EntityManagerInterface */
 		$entityManager = self::getContainer()->get('doctrine')->getManager();
@@ -62,7 +64,7 @@ abstract class TestAuthentificator extends ApiTestCase
 	 *
 	 * @return string Le jeton JWT de l'administrateur de test.
 	 */
-	protected function getTokenAdmin(): string
+	public function getTokenAdmin(): string
 	{
 		if ($this->jwtTokenAdmin) {
 			return $this->jwtTokenAdmin;
@@ -96,7 +98,7 @@ abstract class TestAuthentificator extends ApiTestCase
 	/**
 	 * Vérifie et crée l'utilisateur standard de test si nécessaire.
 	 */
-	protected function ensureUserExists(): void
+	public function ensureUserExists(): void
 	{
 		/** @var EntityManagerInterface */
 		$entityManager = self::getContainer()->get('doctrine')->getManager();
@@ -133,7 +135,7 @@ abstract class TestAuthentificator extends ApiTestCase
 	 *
 	 * @return string Le jeton JWT de l'utilisateur de test.
 	 */
-	protected function getTokenUser(): string
+	public function getTokenUser(): string
 	{
 		if ($this->jwtTokenUser) {
 			return $this->jwtTokenUser;
@@ -170,7 +172,7 @@ abstract class TestAuthentificator extends ApiTestCase
 	 * @param bool $admin Indique si l'utilisateur de test doit être un administrateur.
 	 * @return \ApiPlatform\Symfony\Bundle\Test\Client Le client authentifié.
 	 */
-	protected function createAuthenticatedClient(bool $admin = false): Client
+	public function createAuthenticatedClient(bool $admin = false): Client
 	{
 		$token = $admin ? $this->getTokenAdmin() : $this->getTokenUser();
 
@@ -334,6 +336,7 @@ abstract class TestAuthentificator extends ApiTestCase
 	{
 		$response = $client->request('POST', '/api/adresses', [
 			'json' => [
+				'utilisateur' => $utilisateurIri,
 				'type' => 'Facturation',
 				'prenom' => 'John',
 				'nom' => 'Doe',
@@ -341,29 +344,27 @@ abstract class TestAuthentificator extends ApiTestCase
 				'code_postal' => '75001',
 				'ville' => 'Paris',
 				'pays' => 'France',
-				'utilisateur' => $utilisateurIri,
 				'similaire' => true,
 			],
 		]);
 
 		// Vérifier que l'adresse a été créée avec succès
-		$this->assertResponseStatusCodeSame(Response::HTTP_CREATED, 'L\'adresse n\'a pas été créée correctement.');
+		$this->assertSame(Response::HTTP_CREATED, $response->getStatusCode(), 'L\'adresse n\'a pas été créée correctement.');
 		$data = $response->toArray();
 		return $data['@id'];
 	}
 
 	// Méthode pour créer un produit
-	// Méthode pour créer un produit
 	public function createProduit()
 	{
 		// Créer un client authentifié en tant qu'administrateur
-		echo "\n--- Début de la création du produit ---\n";
+		//echo "\n--- Début de la création du produit ---\n";
 		$client = $this->createAuthenticatedClient(true);
-		echo "\n1. Client administrateur créé avec succès\n";
+		//echo "\n1. Client administrateur créé avec succès\n";
 
 		// Créer une catégorie
 		$categorieNom = 'Catégorie Test' . uniqid();
-		echo "\n2. Création de la catégorie : $categorieNom\n";
+		//echo "\n2. Création de la catégorie : $categorieNom\n";
 
 		// Effectuer une requête POST pour créer une nouvelle catégorie
 		$responseCategorie = $client->request('POST', '/api/categories', [
@@ -374,43 +375,58 @@ abstract class TestAuthentificator extends ApiTestCase
 
 		// Vérifier que la catégorie a été créée avec succès
 		if ($responseCategorie->getStatusCode() !== Response::HTTP_CREATED) {
-			echo "\nErreur : la catégorie n'a pas été créée. Statut : " . $responseCategorie->getStatusCode() . "\n";
+			//echo "\nErreur : la catégorie n'a pas été créée. Statut : " . $responseCategorie->getStatusCode() . "\n";
 		} else {
-			echo "\n3. Catégorie créée avec succès\n";
+			//echo "\n3. Catégorie créée avec succès\n";
 		}
 		$this->assertSame(Response::HTTP_CREATED, $responseCategorie->getStatusCode());
 
-		// Récupérer les données de la catégorie créée sous forme de tableau
-		$responseCategorieArray = $responseCategorie->toArray();
 		// Récupérer l'IRI de la catégorie créée
-		$categorieIri = $responseCategorieArray['@id'];
-		echo "\n4. IRI de la catégorie récupéré : $categorieIri\n";
+		$categorieIri = $responseCategorie->toArray()['@id'];
+		//echo "\n4. IRI de la catégorie récupéré : $categorieIri\n";
 
-		// Créer une TVA
-		echo "\n5. Création de la TVA\n";
-		$responseTva = $client->request('POST', '/api/tvas', [
-			'json' => [
-				'taux' => '20.00'
+		// Créer ou récupérer une TVA existante
+		$tauxTva = '20.00';
+
+		// 1. Rechercher une TVA existante avec le taux spécifié
+		$responseTvaSearch = $client->request('GET', '/api/tvas', [
+			'query' => [
+				'taux' => $tauxTva
 			]
 		]);
 
-		// Vérifier que la TVA a été créée avec succès
-		if ($responseTva->getStatusCode() !== Response::HTTP_CREATED) {
-			echo "\nErreur : la TVA n'a pas été créée. Statut : " . $responseTva->getStatusCode() . "\n";
+		// 2. Vérifier si une TVA existe déjà
+		$tvaData = $responseTvaSearch->toArray();
+		if (!empty($tvaData['hydra:member'])) {
+			// 3. Récupérer l'IRI de la TVA existante
+			$tvaIri = $tvaData['hydra:member'][0]['@id'];
+			//echo "\n5. TVA existante récupérée avec succès. IRI : $tvaIri\n";
 		} else {
-			echo "\n6. TVA créée avec succès\n";
-		}
-		$this->assertSame(Response::HTTP_CREATED, $responseTva->getStatusCode());
+			// 4. Si la TVA n'existe pas, la créer
+			//echo "\n5. Création de la TVA\n";
+			$responseTva = $client->request('POST', '/api/tvas', [
+				'json' => [
+					'taux' => $tauxTva
+				]
+			]);
 
-		// Récupérer les données de la TVA créée sous forme de tableau
-		$responseTvaArray = $responseTva->toArray();
-		// Récupérer l'IRI de la TVA créée
-		$tvaIri = $responseTvaArray['@id'];
-		echo "\n7. IRI de la TVA récupéré : $tvaIri\n";
+			// 5. Vérifier que la TVA a été créée avec succès
+			if ($responseTva->getStatusCode() !== Response::HTTP_CREATED) {
+				//echo "\nErreur : la TVA n'a pas été créée. Statut : " . $responseTva->getStatusCode() . "\n";
+			} else {
+				//echo "\n6. TVA créée avec succès\n";
+			}
+
+			$this->assertSame(Response::HTTP_CREATED, $responseTva->getStatusCode());
+
+			// 6. Récupérer l'IRI de la TVA créée
+			$tvaIri = $responseTva->toArray()['@id'];
+			//echo "\n7. IRI de la TVA récupéré : $tvaIri\n";
+		}
 
 		// Créer un produit
 		$produitNom = 'Produit Test' . uniqid();
-		echo "\n8. Création du produit : $produitNom\n";
+		//echo "\n8. Création du produit : $produitNom\n";
 
 		// Description du produit à créer
 		$produitDescription = 'Description du produit test' . uniqid();
@@ -430,21 +446,21 @@ abstract class TestAuthentificator extends ApiTestCase
 				'stock' => 10,
 			]
 		]);
-		echo "\n9. Requête pour créer le produit envoyée\n";
+		//echo "\n9. Requête pour créer le produit envoyée\n";
 
 		// Vérifier que le produit a été créé avec succès
 		if ($responseProduit->getStatusCode() !== Response::HTTP_CREATED) {
-			echo "\nErreur : le produit n'a pas été créé. Statut : " . $responseProduit->getStatusCode() . "\n";
+			//echo "\nErreur : le produit n'a pas été créé. Statut : " . $responseProduit->getStatusCode() . "\n";
 		} else {
-			echo "\n10. Produit créé avec succès\n";
+			//echo "\n10. Produit créé avec succès\n";
 		}
 		$this->assertSame(Response::HTTP_CREATED, $responseProduit->getStatusCode());
 
 		// Retourner l'IRI du produit créé
 		$produitIri = $responseProduit->toArray()['@id'];
-		echo "\n11. IRI du produit créé : $produitIri\n";
 		return $produitIri;
 	}
+
 
 	/**
 	 * Crée une catégorie avec un nom unique.
@@ -645,10 +661,12 @@ abstract class TestAuthentificator extends ApiTestCase
 		$nomMethodeLivraison = 'Livraison Standard ' . uniqid();
 
 		// Crée une nouvelle méthode de livraison via l'administrateur
-		$response = $client->request('POST', '/api/methodes_livraison', [
+		$response = $client->request('POST', '/api/methode_livraisons', [
 			'json' => [
 				'nom' => $nomMethodeLivraison,
+				'description' => 'Livraison en 48-72 heures',
 				'prix' => '5.99',
+				'delaiEstime' => '48-72 heures',
 				'transporteur' => $transporteurIri,
 			]
 		]);
@@ -658,5 +676,47 @@ abstract class TestAuthentificator extends ApiTestCase
 
 		// Retourne l'IRI de la méthode de livraison créée
 		return $response->toArray()['@id'];
+	}
+
+
+	public function createStripeClient(): StripeClient
+	{
+		echo "\n--- Création d'un client Stripe ---\n";
+		// Clé API Stripe en mode test (assurez-vous que vous utilisez une clé test et non une clé de production)
+		$stripeApiKey = $_ENV['STRIPE_SECRET_KEY'];
+		//echo "\n1. Clé API Stripe : $stripeApiKey\n";
+		// Création d'une instance du client Stripe
+		$stripeClient = new StripeClient($stripeApiKey);
+		//echo "\n2. Client Stripe créé avec succès : \n";
+		//var_dump($stripeClient);
+		//echo "\n\n";
+
+		// Retourner le client Stripe
+		return $stripeClient;
+	}
+
+	public function confirmPaymentIntent(string $paymentIntentId): array
+	{
+		try {
+			// Créez un client Stripe en utilisant la méthode précédemment définie
+			$stripe = $this->createStripeClient();
+
+			// Confirmez le PaymentIntent avec l'ID fourni
+			$paymentIntent = $stripe->paymentIntents->confirm($paymentIntentId);
+
+			// Retournez les détails du PaymentIntent
+			return $paymentIntent->toArray();
+		} catch (ApiErrorException $e) {
+			// Gérez les erreurs Stripe et retournez un message d'erreur
+			return [
+				'error' => true,
+				'message' => $e->getMessage()
+			];
+		}
+	}
+
+	public function extractIdFromIri(string $iri): int
+	{
+		return (int) basename($iri);
 	}
 }

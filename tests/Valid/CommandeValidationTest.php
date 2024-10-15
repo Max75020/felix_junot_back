@@ -6,7 +6,7 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use App\Entity\Commande;
 use App\Entity\Utilisateur;
 use App\Entity\EtatCommande;
-use App\Entity\Transporteurs;
+use App\Entity\Transporteur;
 
 class CommandeValidationTest extends KernelTestCase
 {
@@ -27,7 +27,7 @@ class CommandeValidationTest extends KernelTestCase
 		?string $total = '100.00',
 		?string $poids = '2.50',
 		?string $fraisLivraison = '5.00',
-		?Transporteurs $transporteur = null
+		?Transporteur $transporteur = null
 	): Commande {
 		// Création d'un utilisateur
 		$utilisateur = new Utilisateur();
@@ -44,7 +44,7 @@ class CommandeValidationTest extends KernelTestCase
 
 		// Utiliser un transporteur par défaut si aucun n'est passé en paramètre
 		if ($transporteur === null) {
-			$transporteur = new Transporteurs();
+			$transporteur = new Transporteur();
 			$transporteur->setNom('Colissimo');
 		}
 

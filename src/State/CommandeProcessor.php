@@ -2,39 +2,37 @@
 
 namespace App\State;
 
-use App\Entity\Commande;
-use App\Entity\CommandeProduit;
-use App\Entity\EtatCommande;
-use App\Entity\HistoriqueEtatCommande;
-use App\Entity\Panier;
 use App\Entity\Adresse;
+use App\Entity\Commande;
+use App\Entity\Panier;
+use App\Entity\EtatCommande;
+use App\Entity\CommandeProduit;
+use App\Entity\HistoriqueEtatCommande;
+use App\Service\GestionCommandeService;
 use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProcessorInterface;
 use Symfony\Bundle\SecurityBundle\Security;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
-use App\Service\StripeService;
 
-/**
- * Processor pour gérer les opérations sur l'entité Commande.
- * Il gère l'attribution de l'utilisateur, la génération de la référence de commande,
- * la gestion de l'état de la commande, l'historique des changements d'état,
- * et le transfert des données du panier vers la commande.
- */
 class CommandeProcessor implements ProcessorInterface
 {
 	private Security $security;
 	private EntityManagerInterface $entityManager;
 	private LoggerInterface $logger;
-	private StripeService $stripeService;
+	private GestionCommandeService $gestionCommandeService;
 
-	public function __construct(Security $security, EntityManagerInterface $entityManager, LoggerInterface $logger, StripeService $stripeService)
-	{
+	public function __construct(
+		Security $security,
+		EntityManagerInterface $entityManager,
+		LoggerInterface $logger,
+		GestionCommandeService $gestionCommandeService
+	) {
 		$this->security = $security;
 		$this->entityManager = $entityManager;
 		$this->logger = $logger;
-		$this->stripeService = $stripeService;
+		$this->gestionCommandeService = $gestionCommandeService;
 	}
 
 	public function process($data, Operation $operation, array $uriVariables = [], array $context = []): mixed
@@ -43,112 +41,188 @@ class CommandeProcessor implements ProcessorInterface
 			return $data;
 		}
 
-		// Vérification immédiate du paiement avant de continuer
-		if (!$this->isPaymentConfirmed($data)) {
-			throw new BadRequestHttpException('Le paiement n\'est pas confirmé, la commande ne peut pas être traitée.');
+		// Récupérer l'utilisateur actuel
+		$utilisateur = $this->security->getUser();
+		// Récupérer le panier
+		$panier = $data->getPanier();
+		// Récupérer le transporteur de la commande
+		$transporteur = $data->getTransporteur();
+		// Récupérer la méthode de livraison (qui dépend du transporteur)
+		$methodeLivraison = $data->getMethodeLivraison();
+		// Récupérer l'adresse de facturation
+		$adresseFacturation = $data->getAdresseFacturation();
+		// Récupérer l'adresse de livraison
+		$adresseLivraison = $data->getAdresseLivraison();
+		// Récupérer le poids de la commande (peut être calculé ou fourni)
+		$poids = $data->getPoids();
+		// Récupérer ou générer le numéro de suivi
+		$numeroSuivi = $data->getNumeroSuivi(); // Numéro de suivi par défaut
+		// Récupérer l'état de la commande (par exemple, "Commande Payée")
+		$etatCommande = $data->getEtatCommande();
+
+		// Vérification du Panier
+		if ($panier === null) {
+			$this->logger->error("Le panier est NULL.");
+		} else {
+			$this->logger->info(" panier_id => Panier ID: " . $panier->getIdPanier());
+		}
+		// Vérification du transporteur
+		if ($transporteur === null) {
+			$this->logger->error("Le transporteur est NULL.");
+		} else {
+			$this->logger->info("transporteur_id  => Transporteur ID: " . $transporteur->getIdTransporteur());
+		}
+		// Vérification de la méthode de livraison
+		if ($methodeLivraison === null) {
+			$this->logger->error("La méthode de livraison est NULL.");
+		} else {
+			$this->logger->info("methode_livraison_id => Méthode de livraison ID: " . $methodeLivraison->getIdMethodeLivraison());
+		}
+		// Vérification de l'adresse de facturation
+		if ($adresseFacturation === null) {
+			$this->logger->error("L'adresse de facturation est NULL.");
+		} else {
+			$this->logger->info("adresse_facturation_id  => Adresse de facturation ID: " . $adresseFacturation->getIdAdresse());
+		}
+		// Vérification de l'adresse de livraison
+		if ($adresseLivraison === null) {
+			$this->logger->error("L'adresse de livraison est NULL.");
+		} else {
+			$this->logger->info("adresse_livraison_id => Adresse de livraison ID: " . $adresseLivraison->getIdAdresse());
+		}
+		// Vérification du poids
+		if ($poids === null) {
+			$this->logger->error("Le poids est NULL.");
+		} else {
+			$this->logger->info("poids => Poids de la commande : " . $poids);
+		}
+		// Vérification du numéro de suivi
+		if ($numeroSuivi === null) {
+			$this->logger->error("Le numéro de suivi est NULL.");
+		} else {
+			$this->logger->info("numero_suivi => Numéro de suivi : " . $numeroSuivi);
+		}
+		// Vérification de l'état de la commande
+		if ($etatCommande === null) {
+			$this->logger->error("L'état de la commande est NULL.");
+		} else {
+			$this->logger->info("etat_commande_id => État de la commande : " . $etatCommande->getLibelle());
 		}
 
+		// Utilisation du service pour gérer le paiement et créer la commande après validation du paiement
+		try {
+			// Créer la commande après paiement réussi
+			$commande = $this->gestionCommandeService->creerCommandeApresPaiement(
+				$panier,
+				$methodeLivraison,
+				$utilisateur,
+				$adresseFacturation,
+				$adresseLivraison,
+				$numeroSuivi,
+				$poids,
+				$etatCommande,
+			);
+		} catch (\Exception $e) {
+			$this->logger->error("Erreur lors du traitement de la commande : " . $e->getMessage());
+			throw new BadRequestHttpException("Une erreur est survenue lors de la création de la commande.");
+		}
+
+		// Continuer avec les autres vérifications et traitements de la commande
+
 		// Log de démarrage du processus
-		$this->logger->info("Process method called for Commande ID: {$data->getIdCommande()}");
-		$currentUser = $this->security->getUser();
-		$isNewCommande = $data->getIdCommande() === null;
+		$this->logger->info("Process method called for Commande ID: {$commande->getIdCommande()}");
 
 		// Gérer les adresses similaires
-		$this->handleAdressesSimilaires($data);
+		$this->verificationAdressesSimilaires($commande);
 
-		// Associer l'utilisateur à la commande si nécessaire
-		$this->assignerUtilisateur($data, $currentUser);
+		// Assigner l'utilisateur à la commande si nécessaire
+		$this->verificationUtilisateurCommande($commande, $utilisateur);
 
 		// Générer la référence de la commande si elle n'est pas encore définie
-		$this->genererReferenceCommande($data);
-
-		// Assigner l'état par défaut de la commande si aucun n'est défini
-		$this->assignerEtatCommandeDefaut($data);
+		$this->verificationReferenceCommande($commande);
 
 		// Transférer les informations du panier vers la commande
-		if ($data->getPanier()) {
-			$this->transfertPanierVersCommande($data->getPanier(), $data);
+		if ($commande->getPanier()) {
+			$this->transfertPanierVersCommande($commande->getPanier(), $commande);
 		}
 
 		// Vérifier que le prix total de la commande est correct
-		$this->verifierPrixTotalCommande($data);
+		$this->verifierPrixTotalCommande($commande);
 
 		// Gérer l'historique des changements d'état de la commande
-		$this->gererHistoriqueEtatCommande($data, $isNewCommande);
+		$this->gererHistoriqueEtatCommande($commande, true);
 
-		$this->entityManager->persist($data);
+		// Persister la commande
+		$this->entityManager->persist($commande);
 		$this->entityManager->flush();
 
-		return $data;
+		return $commande;
 	}
 
 	/**
-	 * Gère la duplication des adresses si elles sont similaires.
+	 * Gère la vérification et la duplication des adresses si elles sont similaires.
 	 */
-	private function handleAdressesSimilaires(Commande $commande): void
+	private function verificationAdressesSimilaires(Commande $commande): void
 	{
 		$adresseLivraison = $commande->getAdresseLivraison();
+		$adresseFacturation = $commande->getAdresseFacturation();
 
+		// Vérifier si l'adresse de livraison est définie et si elle a le paramètre 'similaire' à true
 		if ($adresseLivraison && $adresseLivraison->isSimilaire()) {
-			// Dupliquer l'adresse de livraison pour créer une adresse de facturation
-			$adresseFacturation = clone $adresseLivraison;
-			$adresseFacturation->setType('Facturation');
+			// Si les adresses de facturation et livraison sont similaires
+			if ($this->sontAdressesSimilaires($adresseLivraison, $adresseFacturation)) {
+				$this->logger->info("Les adresses de livraison et de facturation sont similaires pour la commande : " . $commande->getReference());
+			} else {
+				// Sinon, cloner l'adresse de livraison pour créer une nouvelle adresse de facturation
+				$adresseFacturation = clone $adresseLivraison;
+				$adresseFacturation->setType('Facturation');
+				$this->entityManager->persist($adresseFacturation);
+				$this->entityManager->flush();
 
-			// Persister la nouvelle adresse de facturation
-			$this->entityManager->persist($adresseFacturation);
-			$this->entityManager->flush();
+				// Assigner la nouvelle adresse de facturation à la commande
+				$commande->setAdresseFacturation($adresseFacturation);
 
-			// Associer l'adresse de facturation à la commande
-			$commande->setAdresseFacturation($adresseFacturation);
-
-			$this->logger->info("Adresse similaire dupliquée pour la commande : " . $commande->getReference());
+				$this->logger->info("Nouvelle adresse de facturation créée et assignée pour la commande : " . $commande->getReference());
+			}
 		}
 	}
 
-	private function assignerUtilisateur(Commande $commande, $currentUser): void
+	/**
+	 * Vérifie si deux adresses sont similaires (tous les champs doivent correspondre sauf le type et 'similaire').
+	 */
+	private function sontAdressesSimilaires(Adresse $adresseLivraison, Adresse $adresseFacturation): bool
 	{
-		if (!$this->security->isGranted('ROLE_ADMIN')) {
-			$commande->setUtilisateur($currentUser);
-		} else {
-			$specifiedUser = $commande->getUtilisateur();
-			$commande->setUtilisateur($specifiedUser ?? $currentUser);
+		// Vérifier si toutes les propriétés sont égales, sauf 'type' et 'similaire'
+		return $adresseLivraison->getPrenom() === $adresseFacturation->getPrenom() &&
+			$adresseLivraison->getNom() === $adresseFacturation->getNom() &&
+			$adresseLivraison->getRue() === $adresseFacturation->getRue() &&
+			$adresseLivraison->getBatiment() === $adresseFacturation->getBatiment() &&
+			$adresseLivraison->getAppartement() === $adresseFacturation->getAppartement() &&
+			$adresseLivraison->getCodePostal() === $adresseFacturation->getCodePostal() &&
+			$adresseLivraison->getVille() === $adresseFacturation->getVille() &&
+			$adresseLivraison->getPays() === $adresseFacturation->getPays() &&
+			$adresseLivraison->getTelephone() === $adresseFacturation->getTelephone();
+	}
+
+	private function verificationUtilisateurCommande(Commande $commande, $currentUser): void
+	{
+		$specifiedUser = $commande->getUtilisateur();
+		if ($specifiedUser === null) {
+			if (!$this->security->isGranted('ROLE_ADMIN')) {
+				$commande->setUtilisateur($currentUser);
+			} else {
+				$commande->setUtilisateur($specifiedUser ?? $currentUser);
+			}
 		}
 	}
 
-	private function genererReferenceCommande(Commande $commande): void
+	private function verificationReferenceCommande(Commande $commande): void
 	{
 		if ($commande->getReference() === null) {
 			$commande->generateReference();
 		}
 	}
 
-	private function assignerEtatCommandeDefaut(Commande $commande): void
-	{
-		$etatCommande = $this->entityManager->getRepository(EtatCommande::class)
-			->findOneBy(['libelle' => 'En attente de paiement']) ?? new EtatCommande('En attente de paiement');
-
-		$this->entityManager->persist($etatCommande);
-		$commande->setEtatCommande($etatCommande);
-	}
-
-	/**
-	 * Vérifie si le paiement est confirmé en utilisant le StripeService.
-	 */
-	private function isPaymentConfirmed(Commande $commande): bool
-	{
-		try {
-			$paymentIntent = $this->stripeService->createPaymentIntent($commande->getPrixTotalCommande());
-			// Vérifie si le paiement est confirmé
-			return $paymentIntent->status === 'succeeded';
-		} catch (\Exception $e) {
-			$this->logger->error('Erreur lors de la création du PaymentIntent : ' . $e->getMessage());
-			return false;
-		}
-	}
-
-	/**
-	 * Transfère les informations du panier et des produits du panier vers la commande et les commande-produits.
-	 */
 	private function transfertPanierVersCommande(Panier $panier, Commande $commande): void
 	{
 		foreach ($panier->getPanierProduits() as $panierProduit) {
@@ -170,6 +244,8 @@ class CommandeProcessor implements ProcessorInterface
 		$totalProduits = $commande->getTotalProduitsCommande();
 		$fraisLivraison = $commande->getFraisLivraison();
 		$prixTotalAttendu = bcadd($totalProduits, $fraisLivraison, 2);
+
+		$this->logger->info("Total produits : $totalProduits, Frais livraison : $fraisLivraison, Prix attendu : $prixTotalAttendu, Prix dans la commande : " . $commande->getPrixTotalCommande());
 
 		if ($commande->getPrixTotalCommande() !== $prixTotalAttendu) {
 			throw new BadRequestHttpException('Le prix total de la commande ne correspond pas à la somme des produits et des frais de livraison.');

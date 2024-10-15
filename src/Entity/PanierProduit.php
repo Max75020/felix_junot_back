@@ -12,7 +12,6 @@ use Symfony\Component\Serializer\Annotation\Groups;
 use App\Repository\PanierProduitRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
-use App\State\PanierProduitProcessor;
 
 #[ApiResource(
 	normalizationContext: ['groups' => ['panierProduit:read']],
@@ -150,35 +149,6 @@ use App\State\PanierProduitProcessor;
 				]
 			]
 		),
-		// Création d'un panier-produit (accessible aux utilisateurs connectés pour leur propre panier et aux administrateurs)
-		new Post(
-			security: "is_granted('ROLE_USER') or is_granted('ROLE_ADMIN')",
-			processor: PanierProduitProcessor::class,
-			openapiContext: [
-				'summary' => 'Ajoute un produit au panier.',
-				'description' => 'Cette opération permet aux utilisateurs connectés et aux administrateurs d\'ajouter un produit dans le panier.',
-				'requestBody' => [
-					'content' => [
-						'application/json' => [
-							'schema' => [
-								'type' => 'object',
-								'properties' => [
-									'produit' => ['type' => 'string', 'format' => 'iri', 'description' => 'IRI du produit à ajouter.', 'example' => '/api/produits/1'],
-									'panier' => ['type' => 'string', 'format' => 'iri', 'description' => 'IRI du panier associé.', 'example' => '/api/paniers/1'],
-									'quantite' => ['type' => 'integer', 'description' => 'Quantité du produit à ajouter.', 'example' => 3]
-								],
-								'required' => ['produit', 'panier', 'quantite']
-							]
-						]
-					]
-				],
-				'responses' => [
-					'201' => ['description' => 'Produit ajouté au panier avec succès.'],
-					'400' => ['description' => 'Requête invalide. Les données fournies ne sont pas conformes.'],
-					'403' => ['description' => 'Accès refusé. Seuls les utilisateurs connectés et les administrateurs peuvent ajouter des produits au panier.']
-				]
-			]
-		),
 	]
 )]
 #[ORM\Entity(repositoryClass: PanierProduitRepository::class)]
@@ -197,7 +167,7 @@ class PanierProduit
 	#[ORM\ManyToOne(targetEntity: Produit::class, inversedBy: 'panierProduits')]
 	#[ORM\JoinColumn(name: 'produit_id', referencedColumnName: 'id_produit', nullable: false)]
 	#[Assert\NotBlank(message: "Le produit est obligatoire.")]
-	#[Groups(['panierProduit:read', 'panierProduit:write'])]
+	#[Groups(['panierProduit:read', 'panierProduit:write', 'panier:read'])]
 	private ?Produit $produit = null;
 
 	// Relation ManyToOne avec l'entité Panier
@@ -211,13 +181,14 @@ class PanierProduit
 	#[ORM\Column(type: 'integer')]
 	#[Assert\NotBlank(message: "La quantité est obligatoire.")]
 	#[Assert\Positive(message: "La quantité doit être un nombre positif.")]
-	#[Groups(['panierProduit:read', 'panierProduit:write'])]
+	#[Groups(['panierProduit:read', 'panierProduit:write', 'panier:read'])]
 	private int $quantite = 1;
 
 	// Prix total du produit dans le panier
 	#[ORM\Column(type: 'decimal', precision: 10, scale: 2, name: 'prix_total_produit')]
 	#[Assert\NotBlank(message: "Le prix total du produit est obligatoire.")]
 	#[Assert\GreaterThanOrEqual(value: 0, message: "Le prix total du produit ne peut pas être négatif.")]
+	#[Groups(['panierProduit:read', 'panierProduit:write', 'panier:read'])]
 	private string $prix_total_produit = '0.00';
 
 	// Getters et Setters

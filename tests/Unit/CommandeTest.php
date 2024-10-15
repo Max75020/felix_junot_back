@@ -6,7 +6,7 @@ use PHPUnit\Framework\TestCase;
 use App\Entity\Commande;
 use App\Entity\Utilisateur;
 use App\Entity\EtatCommande;
-use App\Entity\Transporteurs;
+use App\Entity\Transporteur;
 
 class CommandeTest extends TestCase
 {
@@ -35,7 +35,7 @@ class CommandeTest extends TestCase
 
 		// Test du setter et getter pour le transporteur
 		// Création d'un transporteur
-		$transporteur = new Transporteurs();
+		$transporteur = new Transporteur();
 		$transporteur->setNom('Colissimo');
 		// Associer le transporteur à la commande
 		$commande->setTransporteur($transporteur);

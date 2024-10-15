@@ -41,3 +41,9 @@ ALTER TABLE `tva` auto_increment = 1;
 # Suppression des données de la table utilisateur
 TRUNCATE TABLE `felix_test`.`utilisateur`;
 ALTER TABLE `utilisateur` auto_increment = 1;
+# Suppression des données de la table transporteur
+TRUNCATE TABLE `felix_test`.`transporteur`;
+ALTER TABLE `transporteur` auto_increment = 1;
+# Suppression des données de la table methode_livraison
+TRUNCATE TABLE `felix_test`.`methode_livraison`;
+ALTER TABLE `methode_livraison` auto_increment = 1;

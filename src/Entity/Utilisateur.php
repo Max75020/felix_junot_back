@@ -310,7 +310,7 @@ use App\Controller\CurrentUserController;
 	message: 'Cet email est déjà utilisé.'
 )]
 #[ApiFilter(SearchFilter::class, properties: ['email' => 'exact'])]
-#[ORM\Index(name: 'idx_roles', columns: ['roles'])]
+//#[ORM\Index(name: 'idx_roles', columns: ['roles'])]
 class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
 {
 	// Définir les rôles valides
@@ -321,19 +321,19 @@ class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
 	#[ORM\GeneratedValue]
 	#[ORM\Column(type: 'integer')]
 	#[ApiProperty(identifier: true)]
-	#[Groups(['user:read:collection', 'user:read:item', 'adresse:read'])]
+	#[Groups(['user:read:collection', 'user:read:item', 'adresse:read', 'commande:read','commande:write', 'panier:read', 'favoris:read'])]
 	private ?int $id_utilisateur = null;
 
 	// Prénom de l'utilisateur, ne doit pas être vide
 	#[ORM\Column(type: 'string', length: 50)]
 	#[Assert\NotBlank(message: "Le prénom est obligatoire.")]
-	#[Groups(['user:read:collection', 'user:read:item', 'user:write'])]
+	#[Groups(['user:read:collection', 'user:read:item', 'user:write', 'adresse:read', 'commande:read','commande:write', 'panier:read', 'favoris:read'])]
 	private ?string $prenom = null;
 
 	// Nom de l'utilisateur, ne doit pas être vide
 	#[ORM\Column(type: 'string', length: 50)]
 	#[Assert\NotBlank(message: "Le nom est obligatoire.")]
-	#[Groups(['user:read:collection', 'user:read:item', 'user:write'])]
+	#[Groups(['user:read:collection', 'user:read:item', 'user:write', 'adresse:read', 'commande:read','commande:write', 'panier:read', 'favoris:read'])]
 	private ?string $nom = null;
 
 	// Email de l'utilisateur, unique et format valide

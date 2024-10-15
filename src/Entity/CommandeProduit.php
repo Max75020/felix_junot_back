@@ -190,7 +190,7 @@ class CommandeProduit
 	#[ORM\Id]
 	#[ORM\GeneratedValue]
 	#[ORM\Column(type: 'integer')]
-	#[Groups(['commandeProduit:read'])]
+	#[Groups(['commandeProduit:read','commande:read', 'commande:write'])]
 	private ?int $id_commande_produit = null;
 
 	// Relation ManyToOne avec l'entité Commande
@@ -202,7 +202,7 @@ class CommandeProduit
 	// Relation ManyToOne avec l'entité Produit
 	#[ORM\ManyToOne(targetEntity: Produit::class, inversedBy: 'commandeProduits')]
 	#[ORM\JoinColumn(name: 'produit_id', referencedColumnName: 'id_produit', nullable: false)]
-	#[Groups(['commandeProduit:read', 'commandeProduit:write'])]
+	#[Groups(['commandeProduit:read', 'commandeProduit:write','commande:read', 'commande:write'])]
 	private ?Produit $produit = null;
 
 	// Quantité du produit dans la commande
@@ -210,13 +210,14 @@ class CommandeProduit
 	#[Assert\NotBlank(message: "La quantité est obligatoire.")]
 	#[Assert\Positive(message: "La quantité doit être positive.")]
 	#[Assert\Range(min: 1, max: 500, notInRangeMessage: "La quantité doit être comprise entre {{ min }} et {{ max }}.")]
-	#[Groups(['commandeProduit:read', 'commandeProduit:write'])]
+	#[Groups(['commandeProduit:read', 'commandeProduit:write','commande:read', 'commande:write'])]
 	private int $quantite = 1;
 
 	// Prix total du produit dans la commande
 	#[ORM\Column(type: 'decimal', precision: 10, scale: 2, name: 'prix_total_produit')]
 	#[Assert\NotBlank(message: "Le prix total du produit est obligatoire.")]
 	#[Assert\GreaterThanOrEqual(value: 0, message: "Le prix total du produit ne peut pas être négatif.")]
+	#[Groups(['commandeProduit:read', 'commandeProduit:write','commande:read', 'commande:write'])]
 	private string $prix_total_produit = '0.00';
 
 	// Getters et Setters

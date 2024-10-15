@@ -15,9 +15,11 @@ class StripeService
 	public function createPaymentIntent(float $amount, string $currency = 'eur'): PaymentIntent
 	{
 		return PaymentIntent::create([
-			'amount' => $amount * 100, // Stripe utilise des centimes pour les montants
+			'amount' => $amount , // Le montant est déjà en centimes
 			'currency' => $currency,
 			'payment_method_types' => ['card'],
+			'payment_method' => 'pm_card_visa',
+            'confirm' => true,
 		]);
 	}
 }

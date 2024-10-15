@@ -2,22 +2,22 @@
 
 namespace App\Repository;
 
-use App\Entity\Transporteurs;
+use App\Entity\Transporteur;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
- * @extends ServiceEntityRepository<Transporteurs>
+ * @extends ServiceEntityRepository<Transporteur>
  */
-class TransporteursRepository extends ServiceEntityRepository
+class TransporteurRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
     {
-        parent::__construct($registry, Transporteurs::class);
+        parent::__construct($registry, Transporteur::class);
     }
 
     //    /**
-    //     * @return Transporteurs[] Returns an array of Transporteurs objects
+    //     * @return Transporteur[] Returns an array of Transporteur objects
     //     */
     //    public function findByExampleField($value): array
     //    {
@@ -31,7 +31,7 @@ class TransporteursRepository extends ServiceEntityRepository
     //        ;
     //    }
 
-    //    public function findOneBySomeField($value): ?Transporteurs
+    //    public function findOneBySomeField($value): ?Transporteur
     //    {
     //        return $this->createQueryBuilder('t')
     //            ->andWhere('t.exampleField = :val')

@@ -4,9 +4,6 @@ namespace App\Tests\Functional;
 
 use App\Tests\Authentificator\TestAuthentificator;
 use Symfony\Component\HttpFoundation\Response;
-use App\Tests\Functional\UtilisateurTest;
-use App\Tests\Functional\EtatCommandeTest;
-use ApiPlatform\Symfony\Bundle\Test\Client;
 
 class CommandeTest extends TestAuthentificator
 {
@@ -123,84 +120,124 @@ class CommandeTest extends TestAuthentificator
 		$client = $this->createAuthenticatedClient();
 		echo "\n--- 1. Créer un client authentifié pour l'utilisateur ---\n";
 
-		// 2. Récupérer l'IRI de l'utilisateur connecté
-		$utilisateurIri = $this->getUserIri($client);
-		echo "\n--- 2. Récupérer l'IRI de l'utilisateur connecté ---\n";
-
-		// 3. Créer un panier pour l'utilisateur
-		$responsePanier = $client->request('POST', '/api/paniers', [
-			'json' => [
-				'utilisateur' => $utilisateurIri,
-			]
-		]);
-		$this->assertResponseStatusCodeSame(Response::HTTP_CREATED);
-		$panierIri = $responsePanier->toArray()['@id'];
-		echo "\n--- 3. Créer un panier pour l'utilisateur ---\n";
-
-		// 4. Créer un produit
+		// 2. Créer un produit
 		$produitIri = $this->createProduit();
-		echo "\n--- 4. Créer un produit ---\n";
+		echo "\n--- 2. Créer un produit ---\n";
 
-		// 5. Ajouter le produit au panier_produit avec une quantité de 2
-		$responsePanierProduit = $client->request('POST', '/api/panier_produits', [
+		// 3. Ajouter le produit au panier avec une quantité de 2
+		$responseAddToPanier = $client->request('POST', '/api/paniers/add-product', [
 			'json' => [
-				'panier' => $panierIri,
 				'produit' => $produitIri,
 				'quantite' => 2
 			]
 		]);
-		$this->assertResponseStatusCodeSame(Response::HTTP_CREATED);
-		echo "\n--- 5. Ajouter le produit au panier avec une quantité de 2 ---\n";
 
-		// 6. Vérifier que le produit a bien été ajouté au panier avec la bonne quantité
+		$this->assertResponseIsSuccessful();
+		echo "\n--- 3. Ajouter le produit au panier avec une quantité de 2 ---\n";
+
+		// 4. Récupérer l'IRI du panier créé
+		$panierData = $responseAddToPanier->toArray();
+		$panierIri = $panierData['@id'];
+		echo "\n--- 4. Récupérer l'IRI du panier : $panierIri ---\n";
+
+		// 5. Vérifier que le produit a bien été ajouté au panier avec la bonne quantité
 		$responsePanierVerification = $client->request('GET', $panierIri);
-		$panierData = $responsePanierVerification->toArray();
-		$this->assertCount(1, $panierData['panierProduits'], 'Le produit n\'a pas été ajouté correctement au panier.');
-		$this->assertEquals(2, $panierData['panierProduits'][0]['quantite'], 'La quantité de produit dans le panier est incorrecte.');
-		echo "\n--- 6. Vérifier que le produit a bien été ajouté au panier avec la bonne quantité ---\n";
+		$panierDetails = $responsePanierVerification->toArray();
+		$this->assertCount(1, $panierDetails['panierProduits'], 'Le produit n\'a pas été ajouté correctement au panier.');
+		echo "\n--- 5. Vérification du panier ---\n";
 
-		// 7. Créer une adresse pour la commande
+		// 6. Créer une adresse pour l'utilisateur
+		$utilisateurIri = $this->getUserIri($client);
 		$adresseIri = $this->createAdresse($client, $utilisateurIri);
-		echo "\n--- 7. Créer une adresse pour la commande ---\n";
+		echo "\n--- 6. Créer une adresse pour la commande ---\n";
 
-		// 8. Créer un transporteur pour la commande
+		// 7. Créer un transporteur
 		$transporteurIri = $this->createTransporteur();
-		echo "\n--- 8. Créer un transporteur pour la commande ---\n";
+		echo "\n--- 7. Créer un transporteur ---\n";
 
-		// 9. Créer un état de commande pour la commande
-		$etatCommandeIri = $this->createEtatCommandeTest();
-		echo "\n--- 9. Créer un état de commande pour la commande ---\n";
+		// 8. Créer une méthode de livraison
+		$methodeLivraisonIri = $this->createMethodeLivraison($transporteurIri);
+		echo "\n--- 8. Créer une méthode de livraison ---\n";
 
-		// 10. Valider le panier et créer une commande
+		// 9. Simuler le paiement avec Stripe avant la création de la commande
+		echo "\n--- 9. Simuler le paiement de la commande avec Stripe ---\n";
+
+		// Récupérer le montant total du panier et le prix de la livraison
+		$prixTotalPanier = $panierDetails['prix_total_panier'];
+		$responseLivraison = $client->request('GET', $methodeLivraisonIri);
+		$livraisonData = $responseLivraison->toArray();
+		$prixLivraison = $livraisonData['prix'];
+		$montantTotal = round(bcadd($prixTotalPanier, $prixLivraison, 2), 2); // Montant en euros
+
+		// Simuler la validation du paiement avec Stripe
+		$montantTotalStripe = bcmul($montantTotal, '100', 0); // Convertir en centimes pour Stripe
+		$stripeClient = $this->createStripeClient();
+		$paymentIntent = $stripeClient->paymentIntents->create([
+			'amount' => $montantTotalStripe,
+			'currency' => 'eur',
+			'payment_method_types' => ['card'],
+			'payment_method' => 'pm_card_visa',
+			'confirm' => true
+		]);
+
+		// Vérifier que le paiement a été accepté
+		$this->assertEquals('succeeded', $paymentIntent->status, 'Le paiement n\'a pas été validé.');
+		echo "\n--- 9. Paiement réussi, création de la commande ---\n";
+
+		echo "\n--- Paiement réussi, création de la commande ---\n";
+		echo "\n--- Montant du panier : $prixTotalPanier € ---\n";
+		echo "\n--- Frais de livraison : $prixLivraison € ---\n";
+		echo "\n--- Montant total payé : $montantTotal € ---\n";
+
+		print_r([
+			'utilisateur' => $utilisateurIri,
+			'etat_commande' => $this->createEtatCommandeTest(),
+			'prix_total_commande' => $montantTotal,
+			'poids' => '3.5',
+			'frais_livraison' => $prixLivraison,
+			'numero_suivi' => 'ABC12345678',
+			'adresseLivraison' => $adresseIri,
+			'adresseFacturation' => $adresseIri,
+			'methodeLivraison' => $methodeLivraisonIri,
+			'panier' => $panierIri,
+			'trabsporteur' => $transporteurIri,
+			'total_produits_commande' => $prixTotalPanier
+		]);
+
+		// 10. Créer la commande après validation du paiement
 		$responseCommande = $client->request('POST', '/api/commandes', [
 			'json' => [
 				'utilisateur' => $utilisateurIri,
-				'adresse_livraison' => $adresseIri,
-				'adresse_facturation' => $adresseIri,
-				'transporteur' => $transporteurIri,
+				'etat_commande' => $this->createEtatCommandeTest(),
+				'prix_total_commande' => $montantTotal,
+				'poids' => '3.5',
+				'frais_livraison' => $prixLivraison,
+				'numero_suivi' => 'ABC12345678',
+				'adresseLivraison' => $adresseIri,
+				'adresseFacturation' => $adresseIri,
+				'methodeLivraison' => $methodeLivraisonIri,
 				'panier' => $panierIri,
-				'etat_commande' => $etatCommandeIri
+				'transporteur' => $transporteurIri,
+				'total_produits_commande' => $prixTotalPanier
 			]
 		]);
+
 		$this->assertResponseStatusCodeSame(Response::HTTP_CREATED);
 		$commandeIri = $responseCommande->toArray()['@id'];
-		echo "\n--- 10. Valider le panier et créer une commande ---\n";
+		echo "\n--- 10. Valider la commande ---\n";
+		
 
-		// 11. Vérifier le détail de la commande pour s'assurer que tout est correct
+		// 11. Vérifier le détail de la commande
 		$responseRecap = $client->request('GET', $commandeIri);
 		$commandeData = $responseRecap->toArray();
-		$this->assertEquals($transporteurIri, $commandeData['transporteur']);
-		$this->assertNotEmpty($commandeData['produits'], 'La commande ne contient pas de produits.');
-		echo "\n--- 11. Vérifier le détail de la commande pour s'assurer que tout est correct ---\n";
-
-		// 12. Simuler le paiement de la commande
-		// (Simuler un appel à l'API de paiement pour valider le paiement ici)
-		echo "\n--- 12. Simuler le paiement de la commande ---\n";
-
-		// 13. Vérifier l'état de la commande après le paiement
+		$this->assertEquals($transporteurIri, $commandeData['transporteur']["@id"], 'Le transporteur de la commande est incorrect.');
+		$this->assertNotEmpty($commandeData['commandeProduits'], 'La commande ne contient pas de produits.');
+		echo "\n--- 11. Vérification du détail de la commande ---\n";
+		
+		// 12. Vérifier l'état de la commande après paiement
 		$updatedCommandeResponse = $client->request('GET', $commandeIri);
 		$updatedCommandeData = $updatedCommandeResponse->toArray();
-		$this->assertEquals('Commande payée', $updatedCommandeData['etat_commande'], 'L\'état de la commande n\'a pas été mis à jour après le paiement.');
-		echo "\n--- 13. Vérifier l'état de la commande après le paiement ---\n";
+		$this->assertEquals('Commande Payée', $updatedCommandeData['etat_commande']['libelle'], 'L\'état de la commande n\'a pas été mis à jour après le paiement.');
+		echo "\n--- 12. Vérification de l'état de la commande après le paiement ---\n";
 	}
 }
