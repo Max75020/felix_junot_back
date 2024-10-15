@@ -226,7 +226,6 @@ class CommandeTest extends TestAuthentificator
 		$commandeIri = $responseCommande->toArray()['@id'];
 		echo "\n--- 10. Valider la commande ---\n";
 		
-
 		// 11. Vérifier le détail de la commande
 		$responseRecap = $client->request('GET', $commandeIri);
 		$commandeData = $responseRecap->toArray();
@@ -239,5 +238,17 @@ class CommandeTest extends TestAuthentificator
 		$updatedCommandeData = $updatedCommandeResponse->toArray();
 		$this->assertEquals('Commande Payée', $updatedCommandeData['etat_commande']['libelle'], 'L\'état de la commande n\'a pas été mis à jour après le paiement.');
 		echo "\n--- 12. Vérification de l'état de la commande après le paiement ---\n";
+
+		// 13. Vérifier que l'état du panier est "fermé" après la création de la commande
+		$responsePanier = $client->request('GET', $panierIri);
+		$panierData = $responsePanier->toArray();
+		$this->assertEquals('ferme', $panierData['etat'], 'L\'état du panier n\'a pas été mis à jour en "fermé" après la création de la commande.');
+		echo "\n--- 13. Vérification de l'état du panier après la création de la commande ---\n";
+
+		// 14. Vérifier que le stock du produit a été mis à jour après la commande
+		$responseProduit = $client->request('GET', $produitIri);
+		$produitData = $responseProduit->toArray();
+		$this->assertEquals(8, $produitData['stock'], 'Le stock du produit n\'a pas été mis à jour après la commande.');
+		echo "\n--- 14. Vérification du stock du produit après la commande ---\n";
 	}
 }

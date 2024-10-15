@@ -152,6 +152,12 @@ class CommandeProcessor implements ProcessorInterface
 		// Gérer l'historique des changements d'état de la commande
 		$this->gererHistoriqueEtatCommande($commande, true);
 
+		// Ajuster le stock des produits commandés
+		$this->ajusterStockProduit($commande);
+
+		// Clôturer le panier
+		$this->cloturerPanier($commande->getPanier());
+
 		// Persister la commande
 		$this->entityManager->persist($commande);
 		$this->entityManager->flush();
@@ -272,5 +278,42 @@ class CommandeProcessor implements ProcessorInterface
 			$historiqueEtatCommande->setEtatCommande($nouvelEtatCommande);
 			$this->entityManager->persist($historiqueEtatCommande);
 		}
+	}
+
+	private function ajusterStockProduit(Commande $commande): void
+	{
+		$panier = $commande->getPanier();
+		$produitsDuPanier = $panier->getPanierProduits(); // Assumes you have a relation between Panier and PanierProduit
+
+		foreach ($produitsDuPanier as $panierProduit) {
+			$produit = $panierProduit->getProduit();
+			$quantiteCommandee = $panierProduit->getQuantite();
+
+			// Ajuster le stock du produit
+			$nouveauStock = $produit->getStock() - $quantiteCommandee;
+			$produit->setStock($nouveauStock);
+
+			// Log pour confirmer la mise à jour du stock
+			$this->logger->info("Le stock du produit " . $produit->getNom() . " a été mis à jour. Nouveau stock : " . $nouveauStock);
+
+			// Persister la mise à jour
+			$this->entityManager->persist($produit);
+		}
+
+		// Flush les modifications du stock
+		$this->entityManager->flush();
+	}
+
+
+	private function cloturerPanier(Panier $panier): void
+	{
+		// Changer l'état du panier en "FERME"
+		$panier->setEtat('ferme');
+
+		// Persister et flush l'état mis à jour
+		$this->entityManager->persist($panier);
+		$this->entityManager->flush();
+
+		$this->logger->info("Panier ID " . $panier->getIdPanier() . " a été clôturé.");
 	}
 }

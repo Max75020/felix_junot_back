@@ -111,6 +111,11 @@ class PanierProcessor implements ProcessorInterface
 			throw new BadRequestHttpException('La quantité doit être au moins de 1.');
 		}
 
+		// **Vérification du stock disponible**
+		if ($produit->getStock() < $quantiteDemandee) {
+			throw new BadRequestHttpException('Quantité demandée supérieure au stock disponible.');
+		}
+
 		// Vérifier le panier de l'utilisateur ou en créer un nouveau
 		$panier = $this->entityManager->getRepository(Panier::class)->findOneBy(['utilisateur' => $utilisateur, 'etat' => 'ouvert']);
 		if (!$panier) {
@@ -135,6 +140,12 @@ class PanierProcessor implements ProcessorInterface
 		} else {
 			// Si le produit est déjà dans le panier, mettre à jour la quantité
 			$quantiteTotale = $panierProduit->getQuantite() + $quantiteDemandee;
+
+			// **Vérification du stock total après mise à jour de la quantité**
+			if ($produit->getStock() < $quantiteTotale) {
+				throw new BadRequestHttpException('Quantité totale dans le panier supérieure au stock disponible.');
+			}
+
 			$this->logger->info('Mise à jour de la quantité : ' . $quantiteTotale);
 			$panierProduit->setQuantite($quantiteTotale);
 		}
@@ -244,7 +255,7 @@ class PanierProcessor implements ProcessorInterface
 		$this->entityManager->flush();
 
 		return $panier;
-	}
+	}	
 
 	private function handleDecrementProduct($idPanier, $request, $utilisateur)
 	{
