@@ -19,3 +19,4 @@ api_platform:
     use_symfony_listeners: true
     mapping:
         paths: ['%kernel.project_dir%/src/Entity']
+    show_webby: false
