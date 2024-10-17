@@ -238,20 +238,20 @@ class Produit
 	#[ORM\Id]
 	#[ORM\GeneratedValue]
 	#[ORM\Column(type: 'integer')]
-	#[Groups(['produit:read'])]
+	#[Groups(['produit:read', 'produit:write', 'panier:read', 'panier:write', 'categorie:read', 'commande:read','user:read:item'])]
 	private ?int $id_produit = null;
 
 	// Référence unique du produit
 	#[ORM\Column(type: 'string', length: 15)]
 	#[Assert\NotBlank(message: "La référence est obligatoire.")]
 	#[Assert\Length(exactly: 15, exactMessage: "La référence doit contenir {{ limit }} caractères.")]
-	#[Groups(['produit:read', 'produit:write'])]
+	#[Groups(['produit:read', 'produit:write','user:read:item'])]
 	private ?string $reference = null;
 
 	// Nom du produit
 	#[ORM\Column(type: 'string', length: 100)]
 	#[Assert\NotBlank(message: "Le nom est obligatoire.")]
-	#[Groups(['produit:read', 'produit:write', 'panier:read', 'panier:write', 'categorie:read', 'commande:read'])]
+	#[Groups(['produit:read', 'produit:write', 'panier:read', 'panier:write', 'categorie:read', 'commande:read','user:read:item'])]
 	private ?string $nom = null;
 
 	// Description du produit
@@ -291,12 +291,10 @@ class Produit
 
 	// Relation OneToMany avec l'entité Favoris
 	#[ORM\OneToMany(mappedBy: 'produit', targetEntity: Favoris::class)]
-	#[Groups(['produit:read'])]
 	private Collection $favoris;
 
 	// Relation OneToMany avec l'entité PanierProduit
 	#[ORM\OneToMany(mappedBy: 'produit', targetEntity: PanierProduit::class)]
-	#[Groups(['produit:read'])]
 	private Collection $panierProduits;
 
 	// Relation OneToMany avec l'entité ImageProduit
@@ -306,7 +304,6 @@ class Produit
 
 	// Relation OneToMany avec l'entité CommandeProduit
 	#[ORM\OneToMany(mappedBy: 'produit', targetEntity: CommandeProduit::class)]
-	#[Groups(['produit:read'])]
 	private Collection $commandeProduits;
 
 	#[ORM\Column(type: 'decimal', precision: 10, scale: 2)]

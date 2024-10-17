@@ -270,7 +270,7 @@ class Panier
 	#[ORM\Id]
 	#[ORM\GeneratedValue]
 	#[ORM\Column(type: 'integer')]
-	#[Groups(['panier:read','commande:read', 'commande:write'])]
+	#[Groups(['panier:read','commande:read', 'commande:write', 'user:read:item'])]
 	private ?int $id_panier = null;
 
 	// Relation ManyToOne avec l'entité Utilisateur
@@ -281,7 +281,7 @@ class Panier
 
 	// Relation OneToMany avec l'entité PanierProduit
 	#[ORM\OneToMany(mappedBy: 'panier', targetEntity: PanierProduit::class, cascade: ['persist', 'remove'])]
-	#[Groups(['panier:read', 'panier:write'])]
+	#[Groups(['panier:read', 'panier:write','user:read:item'])]
 	private Collection $panierProduits;
 
 	// État du panier (ouvert ou fermé)
@@ -294,7 +294,7 @@ class Panier
 	#[ORM\Column(type: 'decimal', precision: 10, scale: 2, name: 'prix_total_panier')]
 	#[Assert\NotBlank(message: "Le prix total du panier est obligatoire.")]
 	#[Assert\PositiveOrZero(message: "Le prix total du panier doit être un nombre positif ou nul.")]
-	#[Groups(['panier:read', 'panier:write', 'panierProduit:read', 'panierProduit:write','commande:read', 'commande:write'])]
+	#[Groups(['panier:read', 'panier:write', 'panierProduit:read', 'panierProduit:write','commande:read', 'commande:write', 'user:read:item'])]
 	private string $prix_total_panier = '0.00';
 
 	public function __construct()
