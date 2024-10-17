@@ -405,6 +405,8 @@ class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
 		$this->commandes = new ArrayCollection();
 		$this->paniers = new ArrayCollection();
 		$this->favoris = new ArrayCollection();
+		// Par défaut, tous les utilisateurs ont le rôle ROLE_USER
+		$this->roles = ['ROLE_USER'];
 	}
 
 	// Getters et Setters pour toutes les propriétés
