@@ -44,8 +44,8 @@ class GenerateResetTokenController
 
 		// Construire le lien de réinitialisation
 		$resetLink = sprintf(
-			'https://felix-ceramique.fr/reinitialisation-mot-de-passe?utilisateur=%d&token_reinitialisation=%s',
-			$user->getIdUtilisateur(),
+			'%s/new-password?token=%s',
+			$_ENV['FRONTEND_URL'],
 			$token
 		);
 

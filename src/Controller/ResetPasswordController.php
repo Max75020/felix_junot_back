@@ -22,17 +22,15 @@ class ResetPasswordController
 	public function __invoke(Request $request): JsonResponse
 	{
 		$data = json_decode($request->getContent(), true);
-		$email = $data['email'] ?? null;
 		$token = $data['token'] ?? null;
 		$newPassword = $data['new_password'] ?? null;
 
-		if (!$email || !$token || !$newPassword) {
-			return new JsonResponse(['message' => 'Email, token et nouveau mot de passe sont requis.'], JsonResponse::HTTP_BAD_REQUEST);
+		if (!$token || !$newPassword) {
+			return new JsonResponse(['message' => 'token et nouveau mot de passe sont requis.'], JsonResponse::HTTP_BAD_REQUEST);
 		}
 
 		// Rechercher l'utilisateur par email et token
 		$user = $this->entityManager->getRepository(Utilisateur::class)->findOneBy([
-			'email' => $email,
 			'token_reinitialisation' => $token,
 		]);
 

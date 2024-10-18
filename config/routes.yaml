@@ -7,3 +7,6 @@ controllers:
 api_login_check:
     path: /api/login_check
 
+mail_test:
+    path: /send-test-email
+    controller: App\Controller\MailController::sendEmail

@@ -281,11 +281,10 @@ use App\Controller\CurrentUserController;
 							'schema' => [
 								'type' => 'object',
 								'properties' => [
-									'email' => ['type' => 'string', 'example' => 'maxime.duplaissy@mail.com'],
 									'token' => ['type' => 'string', 'example' => 'R8fAJgEUwxMkBlW7KfkwQUtZISxzYLEZWEDZMO9lbjw02EKIHHtqSGMC0rcciki8'],
 									'new_password' => ['type' => 'string', 'example' => 'NewUserPassword+123'],
 								],
-								'required' => ['email', 'token', 'new_password'],
+								'required' => ['token', 'new_password'],
 							],
 						],
 					],

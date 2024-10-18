@@ -83,3 +83,7 @@ services:
             $logger: '@logger'
         tags:
             - { name: 'api_platform.state_processor' }
+    App\Service\EmailService:
+        arguments:
+            $mailer: '@mailer.mailer'
+            $twig: '@twig'
