@@ -324,6 +324,7 @@ class Produit
 		$this->panierProduits = new ArrayCollection();
 		$this->images = new ArrayCollection();
 		$this->commandeProduits = new ArrayCollection();
+		$this->reference = $this->generateProductReference();
 	}
 
 	// Getters et Setters...
