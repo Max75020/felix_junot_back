@@ -206,7 +206,7 @@ use App\Controller\CurrentUserController;
 								'properties' => [
 									'prenom' => ['type' => 'string', 'example' => 'Félix'],
 									'nom' => ['type' => 'string', 'example' => 'Junot'],
-									'email' => ['type' => 'string', 'example' => 'felix.junot@boss.fr'],
+									'telephone' => ['type' => 'string', 'example' => '+33612345678'],
 								],
 							],
 						],
