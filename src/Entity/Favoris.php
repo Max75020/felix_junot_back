@@ -130,7 +130,7 @@ class Favoris
 	#[ORM\Id]
 	#[ORM\GeneratedValue]
 	#[ORM\Column(type: 'integer')]
-	#[Groups(['favoris:read'])]
+	#[Groups(['favoris:read','user:read:item'])]
 	private ?int $id_favoris = null;
 
 	// Relation ManyToOne avec l'entité Utilisateur
@@ -144,7 +144,7 @@ class Favoris
 	#[ORM\ManyToOne(targetEntity: Produit::class, inversedBy: 'favoris')]
 	#[ORM\JoinColumn(name: 'produit_id', referencedColumnName: 'id_produit', nullable: false)]
 	#[Assert\NotBlank(message: "Le produit est obligatoire.")]
-	#[Groups(['favoris:read', 'favoris:write'])]
+	#[Groups(['favoris:read', 'favoris:write', 'user:read:item'])]
 	private ?Produit $produit = null;
 
 	// Getters et Setters...

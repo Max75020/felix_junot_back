@@ -238,7 +238,7 @@ class Produit
 	#[ORM\Id]
 	#[ORM\GeneratedValue]
 	#[ORM\Column(type: 'integer')]
-	#[Groups(['produit:read', 'produit:write', 'panier:read', 'panier:write', 'categorie:read', 'commande:read','user:read:item'])]
+	#[Groups(['produit:read', 'produit:write', 'panier:read', 'panier:write', 'categorie:read', 'commande:read','user:read:item', 'favoris:read'])]
 	private ?int $id_produit = null;
 
 	// Référence unique du produit
@@ -251,7 +251,7 @@ class Produit
 	// Nom du produit
 	#[ORM\Column(type: 'string', length: 100)]
 	#[Assert\NotBlank(message: "Le nom est obligatoire.")]
-	#[Groups(['produit:read', 'produit:write', 'panier:read', 'panier:write', 'categorie:read', 'commande:read','user:read:item'])]
+	#[Groups(['produit:read', 'produit:write', 'panier:read', 'panier:write', 'categorie:read', 'commande:read','user:read:item','favoris:read'])]
 	private ?string $nom = null;
 
 	// Description du produit

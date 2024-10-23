@@ -36,6 +36,7 @@ security:
         - { path: ^/api/paniers/add-product, roles: IS_AUTHENTICATED_FULLY, methods: [POST] }
         - { path: ^/api/paniers/\d+/decrement-product, roles: IS_AUTHENTICATED_FULLY, methods: [PATCH] }
         - { path: ^/api/paniers/\d+/increment-product, roles: IS_AUTHENTICATED_FULLY, methods: [PATCH] }
+        - { path: ^/api/favoriss , roles: IS_AUTHENTICATED_FULLY, methods: [GET, POST, DELETE] }
         - { path: ^/api/produits, roles: PUBLIC_ACCESS, methods: [GET] }
         - { path: ^/api/produits/\d+, roles: PUBLIC_ACCESS, methods: [GET] }
         - { path: ^/api/utilisateurs, roles: PUBLIC_ACCESS, methods: [POST] }
