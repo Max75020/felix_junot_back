@@ -130,7 +130,7 @@ class Favoris
 	#[ORM\Id]
 	#[ORM\GeneratedValue]
 	#[ORM\Column(type: 'integer')]
-	#[Groups(['favoris:read','user:read:item'])]
+	#[Groups(['favoris:read','user:read:item',"user:read:item"])]
 	private ?int $id_favoris = null;
 
 	// Relation ManyToOne avec l'entité Utilisateur
