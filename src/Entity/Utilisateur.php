@@ -326,13 +326,13 @@ class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
 	// Prénom de l'utilisateur, ne doit pas être vide
 	#[ORM\Column(type: 'string', length: 50)]
 	#[Assert\NotBlank(message: "Le prénom est obligatoire.")]
-	#[Groups(['user:read:collection', 'user:read:item', 'user:write', 'adresse:read', 'commande:read','commande:write', 'panier:read', 'favoris:read'])]
+	#[Groups(['user:read:collection', 'user:read:item', 'user:write', 'commande:read','commande:write', 'panier:read', 'favoris:read'])]
 	private ?string $prenom = null;
 
 	// Nom de l'utilisateur, ne doit pas être vide
 	#[ORM\Column(type: 'string', length: 50)]
 	#[Assert\NotBlank(message: "Le nom est obligatoire.")]
-	#[Groups(['user:read:collection', 'user:read:item', 'user:write', 'adresse:read', 'commande:read','commande:write', 'panier:read', 'favoris:read'])]
+	#[Groups(['user:read:collection', 'user:read:item', 'user:write', 'commande:read','commande:write', 'panier:read', 'favoris:read'])]
 	private ?string $nom = null;
 
 	// Email de l'utilisateur, unique et format valide
