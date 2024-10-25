@@ -146,6 +146,16 @@ use App\State\AdresseProcessor;
 											'description' => 'La rue ou l\'adresse complète',
 											'example' => '123 Rue Principale',
 										],
+										'batiment' => [
+											'type' => 'string',
+											'description' => 'Informations supplémentaires sur le bâtiment',
+											'example' => 'Bâtiment B',
+										],
+										'appartement' => [
+											'type' => 'string',
+											'description' => 'Numéro ou informations sur l\'appartement',
+											'example' => 'Appartement 3',
+										],
 										'code_postal' => [
 											'type' => 'string',
 											'description' => 'Le code postal de l\'adresse',
