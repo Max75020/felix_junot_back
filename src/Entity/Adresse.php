@@ -205,6 +205,11 @@ use App\State\AdresseProcessor;
 										'description' => 'L\'IRI de l\'utilisateur associé',
 										'example' => '/api/utilisateurs/1',
 									],
+									'nom_adresse' => [
+										'type' => 'string',
+										'description' => 'Le nom de l\'adresse',
+										'example' => 'Domicile',
+									],
 									'type' => [
 										'type' => 'string',
 										'description' => 'Le type d\'adresse (Facturation ou Livraison)',
@@ -316,6 +321,11 @@ use App\State\AdresseProcessor;
 										'description' => 'L\'IRI de l\'utilisateur associé',
 										'example' => '/api/utilisateurs/1',
 									],
+									'nom_adresse' => [
+										'type' => 'string',
+										'description' => 'Le nom de l\'adresse (ex: "Domicile", "Travail", etc.)',
+										'example' => 'Domicile',
+									],
 									'type' => [
 										'type' => 'string',
 										'description' => 'Le type d\'adresse (Facturation ou Livraison)',
@@ -372,7 +382,7 @@ use App\State\AdresseProcessor;
 										'example' => false,
 									],
 								],
-								'required' => ['utilisateur', 'type', 'prenom', 'nom', 'rue', 'code_postal', 'ville', 'pays'],
+								'required' => ['utilisateur','nom_adresse', 'type', 'prenom', 'nom', 'rue', 'code_postal', 'ville', 'pays'],
 							],
 						],
 					],
@@ -396,7 +406,7 @@ class Adresse
 	#[ORM\Id]
 	#[ORM\GeneratedValue]
 	#[ORM\Column(type: 'integer')]
-	#[Groups(['adresse:read','commande:read', 'commande:write', "user:read:item", "user:write:item"])]
+	#[Groups(['adresse:read', 'commande:read', 'commande:write', "user:read:item", "user:write:item"])]
 	private ?int $id_adresse = null;
 
 	#[ORM\ManyToOne(targetEntity: Utilisateur::class, inversedBy: 'adresses')]
@@ -407,46 +417,46 @@ class Adresse
 	#[ORM\Column(type: 'string', length: 20)]
 	#[Assert\NotBlank(message: "Le type d'adresse est obligatoire.")]
 	#[Assert\Choice(choices: ["Facturation", "Livraison"], message: "Le type d'adresse doit être 'Facturation' ou 'Livraison'.")]
-	#[Groups(['adresse:read', 'adresse:write','commande:read', 'commande:write', "user:read:item", "user:write:item"])]
+	#[Groups(['adresse:read', 'adresse:write', 'commande:read', 'commande:write', "user:read:item", "user:write:item"])]
 	private ?string $type = null;
 
 	#[ORM\Column(type: 'string', length: 50)]
 	#[Assert\NotBlank(message: "Le prénom est obligatoire.")]
-	#[Groups(['adresse:read', 'adresse:write','commande:read', 'commande:write', "user:read:item", "user:write:item"])]
+	#[Groups(['adresse:read', 'adresse:write', 'commande:read', 'commande:write', "user:read:item", "user:write:item"])]
 	private ?string $prenom = null;
 
 	#[ORM\Column(type: 'string', length: 50)]
 	#[Assert\NotBlank(message: "Le nom est obligatoire.")]
-	#[Groups(['adresse:read', 'adresse:write','commande:read', 'commande:write', "user:read:item", "user:write:item"])]
+	#[Groups(['adresse:read', 'adresse:write', 'commande:read', 'commande:write', "user:read:item", "user:write:item"])]
 	private ?string $nom = null;
 
 	#[ORM\Column(type: 'string', length: 255)]
 	#[Assert\NotBlank(message: "La rue est obligatoire.")]
-	#[Groups(['adresse:read', 'adresse:write','commande:read', 'commande:write', "user:read:item", "user:write:item"])]
+	#[Groups(['adresse:read', 'adresse:write', 'commande:read', 'commande:write', "user:read:item", "user:write:item"])]
 	private ?string $rue = null;
 
 	#[ORM\Column(type: 'string', length: 100, nullable: true)]
-	#[Groups(['adresse:read', 'adresse:write','commande:read', 'commande:write', "user:read:item", "user:write:item"])]
+	#[Groups(['adresse:read', 'adresse:write', 'commande:read', 'commande:write', "user:read:item", "user:write:item"])]
 	private ?string $batiment = null;
 
 	#[ORM\Column(type: 'string', length: 100, nullable: true)]
-	#[Groups(['adresse:read', 'adresse:write','commande:read', 'commande:write', "user:read:item", "user:write:item"])]
+	#[Groups(['adresse:read', 'adresse:write', 'commande:read', 'commande:write', "user:read:item", "user:write:item"])]
 	private ?string $appartement = null;
 
 	#[ORM\Column(type: 'string', length: 5)]
 	#[Assert\NotBlank(message: "Le code postal est obligatoire.")]
 	#[Assert\Length(max: 5, maxMessage: "Le code postal ne peut pas dépasser {{ limit }} caractères.")]
-	#[Groups(['adresse:read', 'adresse:write','commande:read', 'commande:write', "user:read:item", "user:write:item"])]
+	#[Groups(['adresse:read', 'adresse:write', 'commande:read', 'commande:write', "user:read:item", "user:write:item"])]
 	private ?string $code_postal = null;
 
 	#[ORM\Column(type: 'string', length: 100)]
 	#[Assert\NotBlank(message: "La ville est obligatoire.")]
-	#[Groups(['adresse:read', 'adresse:write','commande:read', 'commande:write', "user:read:item", "user:write:item"])]
+	#[Groups(['adresse:read', 'adresse:write', 'commande:read', 'commande:write', "user:read:item", "user:write:item"])]
 	private ?string $ville = null;
 
 	#[ORM\Column(type: 'string', length: 50)]
 	#[Assert\NotBlank(message: "Le pays est obligatoire.")]
-	#[Groups(['adresse:read', 'adresse:write','commande:read', 'commande:write', "user:read:item", "user:write:item"])]
+	#[Groups(['adresse:read', 'adresse:write', 'commande:read', 'commande:write', "user:read:item", "user:write:item"])]
 	private ?string $pays = null;
 
 	#[ORM\Column(type: 'string', length: 14, nullable: true)]
@@ -455,12 +465,16 @@ class Adresse
 		pattern: "/^\+?[1-9]\d{1,14}$|^(0|\+33)[1-9](\s?\d{2}){4}$/",
 		message: "Le numéro de téléphone n'est pas valide."
 	)]
-	#[Groups(['adresse:read', 'adresse:write','commande:read', 'commande:write', "user:read:item", "user:write:item"])]
+	#[Groups(['adresse:read', 'adresse:write', 'commande:read', 'commande:write', "user:read:item", "user:write:item"])]
 	private ?string $telephone = null;
 
 	#[ORM\Column(type: 'boolean', options: ['default' => false])]
-	#[Groups(['adresse:read', 'adresse:write','commande:write', "user:read:item", "user:write:item"])]
+	#[Groups(['adresse:read', 'adresse:write', 'commande:write', "user:read:item", "user:write:item"])]
 	private ?bool $similaire = false;
+
+	#[ORM\Column(length: 255)]
+	#[Groups(['adresse:read', 'adresse:write', 'commande:write', "user:read:item", "user:write:item"])]
+	private ?string $nom_adresse = null;
 
 	// Getters et Setters...
 
@@ -598,6 +612,18 @@ class Adresse
 	public function setSimilaire(bool $similaire): self
 	{
 		$this->similaire = $similaire;
+		return $this;
+	}
+
+	public function getNomAdresse(): ?string
+	{
+		return $this->nom_adresse;
+	}
+
+	public function setNomAdresse(string $nom_adresse): static
+	{
+		$this->nom_adresse = $nom_adresse;
+
 		return $this;
 	}
 }
