@@ -12,6 +12,7 @@ use Symfony\Component\Serializer\Annotation\Groups;
 use App\Repository\PanierProduitRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
+use App\State\PanierProcessor;
 
 #[ApiResource(
 	normalizationContext: ['groups' => ['panierProduit:read']],
@@ -139,6 +140,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 		// Suppression d'un panier-produit (accessible à l'utilisateur propriétaire ou à l'administrateur)
 		new Delete(
 			security: "is_granted('ROLE_ADMIN') or object.getPanier().getUtilisateur() == user",
+			processor: PanierProcessor::class,
 			openapiContext: [
 				'summary' => 'Supprime un produit du panier.',
 				'description' => 'Cette opération permet de supprimer un produit du panier pour les utilisateurs ou les administrateurs.',

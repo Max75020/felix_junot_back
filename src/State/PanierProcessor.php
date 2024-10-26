@@ -6,6 +6,7 @@ use App\Entity\Panier;
 use App\Entity\PanierProduit;
 use App\Entity\Produit;
 use ApiPlatform\Metadata\Operation;
+use ApiPlatform\Metadata\Delete as DeleteMetadata;
 use ApiPlatform\State\ProcessorInterface;
 use Symfony\Bundle\SecurityBundle\Security;
 use Doctrine\ORM\EntityManagerInterface;
@@ -56,6 +57,11 @@ class PanierProcessor implements ProcessorInterface
 		if ($operation->getName() === '_api_/paniers/{id_panier}/decrement-product_patch') {
 			$this->logger->info('Handling decrement-product operation.');
 			return $this->handleDecrementProduct($uriVariables['id_panier'], $request, $utilisateur);
+		}
+
+		if ($operation instanceof DeleteMetadata) {
+			$this->logger->info('Handling delete-product operation.');
+			return $this->handleDeleteProduct($data, $utilisateur);
 		}
 
 		throw new BadRequestHttpException('Opération non prise en charge.');
@@ -180,7 +186,6 @@ class PanierProcessor implements ProcessorInterface
 		return $panier;
 	}
 
-
 	private function handleIncrementProduct($idPanier, $request, $utilisateur)
 	{
 		$this->logger->info('Méthode handleIncrementProduct appelée pour le panier ID : ' . $idPanier);
@@ -255,7 +260,7 @@ class PanierProcessor implements ProcessorInterface
 		$this->entityManager->flush();
 
 		return $panier;
-	}	
+	}
 
 	private function handleDecrementProduct($idPanier, $request, $utilisateur)
 	{
@@ -340,6 +345,41 @@ class PanierProcessor implements ProcessorInterface
 
 		$panier->setPrixTotalPanier($prixTotalPanier);
 		$this->logger->info('Prix total du panier mis à jour : ' . $prixTotalPanier);
+
+		// Enregistrer les modifications
+		$this->entityManager->flush();
+
+		return $panier;
+	}
+
+	private function handleDeleteProduct(PanierProduit $panierProduit, $utilisateur)
+	{
+		// Rechercher le panier
+		$panier = $panierProduit->getPanier();
+		$this->logger->info('Suppression d\'un produit du panier. ID Panier : ' . $panier->getIdPanier());
+
+		// Supprimer le produit du panier
+		$this->entityManager->remove($panierProduit);
+		$this->entityManager->flush(); // Assure-toi que la suppression est enregistrée avant de recalculer
+
+		// Rafraîchir le panier pour obtenir les produits mis à jour
+		$this->entityManager->refresh($panier);
+
+		// Recalculer le prix total du panier après la suppression
+		$prixTotalPanier = '0.00';
+		foreach ($panier->getPanierProduits() as $produitDansPanier) {
+			$this->logger->info('Produit restant dans le panier : ' . $produitDansPanier->getProduit()->getNom() . ', Quantité : ' . $produitDansPanier->getQuantite() . ', Prix total produit : ' . $produitDansPanier->getPrixTotalProduit());
+			$prixTotalPanier = bcadd($prixTotalPanier, $produitDansPanier->getPrixTotalProduit(), 2);
+		}
+
+		// Vérifier si le panier est vide après la suppression
+		if (count($panier->getPanierProduits()) === 0) {
+			$prixTotalPanier = '0.00';
+			$this->logger->info('Aucun produit dans le panier, prix total du panier mis à jour à 0.');
+		}
+
+		$panier->setPrixTotalPanier($prixTotalPanier);
+		$this->logger->info('Prix total du panier mis à jour après suppression : ' . $prixTotalPanier);
 
 		// Enregistrer les modifications
 		$this->entityManager->flush();
