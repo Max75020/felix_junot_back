@@ -11,10 +11,12 @@ security:
                 property: email
 
     firewalls:
+        # Firewall pour l'environnement de développement
         dev:
             pattern: ^/(_(profiler|wdt)|css|images|js)/
             security: false
 
+        # Firewall pour la connexion
         login:
             pattern: ^/api/login
             stateless: true
@@ -25,13 +27,17 @@ security:
                 success_handler: lexik_jwt_authentication.handler.authentication_success
                 failure_handler: lexik_jwt_authentication.handler.authentication_failure
 
+        # Firewall dédié à la régénération des tokens
+        refresh_jwt:
+            pattern: ^/api/token/refresh
+            stateless: true
+            refresh_jwt:
+                check_path: /api/token/refresh
+
         api:
             pattern: ^/api
             stateless: true
-            entry_point: jwt
             jwt: ~
-            refresh_jwt:
-                check_path: /api/refresh_token
 
     access_control:
         - { path: ^/api/utilisateurs/me, roles: IS_AUTHENTICATED_FULLY, methods: [GET] }
@@ -44,6 +50,7 @@ security:
         - { path: ^/api/produits/\d+, roles: PUBLIC_ACCESS, methods: [GET] }
         - { path: ^/api/utilisateurs, roles: PUBLIC_ACCESS, methods: [POST] }
         - { path: ^/api/login, roles: PUBLIC_ACCESS, methods: [POST] }
+        - { path: ^/api/(login|token/refresh), roles: PUBLIC_ACCESS }
         - { path: ^/api/password-reset-request, roles: PUBLIC_ACCESS, methods: [POST] }
         - { path: ^/api/password-reset, roles: PUBLIC_ACCESS, methods: [POST] }
         - { path: ^/api/docs, roles: PUBLIC_ACCESS }

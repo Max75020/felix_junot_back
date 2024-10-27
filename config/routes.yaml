@@ -3,17 +3,16 @@ controllers:
         path: ../src/Controller/
         namespace: App\Controller
     type: attribute
-# config/routes.yaml
-# config/routes.yaml
+
 jwt_login:
     path: /api/login_check
     methods: [POST]
     controller: Lexik\Bundle\JWTAuthenticationBundle\Controller\AuthenticationController::login
 
-jwt_refresh:
-    path: /api/refresh_token
+api_refresh_token:
+    path: /api/token/refresh
+    controller: gesdinet.jwtrefreshtoken::refresh
     methods: [POST]
-    controller: Gesdinet\JWTRefreshTokenBundle\Controller\RefreshTokenController::refresh
 
 mail_test:
     path: /send-test-email
