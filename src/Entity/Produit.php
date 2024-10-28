@@ -309,7 +309,7 @@ class Produit
 	#[ORM\Column(type: 'decimal', precision: 10, scale: 2)]
 	#[Assert\NotBlank(message: "Le prix est obligatoire.")]
 	#[Assert\Positive(message: "Le prix doit être un nombre positif.")]
-	#[Groups(['produit:read', 'produit:write', 'panier:read', 'panier:write'])]
+	#[Groups(['produit:read', 'produit:write', 'panier:read', 'panier:write','user:read:item'])]
 	private ?string $prix_ttc = null;
 
 	#[ORM\Column(type: 'integer', nullable: false)]
