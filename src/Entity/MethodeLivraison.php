@@ -222,7 +222,7 @@ class MethodeLivraison
 	#[ORM\Id]
 	#[ORM\GeneratedValue]
 	#[ORM\Column(name: 'id_methode_livraison', type: 'integer')]
-	#[Groups(['methodeLivraison:read','commande:read', 'commande:write'])]
+	#[Groups(['methodeLivraison:read','commande:read', 'commande:write', 'transporteur:read'])]
 	private ?int $id_methode_livraison = null;
 
 	#[ORM\Column(type: 'string', length: 100)]
@@ -245,7 +245,6 @@ class MethodeLivraison
 
 	#[ORM\ManyToOne(targetEntity: Transporteur::class, inversedBy: 'methodeLivraison')]
 	#[ORM\JoinColumn(nullable: false, referencedColumnName: 'id_transporteur')]
-	#[Groups(['methodeLivraison:read', 'methodeLivraison:write','transporteur:read','commande:read', 'commande:write'])]
 	private ?Transporteur $transporteur = null;
 
 	// Relation OneToMany avec l'entité Commande

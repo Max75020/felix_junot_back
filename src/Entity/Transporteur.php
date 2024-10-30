@@ -201,6 +201,7 @@ class Transporteur
 
 	// Relation OneToMany avec l'entité MethodeLivraison (cascade persist et remove), si un transporteur est supprimé, ses méthodes de livraison associées le sont également
 	#[ORM\OneToMany(mappedBy: 'transporteur', targetEntity: MethodeLivraison::class, cascade: ['persist', 'remove'])]
+	#[Groups(['transporteur:read'])]
 	private Collection $methodeLivraison;
 
 	public function __construct()
