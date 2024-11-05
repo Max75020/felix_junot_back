@@ -10,7 +10,7 @@ use Doctrine\Migrations\AbstractMigration;
 /**
  * Auto-generated Migration: Please modify to your needs!
  */
-final class Version20241021000000 extends AbstractMigration
+final class Version20241105151453 extends AbstractMigration
 {
 	public function getDescription(): string
 	{
@@ -27,7 +27,6 @@ final class Version20241021000000 extends AbstractMigration
 
 	public function down(Schema $schema): void
 	{
-		// this down() migration is auto-generated, please modify it to your needs
 		$this->addSql('DROP INDEX idx_nom ON categorie');
 		$this->addSql('DROP INDEX idx_roles ON utilisateur');
 		$this->addSql('ALTER TABLE utilisateur ADD role VARCHAR(20) NOT NULL, DROP roles');

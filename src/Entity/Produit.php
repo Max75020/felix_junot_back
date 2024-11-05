@@ -238,20 +238,21 @@ class Produit
 	#[ORM\Id]
 	#[ORM\GeneratedValue]
 	#[ORM\Column(type: 'integer')]
-	#[Groups(['produit:read', 'produit:write', 'panier:read', 'panier:write', 'categorie:read', 'commande:read','user:read:item', 'favoris:read'])]
+	#[Groups(['produit:read', 'produit:write', 'panier:read', 'panier:write', 'categorie:read', 'commande:read', 'user:read:item', 'favoris:read'])]
 	private ?int $id_produit = null;
 
 	// Référence unique du produit
-	#[ORM\Column(type: 'string', length: 15)]
+	#[ORM\Column(type: 'string', length: 20)]
 	#[Assert\NotBlank(message: "La référence est obligatoire.")]
-	#[Assert\Length(exactly: 15, exactMessage: "La référence doit contenir {{ limit }} caractères.")]
-	#[Groups(['produit:read', 'produit:write','user:read:item'])]
+	#[Assert\Length(max: 20, maxMessage: "La référence doit contenir au maximum {{ limit }} caractères.")]
+	#[Groups(['produit:read', 'produit:write', 'user:read:item'])]
 	private ?string $reference = null;
+
 
 	// Nom du produit
 	#[ORM\Column(type: 'string', length: 100)]
 	#[Assert\NotBlank(message: "Le nom est obligatoire.")]
-	#[Groups(['produit:read', 'produit:write', 'panier:read', 'panier:write', 'categorie:read', 'commande:read','user:read:item','favoris:read'])]
+	#[Groups(['produit:read', 'produit:write', 'panier:read', 'panier:write', 'categorie:read', 'commande:read', 'user:read:item', 'favoris:read'])]
 	private ?string $nom = null;
 
 	// Description du produit
@@ -309,7 +310,7 @@ class Produit
 	#[ORM\Column(type: 'decimal', precision: 10, scale: 2)]
 	#[Assert\NotBlank(message: "Le prix est obligatoire.")]
 	#[Assert\Positive(message: "Le prix doit être un nombre positif.")]
-	#[Groups(['produit:read', 'produit:write', 'panier:read', 'panier:write','user:read:item'])]
+	#[Groups(['produit:read', 'produit:write', 'panier:read', 'panier:write', 'user:read:item'])]
 	private ?string $prix_ttc = null;
 
 	#[ORM\Column(type: 'integer', nullable: false)]
@@ -350,11 +351,8 @@ class Produit
 		// Crée un objet DateTime avec la date et l'heure actuelles
 		$now = new \DateTime();
 
-		// Génère une partie aléatoire de 4 chiffres
-		$randomPart = mt_rand(1000, 9999);
-
-		// Génère la référence avec le format jour, mois, année + 4 chiffres aléatoires
-		$reference = 'REF' . $now->format('dmY') . $randomPart;
+		// Génère la référence avec le format jour, mois, année, heure, minute et seconde
+		$reference = 'REF' . $now->format('dmYHis');
 
 		return $reference;
 	}
