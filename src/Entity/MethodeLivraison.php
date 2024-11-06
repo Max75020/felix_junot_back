@@ -245,6 +245,7 @@ class MethodeLivraison
 
 	#[ORM\ManyToOne(targetEntity: Transporteur::class, inversedBy: 'methodeLivraison')]
 	#[ORM\JoinColumn(nullable: false, referencedColumnName: 'id_transporteur')]
+	#[Groups(['methodeLivraison:read', 'methodeLivraison:write', 'commande:read'])]
 	private ?Transporteur $transporteur = null;
 
 	// Relation OneToMany avec l'entité Commande

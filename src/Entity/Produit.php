@@ -245,7 +245,7 @@ class Produit
 	#[ORM\Column(type: 'string', length: 20)]
 	#[Assert\NotBlank(message: "La référence est obligatoire.")]
 	#[Assert\Length(max: 20, maxMessage: "La référence doit contenir au maximum {{ limit }} caractères.")]
-	#[Groups(['produit:read', 'produit:write', 'user:read:item'])]
+	#[Groups(['produit:read', 'produit:write', 'user:read:item','panier:read', 'panier:write', 'categorie:read', 'commande:read', 'favoris:read'])]
 	private ?string $reference = null;
 
 

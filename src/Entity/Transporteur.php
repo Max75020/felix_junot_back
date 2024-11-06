@@ -186,13 +186,13 @@ class Transporteur
 	#[ORM\Id]
 	#[ORM\GeneratedValue]
 	#[ORM\Column(type: 'integer')]
-	#[Groups(['transporteur:read, commande:read', 'historiqueEtatCommande:read','commande:read', 'commande:write'])]
+	#[Groups(['transporteur:read, commande:read', 'historiqueEtatCommande:read','commande:read', 'commande:write','methodeLivraison:read'])]
 	private ?int $id_transporteur = null;
 
 	#[ORM\Column(type: 'string', length: 100)]
 	#[Assert\NotBlank(message: "Le nom du transporteur est obligatoire.")]
 	#[Assert\Length(max: 100, maxMessage: "Le nom du transporteur ne peut pas dépasser {{ limit }} caractères.")]
-	#[Groups(['transporteur:read', 'transporteur:write','commande:read', 'commande:write'])]
+	#[Groups(['transporteur:read', 'transporteur:write','commande:read', 'commande:write','methodeLivraison:read'])]
 	private ?string $nom = null;
 
 	// Relation OneToMany avec l'entité Commande
