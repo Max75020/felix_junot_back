@@ -222,13 +222,13 @@ use Symfony\Component\Serializer\Normalizer\DateTimeNormalizer;
 										'description' => 'IRI du panier associé à la commande',
 										'example' => '/api/paniers/1',
 									],
-									'id_adresse_facturation' => [
+									'adresseFacturation' => [
 										'type' => 'string',
 										'format' => 'iri',
 										'description' => 'IRI de l\'adresse de facturation',
 										'example' => '/api/adresses/1',
 									],
-									'id_adresse_livraison' => [
+									'adresseLivraison' => [
 										'type' => 'string',
 										'format' => 'iri',
 										'description' => 'IRI de l\'adresse de livraison',
@@ -240,7 +240,7 @@ use Symfony\Component\Serializer\Normalizer\DateTimeNormalizer;
 										'example' => '100.00',
 									],
 								],
-								'required' => ['utilisateur', 'etat_commande', 'prix_total_commande', 'transporteur', 'frais_livraison', 'numero_suivi', 'reference', 'panier', 'id_adresse_facturation', 'id_adresse_livraison', 'total_produits_commande'],
+								'required' => ['utilisateur', 'prix_total_commande', 'transporteur', 'frais_livraison', 'reference', 'panier', 'adresseFacturation', 'adresseLivraison', 'total_produits_commande'],
 							],
 						],
 					],
@@ -292,7 +292,7 @@ class Commande
 
 	#[ORM\ManyToOne(targetEntity: Adresse::class)]
 	#[ORM\JoinColumn(name: 'adresse_facturation_id', referencedColumnName: 'id_adresse', nullable: false)]
-	#[Groups(['commande:read', 'commande:write', 'historiqueEtatCommande:read', 'historiqueEtatCommande:write', ])]
+	#[Groups(['commande:read', 'commande:write', 'historiqueEtatCommande:read', 'historiqueEtatCommande:write',])]
 	private ?Adresse $adresseFacturation = null;
 
 	#[ORM\ManyToOne(targetEntity: Adresse::class)]
@@ -349,7 +349,6 @@ class Commande
 
 	// Numéro de suivi de la commande
 	#[ORM\Column(type: 'string', length: 100)]
-	#[Assert\NotBlank(message: "Le numéro de suivi est obligatoire.")]
 	#[Assert\Length(max: 100, maxMessage: "Le numéro de suivi ne peut pas dépasser {{ limit }} caractères.")]
 	#[Groups(['commande:read', 'commande:write'])]
 	private ?string $numero_suivi = null;
@@ -364,7 +363,7 @@ class Commande
 	#[ORM\Column(type: 'decimal', precision: 10, scale: 2, name: 'prix_total_commande')]
 	#[Assert\NotBlank(message: "Le prix total de la commande est obligatoire.")]
 	#[Assert\GreaterThanOrEqual(value: 0, message: "Le prix total de la commande ne peut pas être négatif.")]
-/* 	// Le prix total de la commande est bien la somme du total produits et des frais de livraison
+	/* 	// Le prix total de la commande est bien la somme du total produits et des frais de livraison
 	#[Assert\Expression(
 		"this.getPrixTotalCommande() === (this.getTotalProduitsCommande() + this.getFraisLivraison())",
 		message: "Le prix total de la commande doit correspondre à la somme du total des produits et des frais de livraison."

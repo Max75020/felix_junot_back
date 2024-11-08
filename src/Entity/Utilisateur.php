@@ -340,7 +340,7 @@ class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
 	#[Assert\NotBlank(message: "L'email est obligatoire.")]
 	#[Assert\Email(message: "L'email n'est pas valide.")]
 	#[Assert\Length(max: 100, maxMessage: "L'email ne peut pas dépasser 100 caractères.")]
-	#[Groups(['user:read:collection', 'user:read:item', 'user:write'])]
+	#[Groups(['user:read:collection', 'user:read:item', 'user:write', 'adresse:read'])]
 	private ?string $email = null;
 
 	// Téléphone de l'utilisateur, optionnel

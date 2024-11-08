@@ -8,12 +8,17 @@ use App\Entity\Produit;
 use ApiPlatform\Metadata\Operation;
 use ApiPlatform\Metadata\Delete as DeleteMetadata;
 use ApiPlatform\State\ProcessorInterface;
+use App\Entity\Utilisateur;
 use Symfony\Bundle\SecurityBundle\Security;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Psr\Log\LoggerInterface;
+use Stripe\Checkout\Session;
+use Stripe\Stripe;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
 
 class PanierProcessor implements ProcessorInterface
 {
@@ -57,6 +62,11 @@ class PanierProcessor implements ProcessorInterface
 		if ($operation->getName() === '_api_/paniers/{id_panier}/decrement-product_patch') {
 			$this->logger->info('Handling decrement-product operation.');
 			return $this->handleDecrementProduct($uriVariables['id_panier'], $request, $utilisateur);
+		}
+
+		if ($operation->getName() === '_api_/paniers/payment_post') {
+			$this->logger->info('Handling checkout operation.');
+			return $this->createPaymentSession($utilisateur, $request);
 		}
 
 		if ($operation instanceof DeleteMetadata) {
@@ -385,5 +395,94 @@ class PanierProcessor implements ProcessorInterface
 		$this->entityManager->flush();
 
 		return $panier;
+	}
+
+	private function createPaymentSession(Utilisateur $user, Request $request): JsonResponse
+	{
+		try {
+			Stripe::setApiKey($_ENV['STRIPE_SECRET_KEY']);
+
+			// Vérifier la clé API Stripe
+			$this->logger->info('Clé API Stripe : ' . $_ENV['STRIPE_SECRET_KEY']);
+
+			// Récupérer le contenu brut de la requête pour débogage
+			$requestContent = $request->getContent();
+			$this->logger->info('Contenu brut de la requête : ' . $requestContent);
+
+			// Extraire l'ID du panier depuis les données de la requête
+			$data = json_decode($requestContent, true);
+			// Récupérer l'ID du panier
+			$panierId = $data['id_panier'] ?? null;
+			// Récupérer les frais de livraison de la requête du front
+			$fraisLivraison = $data['fraisLivraison'] ?? 0;
+
+			// Récupérer le panier en vérifiant qu'il appartient à l'utilisateur
+			$panier = $this->entityManager->getRepository(Panier::class)->find($panierId);
+			if (!$panier || $panier->getUtilisateur()->getIdUtilisateur() !== $user->getIdUtilisateur()) {
+				$this->logger->error('Panier non trouvé ou ne correspond pas à l\'utilisateur.');
+				return new JsonResponse(['error' => 'Panier introuvable ou accès refusé.'], 404);
+			}
+
+			// Vérifier que le panier contient des produits
+			$panierProduits = $panier->getPanierProduits();
+			if (empty($panierProduits)) {
+				$this->logger->error('Le panier est vide. Aucun produit à payer.');
+				return new JsonResponse(['error' => 'Aucun produit dans le panier.'], 400);
+			}
+
+			// Préparer les articles pour la session de paiement
+			$lineItems = [];
+			foreach ($panierProduits as $panierProduit) {
+				$produit = $panierProduit->getProduit();
+				if (!$produit || !$produit->getNom() || !$produit->getPrixTtc()) {
+					$this->logger->error('Erreur dans les informations du produit : ' . json_encode($produit));
+					return new JsonResponse(['error' => 'Erreur dans les informations d\'un produit.'], 400);
+				}
+				$lineItems[] = [
+					'price_data' => [
+						'currency' => 'eur',
+						'product_data' => [
+							'name' => $produit->getNom(),
+						],
+						'unit_amount' => intval($produit->getPrixTtc() * 100),
+					],
+					'quantity' => $panierProduit->getQuantite(),
+				];
+			}
+
+			// Ajouter les frais de livraison comme item supplémentaire
+			if ($fraisLivraison > 0) {
+				$lineItems[] = [
+					'price_data' => [
+						'currency' => 'eur',
+						'product_data' => [
+							'name' => 'Frais de livraison',
+						],
+						'unit_amount' => intval($fraisLivraison * 100), // Conversion en centimes
+					],
+					'quantity' => 1,
+				];
+			}
+
+			$this->logger->info('Contenu des lineItems pour Stripe : ' . print_r($lineItems, true));
+
+			// Créer la session Stripe Checkout
+			$session = Session::create([
+				'payment_method_types' => ['card'],
+				'line_items' => $lineItems,
+				'mode' => 'payment',
+				'success_url' => $_ENV['FRONTEND_URL'] . '/order-success?session_id={CHECKOUT_SESSION_ID}',
+				'cancel_url' => $_ENV['FRONTEND_URL'] . '/order-cancel',
+				'client_reference_id' => (string) $user->getIdUtilisateur(),
+			]);
+
+			$this->logger->info('Session de paiement Stripe créée avec succès : ' . $session->id);
+
+			// Retourner l'ID de la session
+			return new JsonResponse(['id' => $session->id]);
+		} catch (\Exception $e) {
+			$this->logger->error('Erreur lors de la création de la session de paiement : ' . $e->getMessage());
+			return new JsonResponse(['error' => 'Erreur lors de la création de la session de paiement.'], 500);
+		}
 	}
 }

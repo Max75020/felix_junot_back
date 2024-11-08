@@ -169,7 +169,7 @@ class PanierProduit
 	#[ORM\ManyToOne(targetEntity: Produit::class, inversedBy: 'panierProduits')]
 	#[ORM\JoinColumn(name: 'produit_id', referencedColumnName: 'id_produit', nullable: false)]
 	#[Assert\NotBlank(message: "Le produit est obligatoire.")]
-	#[Groups(['panierProduit:read', 'panierProduit:write', 'panier:read','user:read:item'])]
+	#[Groups(['panierProduit:read', 'panierProduit:write', 'panier:read','panier:write','user:read:item'])]
 	private ?Produit $produit = null;
 
 	// Relation ManyToOne avec l'entité Panier
@@ -183,14 +183,14 @@ class PanierProduit
 	#[ORM\Column(type: 'integer')]
 	#[Assert\NotBlank(message: "La quantité est obligatoire.")]
 	#[Assert\Positive(message: "La quantité doit être un nombre positif.")]
-	#[Groups(['panierProduit:read', 'panierProduit:write', 'panier:read','user:read:item'])]
+	#[Groups(['panierProduit:read', 'panierProduit:write', 'panier:read','panier:write','user:read:item'])]
 	private int $quantite = 1;
 
 	// Prix total du produit dans le panier
 	#[ORM\Column(type: 'decimal', precision: 10, scale: 2, name: 'prix_total_produit')]
 	#[Assert\NotBlank(message: "Le prix total du produit est obligatoire.")]
 	#[Assert\GreaterThanOrEqual(value: 0, message: "Le prix total du produit ne peut pas être négatif.")]
-	#[Groups(['panierProduit:read', 'panierProduit:write', 'panier:read','user:read:item'])]
+	#[Groups(['panierProduit:read', 'panierProduit:write', 'panier:read','panier:write','user:read:item'])]
 	private string $prix_total_produit = '0.00';
 
 	// Getters et Setters

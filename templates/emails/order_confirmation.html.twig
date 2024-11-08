@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>Confirmation de commande</title>
+		<style>
+			/* Styles de base */
+			body {
+				font-family: 'Metric Medium', Arial, sans-serif; /* Police pour les paragraphes */
+				color: #333;
+				line-height: 1.6;
+			}
+			.container {
+				max-width: 600px;
+				margin: 0 auto;
+				padding: 20px;
+				background-color: #f4f4f4;
+				border-radius: 8px;
+			}
+			h1 {
+				color: #2c3e50;
+				font-size: 24px;
+				font-family: 'Century Gothic', sans-serif; /* Police pour les titres */
+			}
+			h3 {
+				color: #2c3e50;
+				font-size: 20px;
+				font-family: 'Century Gothic', sans-serif; /* Police pour les sous-titres */
+				margin-bottom: 10px;
+			}
+			.order-details {
+				background-color: #fff;
+				border: 1px solid #ddd;
+				border-radius: 8px;
+				padding: 15px;
+				margin-top: 20px;
+			}
+			.order-details p,
+			.order-details ul {
+				margin: 0;
+				padding: 0;
+			}
+			.order-details ul {
+				list-style-type: none;
+				padding-left: 0;
+			}
+			.order-details li {
+				padding: 8px 0;
+				border-bottom: 1px solid #eee;
+			}
+			.order-details li:last-child {
+				border-bottom: none;
+			}
+			.order-summary {
+				font-weight: bold;
+				color: #e67e22;
+				font-family: 'Metric Medium', sans-serif;
+			}
+			.footer {
+				margin-top: 20px;
+				font-size: 14px;
+				color: #7f8c8d;
+				text-align: center;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="container">
+			<h1>Bonjour
+				{{ prenom }}</h1>
+			<p>Merci pour votre commande !</p>
+			<p>Nous sommes ravis de vous compter parmi nos clients.</p>
+
+			<div class="order-details">
+				<p>
+					<strong>Référence de commande :</strong>
+					{{ orderReference }}</p>
+				<p>
+					<strong>Frais de livraison :</strong>
+					{{ DeliveryPrice }}
+					€</p>
+				<p>
+					<strong>Total :</strong>
+					{{ total }}
+					€</p>
+
+				<h3>Détails de la commande :</h3>
+				<ul>
+					{% for product in products %}
+						<li>{{ product.produit.getNom() }}
+							-
+							{{ product.quantite }}
+							x
+							{{ product.prixTotalProduit }}
+							€</li>
+					{% endfor %}
+				</ul>
+			</div>
+
+			<p class="order-summary">Nous vous remercions pour votre confiance.</p>
+
+			<div class="footer">
+				<p>Felix Junot Céramique</p>
+				<p>Merci de ne pas répondre directement à cet email.</p>
+			</div>
+		</div>
+	</body>
+</html>
+

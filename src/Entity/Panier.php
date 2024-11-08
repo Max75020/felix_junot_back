@@ -19,6 +19,23 @@ use Doctrine\Common\Collections\Collection;
 	normalizationContext: ['groups' => ['panier:read']],
 	denormalizationContext: ['groups' => ['panier:write']],
 	operations: [
+		// Méthode pour initier le paiement d'un panier (accessible aux utilisateurs connectés et aux administrateurs)
+		new Post(
+			uriTemplate: '/paniers/payment',
+			processor: PanierProcessor::class,
+			normalizationContext: ['groups' => ['panier:read']],
+			denormalizationContext: ['groups' => ['panier:write']],
+			security: "is_granted('ROLE_USER') or is_granted('ROLE_ADMIN')",
+			openapiContext: [
+				'summary' => 'Initier le paiement pour un panier',
+				'description' => 'Crée une session de paiement pour le panier.',
+				'responses' => [
+					'200' => ['description' => 'Payment session created successfully.'],
+					'403' => ['description' => 'Access denied.'],
+					'404' => ['description' => 'Cart not found.']
+				]
+			],
+		),
 		// Ajout d'un produit au panier (accessible aux utilisateurs connectés et aux administrateurs)
 		new Post(
 			uriTemplate: '/paniers/add-product',

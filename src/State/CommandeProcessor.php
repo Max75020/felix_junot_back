@@ -11,6 +11,7 @@ use App\Entity\HistoriqueEtatCommande;
 use App\Service\GestionCommandeService;
 use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProcessorInterface;
+use App\Service\EmailService;
 use Symfony\Bundle\SecurityBundle\Security;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
@@ -22,17 +23,20 @@ class CommandeProcessor implements ProcessorInterface
 	private EntityManagerInterface $entityManager;
 	private LoggerInterface $logger;
 	private GestionCommandeService $gestionCommandeService;
+	private EmailService $emailService;
 
 	public function __construct(
 		Security $security,
 		EntityManagerInterface $entityManager,
 		LoggerInterface $logger,
-		GestionCommandeService $gestionCommandeService
+		GestionCommandeService $gestionCommandeService,
+		EmailService $emailService
 	) {
 		$this->security = $security;
 		$this->entityManager = $entityManager;
 		$this->logger = $logger;
 		$this->gestionCommandeService = $gestionCommandeService;
+		$this->emailService = $emailService;
 	}
 
 	public function process($data, Operation $operation, array $uriVariables = [], array $context = []): mixed
@@ -93,18 +97,31 @@ class CommandeProcessor implements ProcessorInterface
 		// Vérification du poids
 		if ($poids === null) {
 			$this->logger->error("Le poids est NULL.");
+			$poids = 0; // Poids par défaut
 		} else {
 			$this->logger->info("poids => Poids de la commande : " . $poids);
 		}
 		// Vérification du numéro de suivi
 		if ($numeroSuivi === null) {
 			$this->logger->error("Le numéro de suivi est NULL.");
+			$numeroSuivi = ""; // Numéro de suivi par défaut
 		} else {
 			$this->logger->info("numero_suivi => Numéro de suivi : " . $numeroSuivi);
 		}
 		// Vérification de l'état de la commande
 		if ($etatCommande === null) {
 			$this->logger->error("L'état de la commande est NULL.");
+			// État de la commande par défaut
+			$etatCommande = $this->entityManager->getRepository(EtatCommande::class)->findOneBy(['libelle' => 'Commande Payée']);
+			// Si l'état de la commande par défaut n'est pas trouvé, on le créer
+			if (!$etatCommande) {
+				$this->logger->error("État de la commande par défaut non trouvé.");
+				$etatCommande = new EtatCommande();
+				$etatCommande->setLibelle('Commande Payée');
+				$this->entityManager->persist($etatCommande);
+				$this->entityManager->flush();
+			}
+			$data->setEtatCommande($etatCommande);
 		} else {
 			$this->logger->info("etat_commande_id => État de la commande : " . $etatCommande->getLibelle());
 		}
@@ -161,6 +178,32 @@ class CommandeProcessor implements ProcessorInterface
 		// Persister la commande
 		$this->entityManager->persist($commande);
 		$this->entityManager->flush();
+
+		// Préparation des informations pour l'email de confirmation
+		$utilisateur = $commande->getUtilisateur();
+		$destinataire = $utilisateur->getEmail();
+		$emailData = [
+			'prenom' => $utilisateur->getPrenom(),
+			'orderReference' => $commande->getReference(),
+			'total' => $commande->getPrixTotalCommande(),
+			'products' => $commande->getCommandeProduits(), // Assure-toi que cette méthode renvoie les produits
+			'deliveryAddress' => $commande->getAdresseLivraison(),
+			'DeliveryPrice' => $commande->getFraisLivraison(),
+		];
+
+		// Envoi de l’email
+		try {
+			$this->emailService->sendEmail(
+				$destinataire,
+				'Félix Junot Céramique Confirmation de votre commande Référence ' . $commande->getReference(),
+				'emails/order_confirmation.html.twig',
+				$emailData
+			);
+			$this->logger->info("Email de confirmation envoyé pour la commande ID: {$commande->getIdCommande()}");
+		} catch (\Exception $e) {
+			$this->logger->error("Erreur lors de l'envoi de l'email de confirmation : " . $e->getMessage());
+		}
+
 
 		return $commande;
 	}
