@@ -9,6 +9,7 @@ use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Delete;
 use Symfony\Component\Serializer\Annotation\Groups;
 use App\Repository\PanierRepository;
+use App\State\CartStateProvider;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
 use App\State\PanierProcessor;
@@ -19,6 +20,25 @@ use Doctrine\Common\Collections\Collection;
 	normalizationContext: ['groups' => ['panier:read']],
 	denormalizationContext: ['groups' => ['panier:write']],
 	operations: [
+		// Méthode pour obtenir le panier ouvert d'un utilisateur (accessible aux utilisateurs connectés et aux administrateurs)
+		new Get(
+			uriTemplate: '/paniers/ouvert',
+			normalizationContext: ['groups' => ['panier:read']],
+			provider: CartStateProvider::class,
+			security: "is_granted('ROLE_USER') or is_granted('ROLE_ADMIN')",
+			openapiContext: [
+				'summary' => 'Récupère le panier ouvert de l\'utilisateur connecté',
+				'description' => 'Cette opération récupère le panier de l\'utilisateur avec l\'état "ouvert".',
+				'responses' => [
+					'200' => [
+						'description' => 'Panier ouvert récupéré avec succès.',
+					],
+					'404' => [
+						'description' => 'Aucun panier ouvert trouvé.',
+					],
+				],
+			],
+		),
 		// Méthode pour initier le paiement d'un panier (accessible aux utilisateurs connectés et aux administrateurs)
 		new Post(
 			uriTemplate: '/paniers/payment',
@@ -69,7 +89,7 @@ use Doctrine\Common\Collections\Collection;
 		),
 		// Incrémentation de la quantité d'un produit dans le panier (accessible aux utilisateurs connectés et aux administrateurs)
 		new Patch(
-			uriTemplate: '/paniers/{id_panier}/increment-product',
+			uriTemplate: '/paniers/ouvert/increment-product',
 			processor: PanierProcessor::class,
 			openapiContext: [
 				'summary' => 'Incrémente la quantité d\'un produit dans le panier.',
@@ -97,7 +117,7 @@ use Doctrine\Common\Collections\Collection;
 		),
 		// Décrémentation de la quantité d'un produit dans le panier (accessible aux utilisateurs connectés et aux administrateurs)
 		new Patch(
-			uriTemplate: '/paniers/{id_panier}/decrement-product',
+			uriTemplate: '/paniers/ouvert/decrement-product',
 			processor: PanierProcessor::class,
 			openapiContext: [
 				'summary' => 'Décrémente la quantité d\'un produit dans le panier.',
@@ -287,7 +307,7 @@ class Panier
 	#[ORM\Id]
 	#[ORM\GeneratedValue]
 	#[ORM\Column(type: 'integer')]
-	#[Groups(['panier:read','commande:read', 'commande:write', 'user:read:item'])]
+	#[Groups(['panier:read', 'commande:read', 'commande:write', 'user:read:item'])]
 	private ?int $id_panier = null;
 
 	// Relation ManyToOne avec l'entité Utilisateur
@@ -298,20 +318,20 @@ class Panier
 
 	// Relation OneToMany avec l'entité PanierProduit
 	#[ORM\OneToMany(mappedBy: 'panier', targetEntity: PanierProduit::class, cascade: ['persist', 'remove'])]
-	#[Groups(['panier:read', 'panier:write','user:read:item'])]
+	#[Groups(['panier:read', 'panier:write', 'user:read:item'])]
 	private Collection $panierProduits;
 
 	// État du panier (ouvert ou fermé)
 	#[ORM\Column(type: 'string', length: 20)]
 	#[Assert\Choice(choices: ['ouvert', 'ferme'], message: 'Valeur non valide pour le champ etat.')]
-	#[Groups(['panier:read','commande:read', 'commande:write'])]
+	#[Groups(['panier:read', 'commande:read', 'commande:write', 'user:read:item'])]
 	private string $etat = 'ouvert';
 
 	// Prix total des produits dans le panier
 	#[ORM\Column(type: 'decimal', precision: 10, scale: 2, name: 'prix_total_panier')]
 	#[Assert\NotBlank(message: "Le prix total du panier est obligatoire.")]
 	#[Assert\PositiveOrZero(message: "Le prix total du panier doit être un nombre positif ou nul.")]
-	#[Groups(['panier:read', 'panier:write', 'panierProduit:read', 'panierProduit:write','commande:read', 'commande:write', 'user:read:item'])]
+	#[Groups(['panier:read', 'panier:write', 'panierProduit:read', 'panierProduit:write', 'commande:read', 'commande:write', 'user:read:item'])]
 	private string $prix_total_panier = '0.00';
 
 	public function __construct()

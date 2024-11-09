@@ -43,8 +43,9 @@ security:
         - { path: ^/api/utilisateurs/me, roles: IS_AUTHENTICATED_FULLY, methods: [GET] }
         - { path: ^/api/utilisateurs/\d+, roles: IS_AUTHENTICATED_FULLY, methods: [GET, PUT, PATCH, DELETE] }
         - { path: ^/api/paniers/add-product, roles: IS_AUTHENTICATED_FULLY, methods: [POST] }
-        - { path: ^/api/paniers/\d+/decrement-product, roles: IS_AUTHENTICATED_FULLY, methods: [PATCH] }
-        - { path: ^/api/paniers/\d+/increment-product, roles: IS_AUTHENTICATED_FULLY, methods: [PATCH] }
+        - {path: ^/api/paniers/ouvert, roles: IS_AUTHENTICATED_FULLY, methods: [GET]}
+        - { path: ^/api/paniers/ouvert/decrement-product, roles: IS_AUTHENTICATED_FULLY, methods: [PATCH] }
+        - { path: ^/api/paniers/ouvert/increment-product, roles: IS_AUTHENTICATED_FULLY, methods: [PATCH] }
         - { path: ^/api/favoris , roles: IS_AUTHENTICATED_FULLY, methods: [GET, POST, DELETE] }
         - { path: ^/api/produits, roles: PUBLIC_ACCESS, methods: [GET] }
         - { path: ^/api/produits/\d+, roles: PUBLIC_ACCESS, methods: [GET] }

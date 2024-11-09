@@ -87,3 +87,10 @@ services:
         arguments:
             $mailer: '@mailer.mailer'
             $twig: '@twig'
+
+    App\State\CartStateProvider:
+        arguments:
+            $security: '@security.helper'
+            $entityManager: '@doctrine.orm.entity_manager'
+        tags:
+          - { name: 'api_platform.state_provider', item: 'App\Entity\Panier' }

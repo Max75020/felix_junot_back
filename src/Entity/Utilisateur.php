@@ -320,19 +320,19 @@ class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
 	#[ORM\GeneratedValue]
 	#[ORM\Column(type: 'integer')]
 	#[ApiProperty(identifier: true)]
-	#[Groups(['user:read:collection', 'user:read:item', 'adresse:read', 'commande:read','commande:write', 'panier:read', 'favoris:read'])]
+	#[Groups(['user:read:collection', 'user:read:item', 'adresse:read', 'commande:read', 'commande:write', 'panier:read', 'favoris:read'])]
 	private ?int $id_utilisateur = null;
 
 	// Prénom de l'utilisateur, ne doit pas être vide
 	#[ORM\Column(type: 'string', length: 50)]
 	#[Assert\NotBlank(message: "Le prénom est obligatoire.")]
-	#[Groups(['user:read:collection', 'user:read:item', 'user:write', 'commande:read','commande:write', 'panier:read', 'favoris:read'])]
+	#[Groups(['user:read:collection', 'user:read:item', 'user:write', 'commande:read', 'commande:write', 'panier:read', 'favoris:read'])]
 	private ?string $prenom = null;
 
 	// Nom de l'utilisateur, ne doit pas être vide
 	#[ORM\Column(type: 'string', length: 50)]
 	#[Assert\NotBlank(message: "Le nom est obligatoire.")]
-	#[Groups(['user:read:collection', 'user:read:item', 'user:write', 'commande:read','commande:write', 'panier:read', 'favoris:read'])]
+	#[Groups(['user:read:collection', 'user:read:item', 'user:write', 'commande:read', 'commande:write', 'panier:read', 'favoris:read'])]
 	private ?string $nom = null;
 
 	// Email de l'utilisateur, unique et format valide
@@ -389,7 +389,7 @@ class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
 	private Collection $commandes;
 
 	#[ORM\OneToMany(targetEntity: Panier::class, mappedBy: 'utilisateur')]
-	#[Groups(['user:read:item', 'user:write'])]
+	#[Groups(['user:write'])]
 	private Collection $paniers;
 
 	#[ORM\OneToMany(targetEntity: Favoris::class, mappedBy: 'utilisateur')]
@@ -656,6 +656,17 @@ class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
 	public function getSalt(): ?string
 	{
 		// Non nécessaire si bcrypt ou argon2i est utilisé
+		return null;
+	}
+
+	#[Groups(['user:read:item'])]
+	public function getPanierOuvert(): ?Panier
+	{
+		foreach ($this->paniers as $panier) {
+			if ($panier->getEtat() === 'ouvert') {
+				return $panier;
+			}
+		}
 		return null;
 	}
 }

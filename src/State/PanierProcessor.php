@@ -19,6 +19,7 @@ use Stripe\Checkout\Session;
 use Stripe\Stripe;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class PanierProcessor implements ProcessorInterface
 {
@@ -54,14 +55,14 @@ class PanierProcessor implements ProcessorInterface
 			return $this->handleAddProduct($request, $utilisateur);
 		}
 
-		if ($operation->getName() === '_api_/paniers/{id_panier}/increment-product_patch') {
+		if ($operation->getName() === '_api_/paniers/ouvert/increment-product_patch') {
 			$this->logger->info('Handling increment-product operation.');
-			return $this->handleIncrementProduct($uriVariables['id_panier'], $request, $utilisateur);
+			return $this->handleIncrementProduct($request, $utilisateur);
 		}
 
-		if ($operation->getName() === '_api_/paniers/{id_panier}/decrement-product_patch') {
+		if ($operation->getName() === '_api_/paniers/ouvert/decrement-product_patch') {
 			$this->logger->info('Handling decrement-product operation.');
-			return $this->handleDecrementProduct($uriVariables['id_panier'], $request, $utilisateur);
+			return $this->handleDecrementProduct($request, $utilisateur);
 		}
 
 		if ($operation->getName() === '_api_/paniers/payment_post') {
@@ -132,16 +133,8 @@ class PanierProcessor implements ProcessorInterface
 			throw new BadRequestHttpException('Quantité demandée supérieure au stock disponible.');
 		}
 
-		// Vérifier le panier de l'utilisateur ou en créer un nouveau
-		$panier = $this->entityManager->getRepository(Panier::class)->findOneBy(['utilisateur' => $utilisateur, 'etat' => 'ouvert']);
-		if (!$panier) {
-			$this->logger->info('Aucun panier ouvert trouvé, création d\'un nouveau panier.');
-			$panier = new Panier();
-			$panier->setUtilisateur($utilisateur);
-			$panier->setEtat('ouvert');
-			$this->entityManager->persist($panier);
-			$this->entityManager->flush();  // Flush pour s'assurer que le panier est bien créé avant d'ajouter le produit
-		}
+		// Utiliser getOrCreateOpenCart pour récupérer ou créer le panier de l'utilisateur
+		$panier = $this->getOrCreateOpenCart($utilisateur);
 
 		// Vérifier si le produit est déjà dans le panier
 		$panierProduit = $this->entityManager->getRepository(PanierProduit::class)->findOneBy(['panier' => $panier, 'produit' => $produit]);
@@ -196,15 +189,12 @@ class PanierProcessor implements ProcessorInterface
 		return $panier;
 	}
 
-	private function handleIncrementProduct($idPanier, $request, $utilisateur)
+	private function handleIncrementProduct($request, $utilisateur)
 	{
-		$this->logger->info('Méthode handleIncrementProduct appelée pour le panier ID : ' . $idPanier);
+		$this->logger->info('Méthode handleIncrementProduct appelée pour l\'utilisateur : ' . $utilisateur->getEmail());
 
-		// Récupérer le panier
-		$panier = $this->entityManager->getRepository(Panier::class)->find($idPanier);
-		if (!$panier || $panier->getUtilisateur() !== $utilisateur) {
-			throw new AccessDeniedHttpException('Accès refusé.');
-		}
+		// Récupérer le panier ouvert de l'utilisateur
+		$panier = $this->getOrCreateOpenCart($utilisateur);
 
 		// Récupérer le contenu brut de la requête
 		$requestContent = $request->getContent();
@@ -272,15 +262,12 @@ class PanierProcessor implements ProcessorInterface
 		return $panier;
 	}
 
-	private function handleDecrementProduct($idPanier, $request, $utilisateur)
+	private function handleDecrementProduct($request, $utilisateur)
 	{
-		$this->logger->info('Méthode handleDecrementProduct appelée pour le panier ID : ' . $idPanier);
+		$this->logger->info('Méthode handleDecrementProduct appelée pour l\'utilisateur : ' . $utilisateur->getEmail());
 
-		// Récupérer le panier
-		$panier = $this->entityManager->getRepository(Panier::class)->find($idPanier);
-		if (!$panier || $panier->getUtilisateur() !== $utilisateur) {
-			throw new AccessDeniedHttpException('Accès refusé.');
-		}
+		// Récupérer le panier ouvert de l'utilisateur
+		$panier = $this->getOrCreateOpenCart($utilisateur);
 
 		// Récupérer le contenu brut de la requête
 		$requestContent = $request->getContent();
@@ -345,8 +332,6 @@ class PanierProcessor implements ProcessorInterface
 			$prixTotalPanier = bcadd($prixTotalPanier, $produitDansPanier->getPrixTotalProduit(), 2);
 		}
 
-		$compte = (count($panier->getPanierProduits()));
-		$this->logger->info('compte : ' . $compte);
 		// Si tous les produits ont été retirés, le prix total du panier doit être 0
 		if (count($panier->getPanierProduits()) === 0) {
 			$prixTotalPanier = '0.00';
@@ -395,6 +380,40 @@ class PanierProcessor implements ProcessorInterface
 		$this->entityManager->flush();
 
 		return $panier;
+	}
+
+	private function getOrCreateOpenCart(Utilisateur $utilisateur): Panier
+	{
+		// Récupère tous les paniers ouverts pour cet utilisateur
+		$paniersOuverts = $this->entityManager->getRepository(Panier::class)->findBy(['utilisateur' => $utilisateur, 'etat' => 'ouvert']);
+
+
+		$this->logger->info('Nombre de paniers ouverts trouvés : ' . count($paniersOuverts));
+		$this->logger->info('ID Utilisateur : ' . $utilisateur->getIdUtilisateur());
+
+		if (count($paniersOuverts) > 1) {
+			// Ferme les autres paniers ouverts pour assurer l'unicité
+			foreach ($paniersOuverts as $index => $panier) {
+				if ($index > 0) {
+					$panier->setEtat('ferme');
+					$this->entityManager->persist($panier);
+				}
+			}
+			$this->entityManager->flush();
+		}
+
+		// Si aucun panier ouvert, crée un nouveau panier
+		if (empty($paniersOuverts)) {
+			$panier = new Panier();
+			$panier->setUtilisateur($utilisateur);
+			$panier->setEtat('ouvert');
+			$this->entityManager->persist($panier);
+			$this->entityManager->flush();
+			return $panier;
+		}
+
+		// Retourne le panier ouvert
+		return $paniersOuverts[0];
 	}
 
 	private function createPaymentSession(Utilisateur $user, Request $request): JsonResponse
