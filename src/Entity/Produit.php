@@ -300,7 +300,7 @@ class Produit
 
 	// Relation OneToMany avec l'entité ImageProduit
 	#[ORM\OneToMany(mappedBy: 'produit', targetEntity: ImageProduit::class, cascade: ['persist', 'remove'])]
-	#[Groups(['produit:read', 'produit:write', 'panier:read', 'panier:write', 'categorie:read', 'user:read:item'])]
+	#[Groups(['produit:read', 'produit:write', 'panier:read', 'panier:write', 'categorie:read'])]
 	private Collection $images;
 
 	// Relation OneToMany avec l'entité CommandeProduit
@@ -310,7 +310,7 @@ class Produit
 	#[ORM\Column(type: 'decimal', precision: 10, scale: 2)]
 	#[Assert\NotBlank(message: "Le prix est obligatoire.")]
 	#[Assert\Positive(message: "Le prix doit être un nombre positif.")]
-	#[Groups(['produit:read', 'produit:write', 'panier:read', 'panier:write', 'user:read:item'])]
+	#[Groups(['produit:read', 'produit:write', 'panier:read', 'panier:write', 'user:read:item','commande:read'])]
 	private ?string $prix_ttc = null;
 
 	#[ORM\Column(type: 'integer', nullable: false)]
@@ -506,6 +506,7 @@ class Produit
 		return $this->images;
 	}
 
+	#[Groups(['commande:read','user:read:item'])]
 	// Récupérer le chemin de la cover du produit
 	public function getUrlCoverProduit(): ?string
 	{

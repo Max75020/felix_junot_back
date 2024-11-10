@@ -275,7 +275,7 @@ class Commande
 	#[ORM\Id]
 	#[ORM\GeneratedValue]
 	#[ORM\Column(type: 'integer')]
-	#[Groups(['commande:read', 'historiqueEtatCommande:read'])]
+	#[Groups(['commande:read', 'historiqueEtatCommande:read', 'user:read:item'])]
 	private ?int $id_commande = null;
 
 	// Relation ManyToOne avec l'entité Utilisateur
@@ -287,12 +287,12 @@ class Commande
 	// Relation ManyToOne avec l'entité EtatCommande
 	#[ORM\ManyToOne(targetEntity: EtatCommande::class, inversedBy: 'commandes')]
 	#[ORM\JoinColumn(name: 'etat_commande_id', referencedColumnName: 'id_etat_commande', nullable: false)]
-	#[Groups(['commande:read', 'commande:write'])]
+	#[Groups(['commande:read', 'commande:write','user:read:item'])]
 	private ?EtatCommande $etat_commande = null;
 
 	#[ORM\ManyToOne(targetEntity: Adresse::class)]
 	#[ORM\JoinColumn(name: 'adresse_facturation_id', referencedColumnName: 'id_adresse', nullable: false)]
-	#[Groups(['commande:read', 'commande:write', 'historiqueEtatCommande:read', 'historiqueEtatCommande:write',])]
+	#[Groups(['commande:read', 'commande:write'])]
 	private ?Adresse $adresseFacturation = null;
 
 	#[ORM\ManyToOne(targetEntity: Adresse::class)]
@@ -318,7 +318,7 @@ class Commande
 	#[DateTimeNormalizer(format: 'd-m-Y H:i:s')]
 	#[Assert\NotBlank(message: "La date de commande est obligatoire.")]
 	#[Assert\Type(\DateTimeInterface::class, message: "La date de commande doit être une date valide.")]
-	#[Groups(['commande:read'])]
+	#[Groups(['commande:read', 'user:read:item'])]
 	private ?\DateTimeInterface $date_commande = null;
 
 	// Relation ManyToOne avec l'entité MethodeLivraison
@@ -356,7 +356,7 @@ class Commande
 	// Référence de la commande
 	#[ORM\Column(type: 'string', length: 30)]
 	#[Assert\Length(max: 30, maxMessage: "La référence doit contenir {{ limit }} caractères maximum.")]
-	#[Groups(['commande:read'])]
+	#[Groups(['commande:read','user:read:item'])]
 	private ?string $reference = null;
 
 	// Prix total de la commande (total des produits + frais de livraison)
@@ -368,6 +368,7 @@ class Commande
 		"this.getPrixTotalCommande() === (this.getTotalProduitsCommande() + this.getFraisLivraison())",
 		message: "Le prix total de la commande doit correspondre à la somme du total des produits et des frais de livraison."
 	)] */
+	#[Groups(['commande:read', 'commande:write','user:read:item'])]
 	private string $prix_total_commande = '0.00';
 
 	// Relation OneToMany avec l'entité CommandeProduit

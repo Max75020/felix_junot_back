@@ -210,7 +210,7 @@ class EtatCommande
 		max: 50,
 		maxMessage: "Le libellé ne peut pas dépasser {{ limit }} caractères."
 	)]
-	#[Groups(['etatCommande:read', 'etatCommande:write','commande:read', 'commande:write'])]
+	#[Groups(['etatCommande:read', 'etatCommande:write','commande:read', 'commande:write', 'user:read:item'])]
 	private ?string $libelle = null;
 
 	// Relation OneToMany avec l'entité Commande
