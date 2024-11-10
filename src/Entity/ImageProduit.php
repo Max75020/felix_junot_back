@@ -295,20 +295,24 @@ class ImageProduit
 	#[ORM\Column(type: 'integer', options: ['default' => 0])]
 	#[Assert\NotBlank(message: "La position est obligatoire.")]
 	#[Assert\PositiveOrZero(message: "La position doit être un nombre positif ou zéro.")]
-	#[Groups(['imageProduit:read', 'imageProduit:write'])]
+	#[Groups(['imageProduit:read', 'imageProduit:write', 'produit:read', 'categorie:read'])]
 	private ?int $position = 0;
 
 	// Indique si l'image est la couverture du produit
 	#[ORM\Column(type: 'boolean', options: ['default' => false])]
-	#[Groups(['imageProduit:read', 'imageProduit:write'])]
+	#[Groups(['imageProduit:read', 'imageProduit:write', 'produit:read','categorie:read'])]
 	private ?bool $cover = false;
 
 	// Légende de l'image
 	#[ORM\Column(type: 'string', length: 128)]
 	#[Assert\NotBlank(message: "La légende est obligatoire.")]
 	#[Assert\Length(max: 128, maxMessage: "La légende ne peut pas dépasser 128 caractères.")]
-	#[Groups(['imageProduit:read', 'imageProduit:write'])]
+	#[Groups(['imageProduit:read', 'imageProduit:write', 'produit:read','categorie:read'])]
 	private ?string $legend = null;
+
+    #[ORM\Column(length: 255)]
+	#[Groups(['imageProduit:read', 'imageProduit:write', 'produit:read','categorie:read'])]
+    private ?string $Chemin = null;
 
 	// Getters et Setters...
 
@@ -360,4 +364,16 @@ class ImageProduit
 		$this->legend = $legend;
 		return $this;
 	}
+
+    public function getChemin(): ?string
+    {
+        return $this->Chemin;
+    }
+
+    public function setChemin(string $Chemin): static
+    {
+        $this->Chemin = $Chemin;
+
+        return $this;
+    }
 }
