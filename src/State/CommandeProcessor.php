@@ -182,11 +182,25 @@ class CommandeProcessor implements ProcessorInterface
 		// Préparation des informations pour l'email de confirmation
 		$utilisateur = $commande->getUtilisateur();
 		$destinataire = $utilisateur->getEmail();
+
+		// Préparation de la liste des produits avec leurs informations
+		$produitsData = [];
+		foreach ($commande->getCommandeProduits() as $commandeProduit) {
+			$produit = $commandeProduit->getProduit();
+			$produitsData[] = [
+				'nom' => $produit->getNom(),
+				'quantite' => $commandeProduit->getQuantite(),
+				'prix' => $produit->getPrixTtc(),
+				'total' => $commandeProduit->getPrixTotalProduit(),
+				'imageUrl' => $produit->getUrlCoverProduit() ? 'http://localhost:8741/' . $produit->getUrlCoverProduit() : null, // Inclure l'URL de l'image
+			];
+		}
+
 		$emailData = [
 			'prenom' => $utilisateur->getPrenom(),
 			'orderReference' => $commande->getReference(),
 			'total' => $commande->getPrixTotalCommande(),
-			'products' => $commande->getCommandeProduits(), // Assure-toi que cette méthode renvoie les produits
+			'products' => $produitsData, // Inclure les données des produits avec image
 			'deliveryAddress' => $commande->getAdresseLivraison(),
 			'DeliveryPrice' => $commande->getFraisLivraison(),
 		];
@@ -203,7 +217,6 @@ class CommandeProcessor implements ProcessorInterface
 		} catch (\Exception $e) {
 			$this->logger->error("Erreur lors de l'envoi de l'email de confirmation : " . $e->getMessage());
 		}
-
 
 		return $commande;
 	}

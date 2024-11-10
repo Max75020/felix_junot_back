@@ -430,9 +430,7 @@ class PanierProcessor implements ProcessorInterface
 
 			// Extraire l'ID du panier depuis les données de la requête
 			$data = json_decode($requestContent, true);
-			// Récupérer l'ID du panier
 			$panierId = $data['id_panier'] ?? null;
-			// Récupérer les frais de livraison de la requête du front
 			$fraisLivraison = $data['fraisLivraison'] ?? 0;
 
 			// Récupérer le panier en vérifiant qu'il appartient à l'utilisateur
@@ -457,11 +455,23 @@ class PanierProcessor implements ProcessorInterface
 					$this->logger->error('Erreur dans les informations du produit : ' . json_encode($produit));
 					return new JsonResponse(['error' => 'Erreur dans les informations d\'un produit.'], 400);
 				}
+
+				// Obtenir l'URL de l'image de couverture du produit
+				$coverImage = null;
+				foreach ($produit->getImages() as $image) {
+					if ($image->isCover()) {
+						$coverImage = $_ENV['BACKEND_URL'] . '/' . $image->getChemin();
+						break;
+					}
+				}
+
+				// Ajouter les données de produit, y compris l'image
 				$lineItems[] = [
 					'price_data' => [
 						'currency' => 'eur',
 						'product_data' => [
 							'name' => $produit->getNom(),
+							'images' => $coverImage ? [$coverImage] : [], // Inclure l'image de couverture
 						],
 						'unit_amount' => intval($produit->getPrixTtc() * 100),
 					],

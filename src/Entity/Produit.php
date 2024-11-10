@@ -300,7 +300,7 @@ class Produit
 
 	// Relation OneToMany avec l'entité ImageProduit
 	#[ORM\OneToMany(mappedBy: 'produit', targetEntity: ImageProduit::class, cascade: ['persist', 'remove'])]
-	#[Groups(['produit:read', 'produit:write', 'panier:read', 'panier:write', 'categorie:read'])]
+	#[Groups(['produit:read', 'produit:write', 'panier:read', 'panier:write', 'categorie:read', 'user:read:item'])]
 	private Collection $images;
 
 	// Relation OneToMany avec l'entité CommandeProduit
@@ -504,6 +504,18 @@ class Produit
 	public function getImages(): Collection
 	{
 		return $this->images;
+	}
+
+	// Récupérer le chemin de la cover du produit
+	public function getUrlCoverProduit(): ?string
+	{
+		$cover = null;
+		foreach ($this->images as $image) {
+			if ($image->isCover()) {
+				$cover = $image->getChemin();
+			}
+		}
+		return $cover;
 	}
 
 	public function addImage(ImageProduit $image): self

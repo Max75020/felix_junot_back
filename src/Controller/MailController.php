@@ -40,37 +40,4 @@ class MailController extends AbstractController
 
 		return new Response('Email de test avec template envoyé avec succès!');
 	}
-
-	/**
-	 * @Route("/send-order-confirmation/{orderId}", name="order_confirmation_email")
-	 */
-	public function sendOrderConfirmationEmail(int $orderId): Response
-	{
-		// Utilise Doctrine pour récupérer la commande via son id
-		$order = $this->entityManager->getRepository(Commande::class)->find($orderId);
-
-		if (!$order) {
-			return new Response('Commande non trouvée', Response::HTTP_NOT_FOUND);
-		}
-
-		$destinataire = $order->getUser()->getEmail();
-
-		// Données pour le template
-		$data = [
-			'prenom' => $order->getUser()->getPrenom(),
-			'orderNumber' => $order->getOrderNumber(),
-			'total' => $order->getTotal(),
-			'products' => $order->getProducts(), // Assure-toi que cette méthode existe et renvoie les produits de la commande
-			'deliveryAddress' => $order->getDeliveryAddress(),
-		];
-
-		$this->emailService->sendEmail(
-			$destinataire,
-			'Confirmation de votre commande n°' . $order->getOrderNumber(),
-			'emails/order_confirmation.html.twig',
-			$data
-		);
-
-		return new Response('Email de confirmation de commande envoyé avec succès!');
-	}
 }

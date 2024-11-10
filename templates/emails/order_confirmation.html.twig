@@ -47,9 +47,19 @@
 			.order-details li {
 				padding: 8px 0;
 				border-bottom: 1px solid #eee;
+				display: flex;
+				align-items: center;
 			}
 			.order-details li:last-child {
 				border-bottom: none;
+			}
+			.product-image {
+				max-width: 60px;
+				margin-right: 10px;
+				border-radius: 5px;
+			}
+			.product-info {
+				display: inline-block;
 			}
 			.order-summary {
 				font-weight: bold;
@@ -87,12 +97,19 @@
 				<h3>Détails de la commande :</h3>
 				<ul>
 					{% for product in products %}
-						<li>{{ product.produit.getNom() }}
-							-
-							{{ product.quantite }}
-							x
-							{{ product.prixTotalProduit }}
-							€</li>
+						<li>
+							{% if product.imageUrl %}
+								<img src="{{ product.imageUrl }}" alt="Image de {{ product.nom }}" class="product-image">
+							{% endif %}
+							<div class="product-info">
+								<strong>{{ product.nom }}</strong><br>
+								Quantité :
+								{{ product.quantite }}<br>
+								Total :
+								{{ product.total }}
+								€
+							</div>
+						</li>
 					{% endfor %}
 				</ul>
 			</div>
