@@ -29,7 +29,6 @@
 ###< lexik/jwt-authentication-bundle ###
 .env
 .env.test
-.env
 assets/images/produits/tabouret_2/TabouretDeux4.JPG
 assets/images/produits/tabouret_2/TabouretDeux3.JPG
 assets/images/produits/tabouret_2/TabouretDeux2.JPG

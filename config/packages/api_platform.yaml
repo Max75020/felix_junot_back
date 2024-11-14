@@ -1,6 +1,11 @@
 api_platform:
     title: Hello API Platform
     version: 1.0.0
+    enable_docs: true
+    enable_profiler: false
+    enable_swagger_ui: true
+    enable_re_doc: true
+    enable_entrypoint: true
     formats:
         jsonld: ['application/ld+json']
         json: ['application/json']  # Ajouter cette ligne pour accepter application/json
