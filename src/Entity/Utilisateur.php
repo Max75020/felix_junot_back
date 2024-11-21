@@ -22,9 +22,11 @@ use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Serializer\Annotation\Groups;
 use ApiPlatform\Metadata\ApiFilter;
 use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
+use App\Controller\ConfirmSignupController;
 use App\Controller\GenerateResetTokenController;
 use App\Controller\ResetPasswordController;
 use App\Controller\CurrentUserController;
+use App\State\UserSignupProcessor;
 
 #[ORM\Entity(repositoryClass: UtilisateurRepository::class)]
 #[ApiResource(
@@ -88,6 +90,36 @@ use App\Controller\CurrentUserController;
 				],
 			]
 		),
+		new Get(
+			uriTemplate: '/confirm-signup',
+			security: 'is_granted("PUBLIC_ACCESS")',
+			controller: ConfirmSignupController::class,
+			read: false,
+			write: false,
+			openapiContext: [
+				'summary' => 'Valide un token d\'inscription',
+				'description' => 'Permet de valider un token d\'inscription et d\'activer un utilisateur.',
+				'parameters' => [
+					[
+						'name' => 'token',
+						'in' => 'query',
+						'required' => true,
+						'schema' => [
+							'type' => 'string',
+							'example' => '1234567890abcdef1234567890abcdef',
+						],
+					],
+				],
+				'responses' => [
+					'200' => [
+						'description' => 'Inscription confirmée avec succès.',
+					],
+					'400' => [
+						'description' => 'Erreur liée au token (invalide ou expiré).',
+					],
+				],
+			]
+		),
 		// Récupération de la collection d'utilisateurs (accessible uniquement à l'administrateur)
 		new GetCollection(
 			security: "is_granted('ROLE_ADMIN')",
@@ -120,7 +152,7 @@ use App\Controller\CurrentUserController;
 		// Création d'un nouvel utilisateur
 		new Post(
 			security: "user == null or is_granted('ROLE_ADMIN')",
-			processor: UserPasswordHasher::class,
+			processor: UserSignupProcessor::class,
 			normalizationContext: ['groups' => ['user:read:item']],
 			denormalizationContext: ['groups' => ['user:write']],
 			openapiContext: [
@@ -375,6 +407,10 @@ class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
 	#[Groups(['user:write'])]
 	private ?string $token_reinitialisation = null;
 
+	#[ORM\Column(type: 'string', length: 64, nullable: true, unique: true)]
+	#[Groups(['user:write'])]
+	private ?string $tokenInscription = null;
+
 	#[ORM\Column(type: 'boolean', options: ['default' => false])]
 	#[Groups(['user:read:collection', 'user:read:item', 'user:write'])]
 	private ?bool $email_valide = false;
@@ -502,6 +538,17 @@ class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
 		// S'assurer que les rôles sont en majuscules et uniques
 		$this->roles = array_unique(array_map('strtoupper', $roles));
 
+		return $this;
+	}
+
+	public function getTokenInscription(): ?string
+	{
+		return $this->tokenInscription;
+	}
+
+	public function setTokenInscription(?string $tokenInscription): self
+	{
+		$this->tokenInscription = $tokenInscription;
 		return $this;
 	}
 

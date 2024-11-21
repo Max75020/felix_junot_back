@@ -34,6 +34,11 @@ security:
             refresh_jwt:
                 check_path: /api/token/refresh
 
+        public:
+            pattern: ^/api/(password-reset-request|password-reset|confirm-signup|produits|categories)
+            stateless: true
+            security: false
+
         api:
             pattern: ^/api
             stateless: true
@@ -47,6 +52,7 @@ security:
         - { path: ^/api/paniers/ouvert/decrement-product, roles: IS_AUTHENTICATED_FULLY, methods: [PATCH] }
         - { path: ^/api/paniers/ouvert/increment-product, roles: IS_AUTHENTICATED_FULLY, methods: [PATCH] }
         - { path: ^/api/favoris , roles: IS_AUTHENTICATED_FULLY, methods: [GET, POST, DELETE] }
+        - { path: ^/api/confirm-signup, roles: PUBLIC_ACCESS, methods: [GET] }
         - { path: ^/api/produits, roles: PUBLIC_ACCESS, methods: [GET] }
         - { path: ^/api/produits/\d+, roles: PUBLIC_ACCESS, methods: [GET] }
         - { path: ^/api/utilisateurs, roles: PUBLIC_ACCESS, methods: [POST] }

@@ -51,12 +51,13 @@ class GenerateResetTokenController
 
 		// Envoyer l'email de réinitialisation
 		$emailMessage = (new Email())
-			->from('no-reply@felix-ceramique.fr')
+			->from('no-reply@felixjunotceramique.fr')
 			->to($user->getEmail())
 			->subject('Réinitialisation de votre mot de passe')
 			->html(sprintf(
 				'<p>Bonjour %s,</p>
-                <p>Vous avez demandé une réinitialisation de votre mot de passe. Veuillez cliquer sur le lien suivant pour réinitialiser votre mot de passe :</p>
+                <p>Vous avez demandé une réinitialisation de votre mot de passe sur le site Félix Junot Céramique.</p>
+				<p>Veuillez cliquer sur le lien suivant pour choisir un nouveau mot de passe :</p>
                 <p><a href="%s">Réinitialiser mon mot de passe</a></p>
                 <p>Si vous n\'avez pas fait cette demande, veuillez ignorer cet email.</p>',
 				htmlspecialchars($user->getPrenom()),

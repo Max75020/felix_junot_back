@@ -55,6 +55,12 @@ class CurrentUserExtension implements QueryCollectionExtensionInterface, QueryIt
 			return;
 		}
 
+		// Ignorer l'opération personnalisée '_api_/confirm-signup_get'
+		if ($operation && $operation->getName() === '_api_/confirm-signup_get') {
+			$this->logger->info('CurrentUserExtension skipped for operation: _api_/confirm-signup_get');
+			return;
+		}
+
 		$this->logger->info('CurrentUserExtension invoked for resource: ' . $resourceClass);
 
 		/** @var Utilisateur|null $user */

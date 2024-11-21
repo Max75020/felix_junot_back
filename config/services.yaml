@@ -30,6 +30,9 @@ services:
     App\Controller\CurrentUserController:
         public: true
 
+    App\Controller\ConfirmSignupController:
+        public: true
+
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
     App\State\UserPasswordHasher:
@@ -52,8 +55,8 @@ services:
             $security: '@security.helper'
             $logger: '@logger'
         tags:
-            - { name: 'api_platform.doctrine.orm.query_extension.collection' }
-            - { name: 'api_platform.doctrine.orm.query_extension.item' }
+            #- { name: 'api_platform.doctrine.orm.query_extension.collection' }
+            #- { name: 'api_platform.doctrine.orm.query_extension.item' }
 
     App\Extension\CommandeExtension:
         arguments:
