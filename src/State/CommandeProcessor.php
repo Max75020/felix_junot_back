@@ -192,7 +192,7 @@ class CommandeProcessor implements ProcessorInterface
 				'quantite' => $commandeProduit->getQuantite(),
 				'prix' => $produit->getPrixTtc(),
 				'total' => $commandeProduit->getPrixTotalProduit(),
-				'imageUrl' => $produit->getUrlCoverProduit() ? 'http://localhost:8741/' . $produit->getUrlCoverProduit() : null, // Inclure l'URL de l'image
+				'imageUrl' => $produit->getUrlCoverProduit() ? $_ENV['BACKEND_URL'] . '/' . $produit->getUrlCoverProduit() : null, // Inclure l'URL de l'image
 			];
 		}
 
