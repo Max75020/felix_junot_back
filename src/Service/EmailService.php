@@ -33,7 +33,7 @@ class EmailService
 
 		// Créer l'email
 		$email = (new Email())
-			->from('felixjunot.ceramique@gmail.com')
+			->from('no-reply@felixjunotceramique.fr')
 			->to($to)
 			->subject($subject)
 			->html($htmlContent);
