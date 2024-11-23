@@ -97,3 +97,9 @@ services:
             $entityManager: '@doctrine.orm.entity_manager'
         tags:
           - { name: 'api_platform.state_provider', item: 'App\Entity\Panier' }
+
+    App\EventListener\RefreshTokenCleanupListener:
+        arguments:
+            $connection: '@doctrine.dbal.default_connection'
+        tags:
+          - { name: doctrine.event_listener, event: preRemove }

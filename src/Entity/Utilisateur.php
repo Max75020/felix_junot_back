@@ -416,19 +416,19 @@ class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
 	private ?bool $email_valide = false;
 
 	// Relations avec d'autres entités
-	#[ORM\OneToMany(targetEntity: Adresse::class, mappedBy: 'utilisateur')]
+	#[ORM\OneToMany(targetEntity: Adresse::class, mappedBy: 'utilisateur',cascade: ['remove'])]
 	#[Groups(['user:read:item', 'user:write'])]
 	private Collection $adresses;
 
-	#[ORM\OneToMany(targetEntity: Commande::class, mappedBy: 'utilisateur')]
+	#[ORM\OneToMany(targetEntity: Commande::class, mappedBy: 'utilisateur',cascade: ['remove'])]
 	#[Groups(['user:read:item', 'user:write'])]
 	private Collection $commandes;
 
-	#[ORM\OneToMany(targetEntity: Panier::class, mappedBy: 'utilisateur')]
+	#[ORM\OneToMany(targetEntity: Panier::class, mappedBy: 'utilisateur',cascade: ['remove'])]
 	#[Groups(['user:write'])]
 	private Collection $paniers;
 
-	#[ORM\OneToMany(targetEntity: Favoris::class, mappedBy: 'utilisateur')]
+	#[ORM\OneToMany(targetEntity: Favoris::class, mappedBy: 'utilisateur',cascade: ['remove'])]
 	#[Groups(['user:read:item', 'user:write'])]
 	private Collection $favoris;
 
