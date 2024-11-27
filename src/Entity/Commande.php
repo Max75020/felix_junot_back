@@ -20,8 +20,8 @@ use App\Filter\CurrentUserFilter;
 use Symfony\Component\Serializer\Normalizer\DateTimeNormalizer;
 
 #[ApiResource(
-	normalizationContext: ['groups' => ['commande:read']],
-	denormalizationContext: ['groups' => ['commande:write']],
+	normalizationContext: ['groups' => ['commande:read']], // Sérialisation des données en lecture
+	denormalizationContext: ['groups' => ['commande:write']], // Désérialisation des données en écriture
 	operations: [
 		// Récupération de toutes les commandes (accessible uniquement à l'utilisateur propriétaire ou à l'administrateur)
 		new GetCollection(

@@ -164,12 +164,15 @@ class Categorie
 	#[Groups(['categorie:read', 'categorie:write'])]
 	private ?string $nom = null;
 
+	// Relation ManyToMany avec Produit (relation propriétaire)
 	#[ORM\ManyToMany(targetEntity: Produit::class, mappedBy: 'categories', cascade: ['persist', 'remove'])]
 	#[Groups(['categorie:read'])]
 	private Collection $produits;
 
+	// Constructeur
 	public function __construct()
 	{
+		// Initialisation de la collection de produits
 		$this->produits = new ArrayCollection();
 	}
 

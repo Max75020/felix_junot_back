@@ -18,7 +18,6 @@ use App\State\AdresseProcessor;
 	normalizationContext: ['groups' => ['adresse:read']],
 	denormalizationContext: ['groups' => ['adresse:write']],
 	operations: [
-
 		// Récupération de toutes les adresses (accessible à tous)
 		new GetCollection(
 			openapiContext: [
@@ -100,7 +99,6 @@ use App\State\AdresseProcessor;
 				],
 			]
 		),
-
 		// Récupération d'une adresse (accessible à l'utilisateur propriétaire ou à l'administrateur)
 		new Get(
 			security: "is_granted('ROLE_ADMIN') or (is_granted('ROLE_USER') and object.getUtilisateur() == user)",
@@ -196,7 +194,6 @@ use App\State\AdresseProcessor;
 				],
 			]
 		),
-
 		// Modification partielle d'une adresse (accessible à l'utilisateur propriétaire ou à l'administrateur)
 		new Patch(
 			security: "is_granted('ROLE_ADMIN') or (is_granted('ROLE_USER') and object.getUtilisateur() == user)",
@@ -409,66 +406,80 @@ use App\State\AdresseProcessor;
 		),
 	]
 )]
+// Entité représentant une adresse
 #[ORM\Entity(repositoryClass: AdresseRepository::class)]
+// Index pour la colonne utilisateur_id
 #[ORM\Index(name: 'idx_utilisateur_id', columns: ['utilisateur_id'])]
 class Adresse
 {
+	// Identifiant de l'adresse id_adresse type integer auto-incrémenté
 	#[ORM\Id]
 	#[ORM\GeneratedValue]
 	#[ORM\Column(type: 'integer')]
 	#[Groups(['adresse:read', 'commande:read', 'commande:write', "user:read:item", "user:write:item"])]
 	private ?int $id_adresse = null;
 
+	// Utilisateur associé à l'adresse (relation ManyToOne) avec suppression en cascade si l'utilisateur est supprimé
 	#[ORM\ManyToOne(targetEntity: Utilisateur::class, inversedBy: 'adresses')]
 	#[ORM\JoinColumn(name: 'utilisateur_id', referencedColumnName: 'id_utilisateur', nullable: false)]
 	#[Groups(['adresse:read', 'adresse:write'])]
 	private ?Utilisateur $utilisateur = null;
 
+	// Type de l'adresse (Facturation ou Livraison) avec validation des valeurs possibles et message d'erreur personnalisé
 	#[ORM\Column(type: 'string', length: 20)]
 	#[Assert\NotBlank(message: "Le type d'adresse est obligatoire.")]
 	#[Assert\Choice(choices: ["Facturation", "Livraison"], message: "Le type d'adresse doit être 'Facturation' ou 'Livraison'.")]
 	#[Groups(['adresse:read', 'adresse:write', 'commande:read', 'commande:write', "user:read:item", "user:write:item"])]
 	private ?string $type = null;
 
+	// Prénom associé à l'adresse avec validation de champ obligatoire
 	#[ORM\Column(type: 'string', length: 50)]
 	#[Assert\NotBlank(message: "Le prénom est obligatoire.")]
 	#[Groups(['adresse:read', 'adresse:write', 'commande:read', 'commande:write', "user:read:item", "user:write:item"])]
 	private ?string $prenom = null;
 
+	// Nom associé à l'adresse avec validation de champ obligatoire
 	#[ORM\Column(type: 'string', length: 50)]
 	#[Assert\NotBlank(message: "Le nom est obligatoire.")]
 	#[Groups(['adresse:read', 'adresse:write', 'commande:read', 'commande:write', "user:read:item", "user:write:item"])]
 	private ?string $nom = null;
 
+	// Rue ou adresse complète avec validation de champ obligatoire
 	#[ORM\Column(type: 'string', length: 255)]
 	#[Assert\NotBlank(message: "La rue est obligatoire.")]
 	#[Groups(['adresse:read', 'adresse:write', 'commande:read', 'commande:write', "user:read:item", "user:write:item"])]
 	private ?string $rue = null;
 
+	// Informations supplémentaires sur le bâtiment
 	#[ORM\Column(type: 'string', length: 100, nullable: true)]
 	#[Groups(['adresse:read', 'adresse:write', 'commande:read', 'commande:write', "user:read:item", "user:write:item"])]
 	private ?string $batiment = null;
 
+	// Numéro ou informations sur l'appartement 
 	#[ORM\Column(type: 'string', length: 100, nullable: true)]
 	#[Groups(['adresse:read', 'adresse:write', 'commande:read', 'commande:write', "user:read:item", "user:write:item"])]
 	private ?string $appartement = null;
 
+	// Code postal de l'adresse avec validation de champ obligatoire et longueur maximale
 	#[ORM\Column(type: 'string', length: 5)]
 	#[Assert\NotBlank(message: "Le code postal est obligatoire.")]
 	#[Assert\Length(max: 5, maxMessage: "Le code postal ne peut pas dépasser {{ limit }} caractères.")]
 	#[Groups(['adresse:read', 'adresse:write', 'commande:read', 'commande:write', "user:read:item", "user:write:item"])]
 	private ?string $code_postal = null;
 
+	// Ville associée à l'adresse avec validation de champ obligatoire
 	#[ORM\Column(type: 'string', length: 100)]
 	#[Assert\NotBlank(message: "La ville est obligatoire.")]
 	#[Groups(['adresse:read', 'adresse:write', 'commande:read', 'commande:write', "user:read:item", "user:write:item"])]
 	private ?string $ville = null;
 
+	// Pays de l'adresse avec validation de champ obligatoire
 	#[ORM\Column(type: 'string', length: 50)]
 	#[Assert\NotBlank(message: "Le pays est obligatoire.")]
 	#[Groups(['adresse:read', 'adresse:write', 'commande:read', 'commande:write', "user:read:item", "user:write:item"])]
 	private ?string $pays = null;
 
+	// Numéro de téléphone associé à l'adresse avec validation de longueur maximale et format de numéro de téléphone
 	#[ORM\Column(type: 'string', length: 14, nullable: true)]
 	#[Assert\Length(max: 14, maxMessage: "Le numéro de téléphone ne peut pas dépasser {{ limit }} caractères.")]
 	#[Assert\Regex(
@@ -478,10 +489,12 @@ class Adresse
 	#[Groups(['adresse:read', 'adresse:write', 'commande:read', 'commande:write', "user:read:item", "user:write:item"])]
 	private ?string $telephone = null;
 
+	// Indique si cette adresse doit être considérée comme similaire à une autre adresse lors de la création d'une adresse
 	#[ORM\Column(type: 'boolean', options: ['default' => false])]
 	#[Groups(['adresse:read', 'adresse:write', 'commande:write', "user:read:item", "user:write:item"])]
 	private ?bool $similaire = false;
 
+	// Nom de l'adresse (ex: Domicile, Travail, etc.) avec validation de champ obligatoire
 	#[ORM\Column(length: 255)]
 	#[Groups(['adresse:read', 'adresse:write', 'commande:write', "user:read:item", "user:write:item"])]
 	private ?string $nom_adresse = null;
